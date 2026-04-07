@@ -54,6 +54,15 @@ npm run dev
 
 A interface ficará disponível em `http://127.0.0.1:5173`.
 
+## Depuração no VS Code
+
+Use as configurações em `.vscode/launch.json`:
+
+- `Backend: FastAPI`: inicia e depura a API.
+- `Frontend: Vite`: sobe o servidor React.
+- `Frontend: Navegador`: abre o app no navegador com suporte a debug.
+- `Full Stack: FastAPI + React`: inicia backend, frontend e navegador juntos.
+
 ## Próximos passos
 
 1. Adicionar rotas reais da aplicação em `backend/app/api/v1`.

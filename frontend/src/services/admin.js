@@ -31,3 +31,16 @@ export async function getAdminSurveys(token) {
 
   return parseResponse(response)
 }
+
+export async function createAdminSurvey(token, payload) {
+  const response = await fetch(`${API_URL}/admin/surveys`, {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  return parseResponse(response)
+}

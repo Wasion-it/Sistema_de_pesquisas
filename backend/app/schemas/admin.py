@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.enums import CampaignStatusEnum, SurveyCategoryEnum, SurveyVersionStatusEnum
 
@@ -48,3 +48,14 @@ class SurveyManagementItemResponse(BaseModel):
 
 class SurveyManagementListResponse(BaseModel):
     items: list[SurveyManagementItemResponse]
+
+
+class SurveyCreateRequest(BaseModel):
+    code: str = Field(min_length=3, max_length=60)
+    name: str = Field(min_length=3, max_length=180)
+    description: str | None = Field(default=None, max_length=1000)
+    category: SurveyCategoryEnum
+    is_active: bool = True
+    version_title: str = Field(min_length=3, max_length=180)
+    version_description: str | None = Field(default=None, max_length=1000)
+    dimension_names: list[str] = Field(default_factory=list)

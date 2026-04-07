@@ -106,6 +106,7 @@ O frontend administrativo agora possui uma base real protegida por JWT:
 
 - `/admin`: dashboard inicial com indicadores do ambiente
 - `/admin/surveys`: tela inicial para gerenciar pesquisas
+- formulario real para criar novas pesquisas com versao inicial e dimensoes opcionais
 
 Dados exibidos no portal:
 

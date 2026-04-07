@@ -2,9 +2,11 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './auth/AuthProvider'
 import { AdminAccessButton } from './components/AdminAccessButton'
+import { AdminLayout } from './components/AdminLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
+import { AdminSurveysPage } from './pages/AdminSurveysPage'
 import { HomePage } from './pages/HomePage'
 
 export default function App() {
@@ -19,10 +21,13 @@ export default function App() {
             path="/admin"
             element={
               <ProtectedRoute>
-                <AdminDashboardPage />
+                <AdminLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="surveys" element={<AdminSurveysPage />} />
+          </Route>
         </Routes>
       </AuthProvider>
     </BrowserRouter>

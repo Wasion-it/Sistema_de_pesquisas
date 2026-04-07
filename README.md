@@ -100,6 +100,21 @@ Credenciais de desenvolvimento já seedadas:
 - `rh.analyst@example.com` / `AnalistaRH123!`
 - `ti.suporte@example.com` / `SuporteTI123!`
 
+### Primeiras telas do portal administrativo
+
+O frontend administrativo agora possui uma base real protegida por JWT:
+
+- `/admin`: dashboard inicial com indicadores do ambiente
+- `/admin/surveys`: tela inicial para gerenciar pesquisas
+
+Dados exibidos no portal:
+
+- total de pesquisas
+- versoes publicadas
+- campanhas ativas
+- respostas em rascunho e enviadas
+- listagem de pesquisas com versao atual, perguntas, dimensoes e campanha mais recente
+
 ### Rodando o banco localmente
 
 ```bash

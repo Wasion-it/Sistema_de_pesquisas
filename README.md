@@ -86,6 +86,20 @@ O backend agora possui uma base inicial em SQLite para o MVP corporativo de pesq
 - 3 registros de público-alvo
 - 1 resposta em rascunho com 2 itens respondidos
 
+### Login administrativo local
+
+O portal administrativo agora usa autenticação JWT no backend.
+
+- Endpoint de login: `POST /api/v1/auth/login`
+- Endpoint de sessão autenticada: `GET /api/v1/auth/me`
+- Perfis com acesso ao portal administrativo: `RH_ADMIN`, `RH_ANALISTA` e `TI_SUPORTE`
+
+Credenciais de desenvolvimento já seedadas:
+
+- `rh.admin@example.com` / `AdminRH123!`
+- `rh.analyst@example.com` / `AnalistaRH123!`
+- `ti.suporte@example.com` / `SuporteTI123!`
+
 ### Rodando o banco localmente
 
 ```bash

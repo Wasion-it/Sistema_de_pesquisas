@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.security import hash_password
 from app.db.session import SessionLocal, create_tables
 from app.models import (
     AuditActionEnum,
@@ -32,6 +33,14 @@ from app.models import (
     User,
 )
 from app.models.enums import QuestionTypeEnum
+
+DEV_PASSWORDS = {
+    "rh_admin": "AdminRH123!",
+    "rh_analyst": "AnalistaRH123!",
+    "manager": "Gestor123!",
+    "employee": "Colaborador123!",
+    "it_support": "SuporteTI123!",
+}
 
 
 def get_or_create(session: Session, model, defaults: dict | None = None, **filters):
@@ -125,7 +134,7 @@ def seed_users_and_employees(
             "key": "rh_admin",
             "email": "rh.admin@example.com",
             "full_name": "Ana Martins",
-            "password_hash": "dev-only-hash-rh-admin",
+            "password_hash": hash_password(DEV_PASSWORDS["rh_admin"]),
             "role": RoleEnum.RH_ADMIN,
             "employee_code": "EMP-1001",
             "department": departments["HR"],
@@ -136,7 +145,7 @@ def seed_users_and_employees(
             "key": "rh_analyst",
             "email": "rh.analyst@example.com",
             "full_name": "Bruno Lima",
-            "password_hash": "dev-only-hash-rh-analyst",
+            "password_hash": hash_password(DEV_PASSWORDS["rh_analyst"]),
             "role": RoleEnum.RH_ANALISTA,
             "employee_code": "EMP-1002",
             "department": departments["HR"],
@@ -147,7 +156,7 @@ def seed_users_and_employees(
             "key": "manager",
             "email": "gestor.tech@example.com",
             "full_name": "Carla Souza",
-            "password_hash": "dev-only-hash-manager",
+            "password_hash": hash_password(DEV_PASSWORDS["manager"]),
             "role": RoleEnum.GESTOR,
             "employee_code": "EMP-2001",
             "department": departments["TECH"],
@@ -158,7 +167,7 @@ def seed_users_and_employees(
             "key": "employee",
             "email": "colaborador@example.com",
             "full_name": "Diego Alves",
-            "password_hash": "dev-only-hash-employee",
+            "password_hash": hash_password(DEV_PASSWORDS["employee"]),
             "role": RoleEnum.COLABORADOR,
             "employee_code": "EMP-2002",
             "department": departments["TECH"],
@@ -169,7 +178,7 @@ def seed_users_and_employees(
             "key": "it_support",
             "email": "ti.suporte@example.com",
             "full_name": "Elisa Rocha",
-            "password_hash": "dev-only-hash-it-support",
+            "password_hash": hash_password(DEV_PASSWORDS["it_support"]),
             "role": RoleEnum.TI_SUPORTE,
             "employee_code": "EMP-3001",
             "department": departments["OPS"],

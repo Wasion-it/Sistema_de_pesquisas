@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { createAdminSurvey, getAdminSurveys } from '../services/admin'
@@ -297,6 +298,9 @@ export function AdminSurveysPage() {
                 <div>
                   <strong>{survey.name}</strong>
                   <span>{survey.code} · {survey.category}</span>
+                  <Link className="inline-link" to={`/admin/surveys/${survey.id}`}>
+                    Abrir detalhes
+                  </Link>
                 </div>
                 <div>
                   <strong>{survey.current_version ?? 'Sem versao'}</strong>

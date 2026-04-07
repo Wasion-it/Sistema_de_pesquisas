@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import CampaignStatusEnum, SurveyCategoryEnum, SurveyVersionStatusEnum
+from app.models.enums import CampaignStatusEnum, QuestionTypeEnum, SurveyCategoryEnum, SurveyVersionStatusEnum
 
 
 class DashboardSummaryResponse(BaseModel):
@@ -59,3 +59,140 @@ class SurveyCreateRequest(BaseModel):
     version_title: str = Field(min_length=3, max_length=180)
     version_description: str | None = Field(default=None, max_length=1000)
     dimension_names: list[str] = Field(default_factory=list)
+
+
+class SurveyUpdateRequest(BaseModel):
+    name: str = Field(min_length=3, max_length=180)
+    description: str | None = Field(default=None, max_length=1000)
+    category: SurveyCategoryEnum
+    is_active: bool = True
+    version_title: str = Field(min_length=3, max_length=180)
+    version_description: str | None = Field(default=None, max_length=1000)
+
+
+class SurveyDimensionResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str | None
+    display_order: int
+    is_active: bool
+
+
+class SurveyDimensionCreateRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+
+
+class SurveyDimensionUpdateRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool = True
+
+
+class QuestionOptionInput(BaseModel):
+    label: str = Field(min_length=1, max_length=120)
+    value: str = Field(min_length=1, max_length=60)
+    score_value: int | None = None
+
+
+class QuestionOptionResponse(BaseModel):
+    id: int
+    label: str
+    value: str
+    score_value: int | None
+    display_order: int
+    is_active: bool
+
+
+class SurveyQuestionCreateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=80)
+    question_text: str = Field(min_length=3, max_length=2000)
+    help_text: str | None = Field(default=None, max_length=2000)
+    question_type: QuestionTypeEnum
+    dimension_id: int | None = None
+    is_required: bool = True
+    display_order: int | None = None
+    scale_min: int = 1
+    scale_max: int = 5
+    allow_comment: bool = False
+    is_active: bool = True
+    options: list[QuestionOptionInput] = Field(default_factory=list)
+
+
+class SurveyQuestionUpdateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=80)
+    question_text: str = Field(min_length=3, max_length=2000)
+    help_text: str | None = Field(default=None, max_length=2000)
+    question_type: QuestionTypeEnum
+    dimension_id: int | None = None
+    is_required: bool = True
+    display_order: int
+    scale_min: int = 1
+    scale_max: int = 5
+    allow_comment: bool = False
+    is_active: bool = True
+    options: list[QuestionOptionInput] = Field(default_factory=list)
+
+
+class SurveyQuestionResponse(BaseModel):
+    id: int
+    code: str
+    question_text: str
+    help_text: str | None
+    question_type: QuestionTypeEnum
+    dimension_id: int | None
+    is_required: bool
+    display_order: int
+    scale_min: int
+    scale_max: int
+    allow_comment: bool
+    is_active: bool
+    options: list[QuestionOptionResponse]
+
+
+class SurveyVersionDetailResponse(BaseModel):
+    id: int
+    version_number: int
+    title: str
+    description: str | None
+    status: SurveyVersionStatusEnum
+    published_at: datetime | None
+    questions: list[SurveyQuestionResponse]
+
+
+class CampaignSummaryResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str | None
+    status: CampaignStatusEnum
+    start_at: datetime
+    end_at: datetime
+    published_at: datetime | None
+    is_anonymous: bool
+    allows_draft: bool
+    audience_count: int
+
+
+class SurveyDetailResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str | None
+    category: SurveyCategoryEnum
+    is_active: bool
+    updated_at: datetime
+    dimensions: list[SurveyDimensionResponse]
+    current_version: SurveyVersionDetailResponse | None
+    campaigns: list[CampaignSummaryResponse]
+
+
+class PublishSurveyRequest(BaseModel):
+    campaign_code: str = Field(min_length=3, max_length=60)
+    campaign_name: str = Field(min_length=3, max_length=180)
+    campaign_description: str | None = Field(default=None, max_length=1000)
+    start_at: datetime
+    end_at: datetime
+    is_anonymous: bool = True
+    allows_draft: bool = True

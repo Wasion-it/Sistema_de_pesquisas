@@ -213,6 +213,47 @@ p {
   background: rgba(255, 255, 255, 0.95);
 }
 
+.secondary-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #0f172a;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.secondary-link-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.danger-button {
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.danger-button:hover {
+  background: #fee2e2;
+}
+
+.inline-link {
+  color: #0369a1;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.inline-link:hover {
+  text-decoration: underline;
+}
+
 .form-error {
   padding: 12px 14px;
   border-radius: 14px;
@@ -554,6 +595,46 @@ p {
   align-items: center;
 }
 
+.stack-list {
+  margin-top: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.stack-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.stack-item-card > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.compact-list .stack-item-card {
+  padding: 16px 18px;
+}
+
+.survey-detail-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.question-stack-item {
+  align-items: center;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -595,7 +676,8 @@ p {
   }
 
   .dashboard-stats-grid,
-  .dashboard-detail-grid {
+  .dashboard-detail-grid,
+  .survey-detail-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -634,6 +716,7 @@ p {
 
   .admin-view-header,
   .dashboard-detail-grid,
+  .survey-detail-grid,
   .dashboard-stats-grid,
   .mini-metrics-grid,
   .form-grid.two-columns {

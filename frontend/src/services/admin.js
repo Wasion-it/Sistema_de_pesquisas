@@ -16,6 +16,17 @@ function buildHeaders(token) {
   }
 }
 
+function buildJsonOptions(token, method, payload) {
+  return {
+    method,
+    headers: {
+      ...buildHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  }
+}
+
 export async function getAdminDashboard(token) {
   const response = await fetch(`${API_URL}/admin/dashboard`, {
     headers: buildHeaders(token),
@@ -33,14 +44,87 @@ export async function getAdminSurveys(token) {
 }
 
 export async function createAdminSurvey(token, payload) {
-  const response = await fetch(`${API_URL}/admin/surveys`, {
-    method: 'POST',
-    headers: {
-      ...buildHeaders(token),
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+  const response = await fetch(`${API_URL}/admin/surveys`, buildJsonOptions(token, 'POST', payload))
+
+  return parseResponse(response)
+}
+
+export async function getAdminSurveyDetail(token, surveyId) {
+  const response = await fetch(`${API_URL}/admin/surveys/${surveyId}`, {
+    headers: buildHeaders(token),
   })
+
+  return parseResponse(response)
+}
+
+export async function updateAdminSurvey(token, surveyId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/surveys/${surveyId}`,
+    buildJsonOptions(token, 'PUT', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function createSurveyDimension(token, surveyId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/surveys/${surveyId}/dimensions`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function updateSurveyDimension(token, dimensionId, payload) {
+  const response = await fetch(
+    `${API_URL}/dimensions/${dimensionId}`,
+    buildJsonOptions(token, 'PATCH', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function deleteSurveyDimension(token, dimensionId) {
+  const response = await fetch(`${API_URL}/dimensions/${dimensionId}`, {
+    method: 'DELETE',
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function createSurveyQuestion(token, surveyId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/surveys/${surveyId}/questions`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function updateSurveyQuestion(token, questionId, payload) {
+  const response = await fetch(
+    `${API_URL}/questions/${questionId}`,
+    buildJsonOptions(token, 'PATCH', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function deleteSurveyQuestion(token, questionId) {
+  const response = await fetch(`${API_URL}/questions/${questionId}`, {
+    method: 'DELETE',
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function publishAdminSurvey(token, surveyId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/surveys/${surveyId}/publish`,
+    buildJsonOptions(token, 'POST', payload),
+  )
 
   return parseResponse(response)
 }

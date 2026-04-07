@@ -15,25 +15,101 @@ from app.models import (
     AuditActionEnum,
     AuditLog,
     Campaign,
+    CampaignAudience,
     CampaignStatusEnum,
+    Employee,
+    EmployeeStatusEnum,
+    QuestionOption,
+    QuestionTypeEnum,
     Response,
     ResponseStatusEnum,
     Survey,
     SurveyDimension,
+    SurveyQuestion,
     SurveyVersion,
     SurveyVersionStatusEnum,
     User,
 )
 from app.schemas.admin import (
+    CampaignSummaryResponse,
     DashboardRecentSurveyResponse,
     DashboardResponse,
     DashboardSummaryResponse,
+    PublishSurveyRequest,
+    QuestionOptionResponse,
     SurveyCreateRequest,
+    SurveyDetailResponse,
+    SurveyDimensionCreateRequest,
+    SurveyDimensionResponse,
+    SurveyDimensionUpdateRequest,
     SurveyManagementItemResponse,
     SurveyManagementListResponse,
+    SurveyQuestionCreateRequest,
+    SurveyQuestionResponse,
+    SurveyQuestionUpdateRequest,
+    SurveyUpdateRequest,
+    SurveyVersionDetailResponse,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+def _normalize_dimension_code(name: str, fallback_index: int) -> str:
+    normalized = re.sub(r"[^A-Z0-9]+", "_", name.upper()).strip("_")
+    if not normalized:
+        normalized = f"DIMENSION_{fallback_index}"
+    return normalized[:60]
+
+
+def _get_current_version(survey: Survey) -> SurveyVersion | None:
+    versions = sorted(survey.versions, key=lambda item: item.version_number, reverse=True)
+    return versions[0] if versions else None
+
+
+def _serialize_option(option: QuestionOption) -> QuestionOptionResponse:
+    return QuestionOptionResponse(
+        id=option.id,
+        label=option.label,
+        value=option.value,
+        score_value=option.score_value,
+        display_order=option.display_order,
+        is_active=option.is_active,
+    )
+
+
+def _serialize_question(question: SurveyQuestion) -> SurveyQuestionResponse:
+    options = sorted(question.options, key=lambda item: item.display_order)
+    return SurveyQuestionResponse(
+        id=question.id,
+        code=question.code,
+        question_text=question.question_text,
+        help_text=question.help_text,
+        question_type=question.question_type,
+        dimension_id=question.dimension_id,
+        is_required=question.is_required,
+        display_order=question.display_order,
+        scale_min=question.scale_min,
+        scale_max=question.scale_max,
+        allow_comment=question.allow_comment,
+        is_active=question.is_active,
+        options=[_serialize_option(option) for option in options],
+    )
+
+
+def _serialize_campaign(campaign: Campaign) -> CampaignSummaryResponse:
+    return CampaignSummaryResponse(
+        id=campaign.id,
+        code=campaign.code,
+        name=campaign.name,
+        description=campaign.description,
+        status=campaign.status,
+        start_at=campaign.start_at,
+        end_at=campaign.end_at,
+        published_at=campaign.published_at,
+        is_anonymous=campaign.is_anonymous,
+        allows_draft=campaign.allows_draft,
+        audience_count=len(campaign.audiences),
+    )
 
 
 def _serialize_survey_item(survey: Survey) -> SurveyManagementItemResponse:
@@ -67,11 +143,102 @@ def _serialize_survey_item(survey: Survey) -> SurveyManagementItemResponse:
     )
 
 
-def _normalize_dimension_code(name: str, fallback_index: int) -> str:
-    normalized = re.sub(r"[^A-Z0-9]+", "_", name.upper()).strip("_")
-    if not normalized:
-        normalized = f"DIMENSION_{fallback_index}"
-    return normalized[:60]
+def _serialize_survey_detail(survey: Survey) -> SurveyDetailResponse:
+    current_version = _get_current_version(survey)
+    dimensions = sorted(survey.dimensions, key=lambda item: item.display_order)
+    campaigns = []
+
+    current_version_response = None
+    if current_version is not None:
+        questions = sorted(current_version.questions, key=lambda item: item.display_order)
+        campaigns = sorted(current_version.campaigns, key=lambda item: item.start_at, reverse=True)
+        current_version_response = SurveyVersionDetailResponse(
+            id=current_version.id,
+            version_number=current_version.version_number,
+            title=current_version.title,
+            description=current_version.description,
+            status=current_version.status,
+            published_at=current_version.published_at,
+            questions=[_serialize_question(question) for question in questions],
+        )
+
+    return SurveyDetailResponse(
+        id=survey.id,
+        code=survey.code,
+        name=survey.name,
+        description=survey.description,
+        category=survey.category,
+        is_active=survey.is_active,
+        updated_at=survey.updated_at,
+        dimensions=[
+            SurveyDimensionResponse(
+                id=dimension.id,
+                code=dimension.code,
+                name=dimension.name,
+                description=dimension.description,
+                display_order=dimension.display_order,
+                is_active=dimension.is_active,
+            )
+            for dimension in dimensions
+        ],
+        current_version=current_version_response,
+        campaigns=[_serialize_campaign(campaign) for campaign in campaigns],
+    )
+
+
+def _get_survey_with_related(db: Session, survey_id: int) -> Survey | None:
+    return db.scalar(
+        select(Survey)
+        .options(
+            selectinload(Survey.dimensions),
+            selectinload(Survey.versions)
+            .selectinload(SurveyVersion.questions)
+            .selectinload(SurveyQuestion.options),
+            selectinload(Survey.versions)
+            .selectinload(SurveyVersion.campaigns)
+            .selectinload(Campaign.audiences),
+        )
+        .where(Survey.id == survey_id)
+    )
+
+
+def _ensure_dimension_belongs_to_survey(
+    survey: Survey,
+    dimension_id: int | None,
+) -> SurveyDimension | None:
+    if dimension_id is None:
+        return None
+
+    for dimension in survey.dimensions:
+        if dimension.id == dimension_id:
+            return dimension
+
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dimension does not belong to survey")
+
+
+def _validate_question_payload(payload: SurveyQuestionCreateRequest | SurveyQuestionUpdateRequest) -> None:
+    if payload.scale_min > payload.scale_max:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Scale min cannot be greater than scale max")
+
+    if payload.question_type == QuestionTypeEnum.SINGLE_CHOICE and not payload.options:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Single choice questions require options")
+
+    if payload.question_type != QuestionTypeEnum.SINGLE_CHOICE and payload.options:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only single choice questions can define options")
+
+
+def _sync_question_options(question: SurveyQuestion, options_payload: list) -> None:
+    question.options.clear()
+    for index, option in enumerate(options_payload, start=1):
+        question.options.append(
+            QuestionOption(
+                label=option.label.strip(),
+                value=option.value.strip().upper(),
+                score_value=option.score_value,
+                display_order=index,
+                is_active=True,
+            )
+        )
 
 
 @router.get("/dashboard", response_model=DashboardResponse)
@@ -134,6 +301,19 @@ def read_admin_dashboard(
         ),
         recent_surveys=recent_surveys,
     )
+
+
+@router.get("/surveys/{survey_id}", response_model=SurveyDetailResponse)
+def read_admin_survey_detail(
+    survey_id: int,
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    survey = _get_survey_with_related(db, survey_id)
+    if survey is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
+    return _serialize_survey_detail(survey)
 
 
 @router.get("/surveys", response_model=SurveyManagementListResponse)
@@ -253,3 +433,422 @@ def create_admin_survey(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Survey was created but could not be loaded")
 
     return _serialize_survey_item(created_survey)
+
+
+@router.put("/surveys/{survey_id}", response_model=SurveyDetailResponse)
+def update_admin_survey(
+    survey_id: int,
+    payload: SurveyUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    survey = _get_survey_with_related(db, survey_id)
+    if survey is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
+    current_version = _get_current_version(survey)
+    if current_version is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Survey has no version to update")
+
+    survey.name = payload.name.strip()
+    survey.description = payload.description.strip() if payload.description else None
+    survey.category = payload.category
+    survey.is_active = payload.is_active
+    current_version.title = payload.version_title.strip()
+    current_version.description = payload.version_description.strip() if payload.version_description else None
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="survey",
+            entity_id=survey.code,
+            description="Survey metadata updated from administrative portal.",
+            details_json=json.dumps({"survey_id": survey.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    updated_survey = _get_survey_with_related(db, survey_id)
+    if updated_survey is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Updated survey could not be loaded")
+
+    return _serialize_survey_detail(updated_survey)
+
+
+@router.post("/surveys/{survey_id}/dimensions", response_model=SurveyDetailResponse)
+def create_survey_dimension(
+    survey_id: int,
+    payload: SurveyDimensionCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    survey = _get_survey_with_related(db, survey_id)
+    if survey is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
+    dimension_name = payload.name.strip()
+    if any(existing.name.casefold() == dimension_name.casefold() for existing in survey.dimensions):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Dimension already exists")
+
+    next_order = max((dimension.display_order for dimension in survey.dimensions), default=0) + 1
+    base_code = _normalize_dimension_code(dimension_name, next_order)
+    code = base_code
+    suffix = 1
+    existing_codes = {dimension.code for dimension in survey.dimensions}
+    while code in existing_codes:
+        suffix += 1
+        code = f"{base_code[:55]}_{suffix}"
+
+    db.add(
+        SurveyDimension(
+            survey_id=survey.id,
+            code=code,
+            name=dimension_name,
+            description=payload.description.strip() if payload.description else None,
+            display_order=next_order,
+            is_active=True,
+        )
+    )
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="survey_dimension",
+            entity_id=survey.code,
+            description="Dimension added from administrative portal.",
+            details_json=json.dumps({"name": dimension_name}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    updated_survey = _get_survey_with_related(db, survey_id)
+    return _serialize_survey_detail(updated_survey)
+
+
+@router.patch("/dimensions/{dimension_id}", response_model=SurveyDetailResponse)
+def update_survey_dimension(
+    dimension_id: int,
+    payload: SurveyDimensionUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    dimension = db.scalar(select(SurveyDimension).where(SurveyDimension.id == dimension_id))
+    if dimension is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dimension not found")
+
+    duplicate_dimension = db.scalar(
+        select(SurveyDimension)
+        .where(SurveyDimension.survey_id == dimension.survey_id)
+        .where(func.lower(SurveyDimension.name) == payload.name.strip().lower())
+        .where(SurveyDimension.id != dimension.id)
+    )
+    if duplicate_dimension is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Dimension already exists")
+
+    dimension.name = payload.name.strip()
+    dimension.description = payload.description.strip() if payload.description else None
+    dimension.is_active = payload.is_active
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="survey_dimension",
+            entity_id=str(dimension.id),
+            description="Dimension updated from administrative portal.",
+            details_json=json.dumps({"dimension_id": dimension.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    survey = _get_survey_with_related(db, dimension.survey_id)
+    return _serialize_survey_detail(survey)
+
+
+@router.delete("/dimensions/{dimension_id}", response_model=SurveyDetailResponse)
+def delete_survey_dimension(
+    dimension_id: int,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    dimension = db.scalar(select(SurveyDimension).where(SurveyDimension.id == dimension_id))
+    if dimension is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dimension not found")
+
+    survey_id = dimension.survey_id
+    for question in db.scalars(select(SurveyQuestion).where(SurveyQuestion.dimension_id == dimension.id)).all():
+        question.dimension_id = None
+
+    db.delete(dimension)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.DELETE,
+            entity_name="survey_dimension",
+            entity_id=str(dimension_id),
+            description="Dimension removed from administrative portal.",
+            details_json=json.dumps({"dimension_id": dimension_id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    survey = _get_survey_with_related(db, survey_id)
+    return _serialize_survey_detail(survey)
+
+
+@router.post("/surveys/{survey_id}/questions", response_model=SurveyDetailResponse)
+def create_survey_question(
+    survey_id: int,
+    payload: SurveyQuestionCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    _validate_question_payload(payload)
+    survey = _get_survey_with_related(db, survey_id)
+    if survey is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
+    current_version = _get_current_version(survey)
+    if current_version is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Survey has no active version")
+
+    _ensure_dimension_belongs_to_survey(survey, payload.dimension_id)
+    normalized_code = payload.code.strip().upper()
+    if any(question.code == normalized_code for question in current_version.questions):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Question code already exists in version")
+
+    display_order = payload.display_order or (max((question.display_order for question in current_version.questions), default=0) + 1)
+    if any(question.display_order == display_order for question in current_version.questions):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Question display order already exists")
+
+    question = SurveyQuestion(
+        survey_version_id=current_version.id,
+        dimension_id=payload.dimension_id,
+        code=normalized_code,
+        question_text=payload.question_text.strip(),
+        help_text=payload.help_text.strip() if payload.help_text else None,
+        question_type=payload.question_type,
+        is_required=payload.is_required,
+        display_order=display_order,
+        scale_min=payload.scale_min,
+        scale_max=payload.scale_max,
+        allow_comment=payload.allow_comment,
+        is_active=payload.is_active,
+    )
+    _sync_question_options(question, payload.options)
+    db.add(question)
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="survey_question",
+            entity_id=normalized_code,
+            description="Question created from administrative portal.",
+            details_json=json.dumps({"survey_id": survey.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    updated_survey = _get_survey_with_related(db, survey_id)
+    return _serialize_survey_detail(updated_survey)
+
+
+@router.patch("/questions/{question_id}", response_model=SurveyDetailResponse)
+def update_survey_question(
+    question_id: int,
+    payload: SurveyQuestionUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    _validate_question_payload(payload)
+    question = db.scalar(
+        select(SurveyQuestion)
+        .options(selectinload(SurveyQuestion.survey_version).selectinload(SurveyVersion.survey))
+        .where(SurveyQuestion.id == question_id)
+    )
+    if question is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
+
+    survey = _get_survey_with_related(db, question.survey_version.survey_id)
+    if survey is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
+    _ensure_dimension_belongs_to_survey(survey, payload.dimension_id)
+    normalized_code = payload.code.strip().upper()
+    current_version = _get_current_version(survey)
+    if current_version is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Survey has no active version")
+
+    for existing_question in current_version.questions:
+        if existing_question.id == question.id:
+            continue
+        if existing_question.code == normalized_code:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Question code already exists in version")
+        if existing_question.display_order == payload.display_order:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Question display order already exists")
+
+    question.code = normalized_code
+    question.question_text = payload.question_text.strip()
+    question.help_text = payload.help_text.strip() if payload.help_text else None
+    question.question_type = payload.question_type
+    question.dimension_id = payload.dimension_id
+    question.is_required = payload.is_required
+    question.display_order = payload.display_order
+    question.scale_min = payload.scale_min
+    question.scale_max = payload.scale_max
+    question.allow_comment = payload.allow_comment
+    question.is_active = payload.is_active
+    _sync_question_options(question, payload.options)
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="survey_question",
+            entity_id=str(question.id),
+            description="Question updated from administrative portal.",
+            details_json=json.dumps({"question_id": question.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    updated_survey = _get_survey_with_related(db, survey.id)
+    return _serialize_survey_detail(updated_survey)
+
+
+@router.delete("/questions/{question_id}", response_model=SurveyDetailResponse)
+def delete_survey_question(
+    question_id: int,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    question = db.scalar(
+        select(SurveyQuestion)
+        .options(selectinload(SurveyQuestion.survey_version).selectinload(SurveyVersion.survey))
+        .where(SurveyQuestion.id == question_id)
+    )
+    if question is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
+
+    survey_id = question.survey_version.survey_id
+    db.delete(question)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.DELETE,
+            entity_name="survey_question",
+            entity_id=str(question_id),
+            description="Question removed from administrative portal.",
+            details_json=json.dumps({"question_id": question_id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    updated_survey = _get_survey_with_related(db, survey_id)
+    return _serialize_survey_detail(updated_survey)
+
+
+@router.post("/surveys/{survey_id}/publish", response_model=SurveyDetailResponse)
+def publish_survey_version(
+    survey_id: int,
+    payload: PublishSurveyRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SurveyDetailResponse:
+    survey = _get_survey_with_related(db, survey_id)
+    if survey is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
+    current_version = _get_current_version(survey)
+    if current_version is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Survey has no version to publish")
+    if not current_version.questions:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Survey version must have at least one question before publishing")
+    if payload.start_at >= payload.end_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campaign start date must be before end date")
+
+    campaign_code = payload.campaign_code.strip().upper()
+    if db.scalar(select(Campaign.id).where(Campaign.code == campaign_code)) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Campaign code already exists")
+
+    for version in survey.versions:
+        if version.id != current_version.id and version.status == SurveyVersionStatusEnum.PUBLISHED:
+            version.status = SurveyVersionStatusEnum.ARCHIVED
+
+    current_version.status = SurveyVersionStatusEnum.PUBLISHED
+    current_version.published_at = datetime.now(UTC)
+
+    campaign = Campaign(
+        survey_version_id=current_version.id,
+        code=campaign_code,
+        name=payload.campaign_name.strip(),
+        description=payload.campaign_description.strip() if payload.campaign_description else None,
+        start_at=payload.start_at,
+        end_at=payload.end_at,
+        published_at=datetime.now(UTC),
+        status=CampaignStatusEnum.ACTIVE,
+        is_anonymous=payload.is_anonymous,
+        allows_draft=payload.allows_draft,
+        created_by_user_id=user.id,
+    )
+    db.add(campaign)
+    db.flush()
+
+    employees = db.scalars(
+        select(Employee)
+        .options(
+            selectinload(Employee.department),
+            selectinload(Employee.job_title),
+            selectinload(Employee.manager),
+            selectinload(Employee.user),
+        )
+        .where(Employee.status == EmployeeStatusEnum.ACTIVE)
+        .order_by(Employee.id.asc())
+    ).all()
+
+    for employee in employees:
+        db.add(
+            CampaignAudience(
+                campaign_id=campaign.id,
+                employee_id=employee.id,
+                employee_name_snapshot=employee.full_name,
+                work_email_snapshot=employee.work_email or (employee.user.email if employee.user else ""),
+                department_name_snapshot=employee.department.name,
+                job_title_name_snapshot=employee.job_title.name,
+                manager_name_snapshot=employee.manager.full_name if employee.manager else None,
+                published_at=campaign.published_at,
+            )
+        )
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.PUBLISH,
+            entity_name="survey_version",
+            entity_id=str(current_version.id),
+            description="Survey version published and campaign created from administrative portal.",
+            details_json=json.dumps({"survey_id": survey.id, "campaign_code": campaign.code}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    updated_survey = _get_survey_with_related(db, survey_id)
+    return _serialize_survey_detail(updated_survey)

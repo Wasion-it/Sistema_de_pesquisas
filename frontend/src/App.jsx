@@ -6,6 +6,7 @@ import { AdminLayout } from './components/AdminLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
+import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
 import { HomePage } from './pages/HomePage'
 
@@ -27,6 +28,7 @@ export default function App() {
           >
             <Route index element={<AdminDashboardPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />
+            <Route path="surveys/:surveyId" element={<AdminSurveyDetailPage />} />
           </Route>
         </Routes>
       </AuthProvider>

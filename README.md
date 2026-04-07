@@ -15,11 +15,14 @@ backend/
 				endpoints/
 				router.py
 		core/
+		db/
 		models/
 		repositories/
 		schemas/
+		seeds/
 		services/
 		main.py
+	seed.py
 	tests/
 
 frontend/
@@ -44,6 +47,56 @@ uvicorn app.main:app --reload
 
 A API ficará disponível em `http://127.0.0.1:8000`.
 
+## Banco de dados local
+
+O backend agora possui uma base inicial em SQLite para o MVP corporativo de pesquisas de RH.
+
+- Configuração do banco: `backend/app/core/config.py`
+- Base declarativa e registro dos modelos: `backend/app/db/base.py`
+- Engine, session local e criação das tabelas: `backend/app/db/session.py`
+- Modelos do domínio: `backend/app/models/`
+- Seed inicial: `backend/app/seeds/seed_initial.py`
+- Script simples para seed: `backend/seed.py`
+
+### Cobertura inicial do domínio
+
+- autenticação e usuários
+- colaboradores
+- departamentos
+- cargos
+- pesquisas e versões
+- dimensões e perguntas
+- opções de resposta
+- campanhas e público-alvo congelado
+- respostas e itens de resposta
+- auditoria básica
+
+### Seed inicial incluído
+
+- 3 departamentos
+- 5 cargos
+- 5 usuários com perfis `RH_ADMIN`, `RH_ANALISTA`, `GESTOR`, `COLABORADOR` e `TI_SUPORTE`
+- 5 colaboradores vinculados
+- 1 pesquisa GPTW
+- 1 versão publicada
+- 4 dimensões
+- 6 perguntas
+- 3 opções de resposta para pergunta `SINGLE_CHOICE`
+- 1 campanha ativa
+- 3 registros de público-alvo
+- 1 resposta em rascunho com 2 itens respondidos
+
+### Rodando o banco localmente
+
+```bash
+cd backend
+.venv\Scripts\activate
+python seed.py
+uvicorn app.main:app --reload
+```
+
+O arquivo SQLite será criado em `backend/rh_surveys.db`.
+
 ## Frontend
 
 ```bash
@@ -65,6 +118,7 @@ Use as configurações em `.vscode/launch.json`:
 
 ## Próximos passos
 
-1. Adicionar rotas reais da aplicação em `backend/app/api/v1`.
-2. Implementar serviços e integração com banco de dados no backend.
-3. Evoluir o frontend a partir de `frontend/src/pages` e `frontend/src/services`.
+1. Adicionar autenticação real com hash seguro e emissão de token.
+2. Criar migrations com Alembic pensando na futura migração para MySQL.
+3. Expor CRUD inicial de pesquisas, campanhas e respostas no backend.
+4. Conectar o frontend aos fluxos reais de login, listagem de campanhas e resposta da pesquisa.

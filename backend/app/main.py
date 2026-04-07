@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import router as v1_router
 from app.core.config import settings
+from app.db.session import create_tables
 
 app = FastAPI(
     title=settings.app_name,
@@ -17,6 +18,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    create_tables()
 
 
 @app.get("/", tags=["root"])

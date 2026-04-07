@@ -36,6 +36,11 @@ export function HomePage() {
           para crescer sem bagunca.
         </p>
 
+        <p className="supporting-copy">
+          O acesso do RH ao portal administrativo comeca pelo botao no canto superior
+          da tela.
+        </p>
+
         <StatusPanel status={apiStatus} />
       </section>
     </main>

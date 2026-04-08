@@ -103,6 +103,17 @@ function buildMetadataForm(data) {
   }
 }
 
+function formatCampaignPreviewDate(value) {
+  if (!value) {
+    return 'Defina a data'
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
 export function AdminSurveyDetailPage() {
   const { surveyId } = useParams()
   const { token } = useAuth()
@@ -112,6 +123,7 @@ export function AdminSurveyDetailPage() {
   const [editingDimensionId, setEditingDimensionId] = useState(null)
   const [questionForm, setQuestionForm] = useState(INITIAL_QUESTION_FORM)
   const [publishForm, setPublishForm] = useState(INITIAL_PUBLISH_FORM)
+  const [campaignStep, setCampaignStep] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -155,6 +167,34 @@ export function AdminSurveyDetailPage() {
   const dimensions = useMemo(() => survey?.dimensions ?? [], [survey])
   const questions = useMemo(() => survey?.current_version?.questions ?? [], [survey])
   const campaigns = useMemo(() => survey?.campaigns ?? [], [survey])
+  const stepOneComplete = Boolean(publishForm.campaignCode.trim() && publishForm.campaignName.trim())
+  const hasDates = Boolean(publishForm.startAt && publishForm.endAt)
+  const hasValidDateRange = hasDates && new Date(publishForm.endAt) >= new Date(publishForm.startAt)
+  const stepTwoComplete = hasDates && hasValidDateRange
+  const canPublishCampaign = stepOneComplete && stepTwoComplete
+  const campaignSteps = [
+    {
+      id: 1,
+      title: 'Identificacao',
+      description: 'Nome, codigo e contexto da campanha',
+      isAvailable: true,
+      isComplete: stepOneComplete,
+    },
+    {
+      id: 2,
+      title: 'Janela e regras',
+      description: 'Periodo de resposta e configuracao operacional',
+      isAvailable: stepOneComplete,
+      isComplete: stepTwoComplete,
+    },
+    {
+      id: 3,
+      title: 'Revisao final',
+      description: 'Conferir o resumo antes de publicar',
+      isAvailable: stepOneComplete && stepTwoComplete,
+      isComplete: false,
+    },
+  ]
 
   function applySurveyUpdate(data, successText) {
     setSurvey(data)
@@ -342,11 +382,22 @@ export function AdminSurveyDetailPage() {
       })
       applySurveyUpdate(data, 'Versao publicada e campanha criada com sucesso.')
       setPublishForm(INITIAL_PUBLISH_FORM)
+      setCampaignStep(1)
     } catch (error) {
       setErrorMessage(error.message)
     } finally {
       setIsPublishing(false)
     }
+  }
+
+  function handleCampaignStepChange(nextStep) {
+    const targetStep = campaignSteps.find((step) => step.id === nextStep)
+
+    if (!targetStep || !targetStep.isAvailable) {
+      return
+    }
+
+    setCampaignStep(nextStep)
   }
 
   if (isLoading) {
@@ -512,70 +563,223 @@ export function AdminSurveyDetailPage() {
           <div className="panel-header-row">
             <div>
               <h3>Publicar versao e abrir campanha</h3>
-              <p>Quando a versao estiver pronta, publique e congele o publico-alvo.</p>
+              <p>Fluxo guiado para o RH publicar sem se perder entre campos e regras.</p>
             </div>
           </div>
 
-          <form className="survey-create-form" onSubmit={handlePublishSubmit}>
-            <div className="form-grid two-columns">
-              <label className="field-group">
-                <span>Codigo da campanha</span>
-                <input name="campaignCode" value={publishForm.campaignCode} onChange={handlePublishFieldChange} />
-              </label>
-              <label className="field-group">
-                <span>Nome da campanha</span>
-                <input name="campaignName" value={publishForm.campaignName} onChange={handlePublishFieldChange} />
-              </label>
-            </div>
-
-            <label className="field-group">
-              <span>Descricao da campanha</span>
-              <textarea name="campaignDescription" rows="3" value={publishForm.campaignDescription} onChange={handlePublishFieldChange} />
-            </label>
-
-            <div className="form-grid two-columns">
-              <label className="field-group">
-                <span>Inicio</span>
-                <input name="startAt" type="datetime-local" value={publishForm.startAt} onChange={handlePublishFieldChange} />
-              </label>
-              <label className="field-group">
-                <span>Fim</span>
-                <input name="endAt" type="datetime-local" value={publishForm.endAt} onChange={handlePublishFieldChange} />
-              </label>
-            </div>
-
-            <div className="form-grid two-columns">
-              <div className="checkbox-field">
-                <span>Campanha anonima fixa nesta fase do produto</span>
+          <div className="campaign-builder-shell">
+            <div className="campaign-builder-banner">
+              <div>
+                <span className="eyebrow">Criacao guiada</span>
+                <h4>Uma decisao por vez</h4>
+                <p>
+                  Primeiro identifique a campanha, depois defina o periodo e por fim revise o resumo antes da publicacao.
+                </p>
               </div>
-              <label className="checkbox-field">
-                <input checked={publishForm.allowsDraft} name="allowsDraft" type="checkbox" onChange={handlePublishFieldChange} />
-                <span>Permitir rascunho</span>
-              </label>
+              <div className="campaign-builder-context">
+                <span>Pesquisa: {survey.name}</span>
+                <span>Versao: {survey.current_version?.title ?? 'Sem versao atual'}</span>
+                <span>{questions.length} pergunta(s) pronta(s)</span>
+              </div>
             </div>
 
-            <div className="form-actions-row">
-              <button className="primary-button" disabled={isPublishing} type="submit">
-                {isPublishing ? 'Publicando...' : 'Publicar e abrir campanha'}
-              </button>
+            <div className="campaign-stepper" role="tablist" aria-label="Etapas de criacao da campanha">
+              {campaignSteps.map((step) => (
+                <button
+                  key={step.id}
+                  aria-selected={campaignStep === step.id}
+                  className={`campaign-step-card${campaignStep === step.id ? ' active' : ''}${step.isComplete ? ' complete' : ''}`}
+                  disabled={!step.isAvailable}
+                  type="button"
+                  onClick={() => handleCampaignStepChange(step.id)}
+                >
+                  <span className="campaign-step-index">0{step.id}</span>
+                  <strong>{step.title}</strong>
+                  <small>{step.description}</small>
+                </button>
+              ))}
             </div>
-          </form>
 
-          <div className="stack-list compact-list">
-            {campaigns.map((campaign) => (
-              <article className="stack-item-card" key={campaign.id}>
-                <div>
-                  <strong>{campaign.name}</strong>
-                  <span>{campaign.code} · {campaign.status}</span>
+            <form className="survey-create-form" onSubmit={handlePublishSubmit}>
+              {campaignStep === 1 ? (
+                <section className="campaign-step-panel">
+                  <div className="campaign-step-header">
+                    <div>
+                      <span className="eyebrow">Etapa 1</span>
+                      <h4>Identifique a campanha</h4>
+                      <p>Defina um nome claro para o RH reconhecer rapidamente esta rodada.</p>
+                    </div>
+                    <div className="campaign-step-tip">
+                      <strong>Dica</strong>
+                      <span>Use um codigo curto e um nome com periodo ou publico alvo.</span>
+                    </div>
+                  </div>
+
+                  <div className="form-grid two-columns">
+                    <label className="field-group">
+                      <span>Codigo da campanha</span>
+                      <input name="campaignCode" placeholder="Ex: CLIMA-2026-Q2" value={publishForm.campaignCode} onChange={handlePublishFieldChange} />
+                    </label>
+                    <label className="field-group">
+                      <span>Nome da campanha</span>
+                      <input name="campaignName" placeholder="Ex: Pesquisa de clima do 2o trimestre" value={publishForm.campaignName} onChange={handlePublishFieldChange} />
+                    </label>
+                  </div>
+
+                  <label className="field-group">
+                    <span>Mensagem de contexto</span>
+                    <textarea
+                      name="campaignDescription"
+                      rows="4"
+                      placeholder="Explique rapidamente o objetivo desta campanha para facilitar o acompanhamento do RH."
+                      value={publishForm.campaignDescription}
+                      onChange={handlePublishFieldChange}
+                    />
+                  </label>
+
+                  <div className="campaign-step-actions">
+                    <div className="campaign-step-hint">
+                      {stepOneComplete ? 'Identificacao preenchida. Voce ja pode seguir para o periodo.' : 'Preencha codigo e nome para liberar a proxima etapa.'}
+                    </div>
+                    <button className="primary-button" disabled={!stepOneComplete} type="button" onClick={() => handleCampaignStepChange(2)}>
+                      Continuar para periodo
+                    </button>
+                  </div>
+                </section>
+              ) : null}
+
+              {campaignStep === 2 ? (
+                <section className="campaign-step-panel">
+                  <div className="campaign-step-header">
+                    <div>
+                      <span className="eyebrow">Etapa 2</span>
+                      <h4>Defina a janela de participacao</h4>
+                      <p>Escolha com calma o periodo de abertura e se o colaborador pode voltar a um rascunho.</p>
+                    </div>
+                  </div>
+
+                  <div className="form-grid two-columns">
+                    <label className="field-group">
+                      <span>Inicio</span>
+                      <input name="startAt" type="datetime-local" value={publishForm.startAt} onChange={handlePublishFieldChange} />
+                    </label>
+                    <label className="field-group">
+                      <span>Fim</span>
+                      <input name="endAt" type="datetime-local" value={publishForm.endAt} onChange={handlePublishFieldChange} />
+                    </label>
+                  </div>
+
+                  {!hasValidDateRange && hasDates ? (
+                    <div className="form-error">A data final precisa ser igual ou posterior a data inicial.</div>
+                  ) : null}
+
+                  <div className="campaign-rules-grid">
+                    <div className="campaign-rule-card locked">
+                      <strong>Anonimato</strong>
+                      <span>Ativo por padrao nesta fase do produto.</span>
+                    </div>
+                    <label className="checkbox-field campaign-rule-card" htmlFor="campaign-allows-draft">
+                      <input
+                        checked={publishForm.allowsDraft}
+                        id="campaign-allows-draft"
+                        name="allowsDraft"
+                        type="checkbox"
+                        onChange={handlePublishFieldChange}
+                      />
+                      <span>Permitir que o colaborador salve rascunho</span>
+                    </label>
+                  </div>
+
+                  <div className="campaign-step-actions split-actions">
+                    <button className="secondary-button" type="button" onClick={() => handleCampaignStepChange(1)}>
+                      Voltar
+                    </button>
+                    <button className="primary-button" disabled={!stepTwoComplete} type="button" onClick={() => handleCampaignStepChange(3)}>
+                      Revisar campanha
+                    </button>
+                  </div>
+                </section>
+              ) : null}
+
+              {campaignStep === 3 ? (
+                <section className="campaign-step-panel review-panel">
+                  <div className="campaign-step-header">
+                    <div>
+                      <span className="eyebrow">Etapa 3</span>
+                      <h4>Revise antes de publicar</h4>
+                      <p>Confira o resumo final. Ao publicar, a campanha fica aberta para uso e vinculada a esta versao.</p>
+                    </div>
+                  </div>
+
+                  <div className="campaign-review-grid">
+                    <article className="campaign-review-card highlight">
+                      <span>Campanha</span>
+                      <strong>{publishForm.campaignName || 'Nome nao definido'}</strong>
+                      <p>{publishForm.campaignCode || 'Codigo nao definido'}</p>
+                    </article>
+                    <article className="campaign-review-card">
+                      <span>Inicio</span>
+                      <strong>{formatCampaignPreviewDate(publishForm.startAt)}</strong>
+                    </article>
+                    <article className="campaign-review-card">
+                      <span>Fim</span>
+                      <strong>{formatCampaignPreviewDate(publishForm.endAt)}</strong>
+                    </article>
+                    <article className="campaign-review-card">
+                      <span>Rascunho</span>
+                      <strong>{publishForm.allowsDraft ? 'Permitido' : 'Nao permitido'}</strong>
+                    </article>
+                  </div>
+
+                  <div className="campaign-summary-note">
+                    <strong>Descricao registrada</strong>
+                    <p>{publishForm.campaignDescription?.trim() || 'Nenhuma descricao adicional foi informada.'}</p>
+                  </div>
+
+                  <div className="campaign-step-actions split-actions">
+                    <button className="secondary-button" type="button" onClick={() => handleCampaignStepChange(2)}>
+                      Ajustar periodo
+                    </button>
+                    <button className="primary-button" disabled={!canPublishCampaign || isPublishing} type="submit">
+                      {isPublishing ? 'Publicando...' : 'Publicar e abrir campanha'}
+                    </button>
+                  </div>
+                </section>
+              ) : null}
+            </form>
+          </div>
+
+          <div className="campaign-history-section">
+            <div className="panel-header-row">
+              <div>
+                <h4>Campanhas ja criadas</h4>
+                <p>Historico rapido para consultar status e acessar as respostas.</p>
+              </div>
+            </div>
+
+            <div className="stack-list compact-list">
+              {campaigns.length === 0 ? (
+                <div className="empty-state">
+                  <strong>Nenhuma campanha publicada</strong>
+                  <span>Conclua o fluxo acima para abrir a primeira campanha desta pesquisa.</span>
                 </div>
-                <div className="inline-actions aligned-actions">
-                  <span className="campaign-audience-count">{campaign.audience_count} colaboradores</span>
-                  <Link className="secondary-link-button" to={`/admin/campaigns/${campaign.id}/responses`}>
-                    Ver respostas
-                  </Link>
-                </div>
-              </article>
-            ))}
+              ) : (
+                campaigns.map((campaign) => (
+                  <article className="stack-item-card" key={campaign.id}>
+                    <div>
+                      <strong>{campaign.name}</strong>
+                      <span>{campaign.code} · {campaign.status}</span>
+                    </div>
+                    <div className="inline-actions aligned-actions">
+                      <span className="campaign-audience-count">{campaign.audience_count} colaboradores</span>
+                      <Link className="secondary-link-button" to={`/admin/campaigns/${campaign.id}/responses`}>
+                        Ver respostas
+                      </Link>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
           </div>
         </section>
       </section>

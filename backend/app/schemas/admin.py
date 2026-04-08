@@ -238,4 +238,4 @@ class PublishSurveyRequest(BaseModel):
     start_at: datetime
     end_at: datetime
     is_anonymous: bool = True
-    allows_draft: bool = True
+    allows_draft: bool = False

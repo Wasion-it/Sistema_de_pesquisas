@@ -38,7 +38,6 @@ const INITIAL_QUESTION_FORM = {
 const INITIAL_PUBLISH_FORM = {
   startAt: '',
   endAt: '',
-  allowsDraft: true,
 }
 
 function buildQuestionForm(question) {
@@ -167,10 +166,10 @@ export function AdminSurveyDetailPage() {
   }
 
   function handlePublishFieldChange(event) {
-    const { name, value, type, checked } = event.target
+    const { name, value } = event.target
     setPublishForm((current) => ({
       ...current,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: value,
     }))
   }
 
@@ -271,7 +270,7 @@ export function AdminSurveyDetailPage() {
         start_at: publishForm.startAt,
         end_at: publishForm.endAt,
         is_anonymous: true,
-        allows_draft: publishForm.allowsDraft,
+        allows_draft: false,
       })
       applySurveyUpdate(data, 'Pesquisa publicada com sucesso.')
       setPublishForm(INITIAL_PUBLISH_FORM)
@@ -398,17 +397,6 @@ export function AdminSurveyDetailPage() {
               {!hasValidDateRange && hasDates ? (
                 <div className="form-error">A data de encerramento precisa ser igual ou posterior a abertura.</div>
               ) : null}
-
-              <label className="checkbox-field">
-                <input
-                  checked={publishForm.allowsDraft}
-                  id="allows-draft"
-                  name="allowsDraft"
-                  type="checkbox"
-                  onChange={handlePublishFieldChange}
-                />
-                <span>Permitir rascunho — o colaborador pode salvar e continuar depois</span>
-              </label>
 
               <div className="form-actions-row">
                 <button className="primary-button" disabled={!canPublish || isPublishing} type="submit">

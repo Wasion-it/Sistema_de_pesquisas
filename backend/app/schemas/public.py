@@ -93,7 +93,7 @@ class PublicCampaignStartRequest(BaseModel):
 
 
 class PublicCampaignStartResponse(BaseModel):
-    response_id: int
+    response_id: int | None
     status: str
     participant_name: str | None
     participant_email: str | None
@@ -111,7 +111,7 @@ class PublicCampaignAnswerInput(BaseModel):
 
 
 class PublicCampaignSubmitRequest(BaseModel):
-    response_id: int
+    response_id: int | None = None
     answers: list[PublicCampaignAnswerInput]
 
 

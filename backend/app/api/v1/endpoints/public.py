@@ -164,6 +164,24 @@ def _build_participation_payload(campaign: Campaign, response: Response, audienc
     )
 
 
+def _build_transient_participation_payload(campaign: Campaign) -> PublicCampaignStartResponse:
+    active_questions = sorted(
+        [question for question in campaign.survey_version.questions if question.is_active],
+        key=lambda item: item.display_order,
+    )
+
+    return PublicCampaignStartResponse(
+        response_id=None,
+        status="IN_PROGRESS",
+        participant_name=None,
+        participant_email=None,
+        started_at=_utc_now_naive(),
+        campaign=_build_campaign_detail(campaign),
+        questions=[_serialize_public_question(question) for question in active_questions],
+        answers=[],
+    )
+
+
 def _create_anonymous_participation(db: Session, campaign: Campaign) -> tuple[CampaignAudience, Response]:
     department = db.scalar(select(Department).where(Department.is_active.is_(True)).order_by(Department.id.asc()))
     job_title = db.scalar(select(JobTitle).where(JobTitle.is_active.is_(True)).order_by(JobTitle.id.asc()))
@@ -308,6 +326,10 @@ def start_public_campaign_participation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
 
     _ensure_campaign_available(campaign)
+
+    if not campaign.allows_draft:
+        return _build_transient_participation_payload(campaign)
+
     audience, response = _create_anonymous_participation(db, campaign)
 
     db.commit()
@@ -342,18 +364,6 @@ def submit_public_campaign_response(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
 
     _ensure_campaign_available(campaign)
-    response = db.scalar(
-        select(Response)
-        .options(selectinload(Response.items), selectinload(Response.campaign_audience))
-        .where(Response.id == payload.response_id)
-        .where(Response.campaign_id == campaign.id)
-    )
-    if response is None or response.campaign_audience is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participation not found for this campaign")
-
-    audience = response.campaign_audience
-    if response.status == ResponseStatusEnum.SUBMITTED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This response was already submitted")
 
     active_questions = {
         question.id: question
@@ -391,6 +401,25 @@ def submit_public_campaign_response(
             valid_option_ids = {option.id for option in question.options if option.is_active}
             if answer.selected_option_id not in valid_option_ids:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid option for question {question.code}")
+
+    if campaign.allows_draft:
+        if payload.response_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Participation identifier is required")
+
+        response = db.scalar(
+            select(Response)
+            .options(selectinload(Response.items), selectinload(Response.campaign_audience))
+            .where(Response.id == payload.response_id)
+            .where(Response.campaign_id == campaign.id)
+        )
+        if response is None or response.campaign_audience is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participation not found for this campaign")
+
+        audience = response.campaign_audience
+        if response.status == ResponseStatusEnum.SUBMITTED:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This response was already submitted")
+    else:
+        audience, response = _create_anonymous_participation(db, campaign)
 
     existing_items = {item.question_id: item for item in response.items}
     for question_id, answer in answers_by_question_id.items():

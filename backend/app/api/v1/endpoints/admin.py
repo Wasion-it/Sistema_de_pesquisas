@@ -362,7 +362,9 @@ def read_admin_campaign_responses(
         .options(
             selectinload(Campaign.audiences),
             selectinload(Campaign.survey_version).selectinload(SurveyVersion.survey),
-            selectinload(Campaign.survey_version).selectinload(SurveyVersion.questions),
+            selectinload(Campaign.survey_version)
+            .selectinload(SurveyVersion.questions)
+            .selectinload(SurveyQuestion.options),
             selectinload(Campaign.responses)
             .selectinload(Response.items)
             .selectinload(ResponseItem.question),
@@ -388,6 +390,10 @@ def read_admin_campaign_responses(
         version_id=campaign.survey_version.id,
         version_title=campaign.survey_version.title,
         total_questions=len(campaign.survey_version.questions),
+        questions=[
+            _serialize_question(question)
+            for question in sorted(campaign.survey_version.questions, key=lambda item: item.display_order)
+        ],
         summary=CampaignResponsesSummaryResponse(
             audience_count=len(campaign.audiences),
             total_responses=len(responses),

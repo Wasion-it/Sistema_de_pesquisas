@@ -214,6 +214,7 @@ class CampaignResponsesPageResponse(BaseModel):
     version_id: int
     version_title: str
     total_questions: int
+    questions: list[SurveyQuestionResponse]
     summary: CampaignResponsesSummaryResponse
     responses: list[CampaignResponseEntryResponse]
 

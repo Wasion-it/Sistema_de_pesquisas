@@ -8,6 +8,22 @@ function formatPercent(value) {
   return `${Math.round(value)}%`
 }
 
+function getBarColor(percentage) {
+  if (percentage >= 75) {
+    return 'linear-gradient(90deg, var(--green-600), #4ade80)'
+  }
+
+  if (percentage >= 50) {
+    return 'linear-gradient(90deg, var(--blue-600), var(--blue-400))'
+  }
+
+  if (percentage >= 25) {
+    return 'linear-gradient(90deg, var(--amber-500), var(--amber-400))'
+  }
+
+  return 'linear-gradient(90deg, var(--red-600), #f87171)'
+}
+
 function buildQuestionMetrics(pageData) {
   const submittedResponses = (pageData?.responses ?? []).filter((response) => response.status === 'SUBMITTED')
   const submittedCount = submittedResponses.length
@@ -97,7 +113,7 @@ function renderDistributionBars(items) {
                 width: `${item.percentage}%`,
                 height: '100%',
                 borderRadius: 999,
-                background: 'linear-gradient(90deg, var(--blue-500), var(--blue-300))',
+                background: getBarColor(item.percentage),
               }}
             />
           </div>

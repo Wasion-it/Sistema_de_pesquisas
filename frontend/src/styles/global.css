@@ -1420,7 +1420,7 @@ body:has(.admin-shell) { background: var(--slate-100); }
 /* Survey table */
 .survey-table {
   display: grid;
-  grid-template-columns: 1.8fr 1fr .9fr 1fr .6fr;
+  grid-template-columns: 1.8fr 1fr .9fr 1fr .6fr .8fr;
   gap: 16px;
   padding: 14px 0;
   border-top: 1px solid var(--slate-100);

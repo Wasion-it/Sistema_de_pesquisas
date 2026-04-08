@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_admin_user
@@ -32,6 +32,7 @@ from app.models import (
     User,
 )
 from app.schemas.admin import (
+    AdminActionResponse,
     CampaignResponseAnswerResponse,
     CampaignResponseEntryResponse,
     CampaignResponsesPageResponse,
@@ -514,6 +515,55 @@ def create_admin_survey(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Survey was created but could not be loaded")
 
     return _serialize_survey_item(created_survey)
+
+
+@router.delete("/surveys/{survey_id}", response_model=AdminActionResponse)
+def delete_admin_survey(
+    survey_id: int,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdminActionResponse:
+    survey = _get_survey_with_related(db, survey_id)
+    if survey is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
+    version_ids = [version.id for version in survey.versions]
+    question_ids = [question.id for version in survey.versions for question in version.questions]
+    campaign_ids = [campaign.id for version in survey.versions for campaign in version.campaigns]
+    survey_name = survey.name
+    survey_code = survey.code
+
+    if question_ids:
+        db.execute(delete(ResponseItem).where(ResponseItem.question_id.in_(question_ids)))
+        db.execute(delete(QuestionOption).where(QuestionOption.question_id.in_(question_ids)))
+        db.execute(delete(SurveyQuestion).where(SurveyQuestion.id.in_(question_ids)))
+
+    if campaign_ids:
+        db.execute(delete(Response).where(Response.campaign_id.in_(campaign_ids)))
+        db.execute(delete(CampaignAudience).where(CampaignAudience.campaign_id.in_(campaign_ids)))
+        db.execute(delete(Campaign).where(Campaign.id.in_(campaign_ids)))
+
+    if version_ids:
+        db.execute(delete(SurveyVersion).where(SurveyVersion.id.in_(version_ids)))
+
+    db.execute(delete(SurveyDimension).where(SurveyDimension.survey_id == survey_id))
+    db.execute(delete(Survey).where(Survey.id == survey_id))
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.DELETE,
+            entity_name="survey",
+            entity_id=survey_code,
+            description="Survey removed from administrative portal.",
+            details_json=json.dumps({"survey_id": survey_id, "survey_name": survey_name}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    return AdminActionResponse(message=f'Pesquisa "{survey_name}" excluida com sucesso.')
 
 
 @router.put("/surveys/{survey_id}", response_model=SurveyDetailResponse)

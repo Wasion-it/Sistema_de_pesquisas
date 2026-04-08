@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { createAdminSurvey, getAdminSurveys } from '../services/admin'
+import { createAdminSurvey, deleteAdminSurvey, getAdminSurveys } from '../services/admin'
 
 const INITIAL_FORM = {
   code: '',
@@ -36,6 +36,7 @@ export function AdminSurveysPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deletingSurveyId, setDeletingSurveyId] = useState(null)
   const [formValues, setFormValues] = useState(INITIAL_FORM)
   const [formStep, setFormStep] = useState(1) // wizard steps: 1, 2
 
@@ -91,6 +92,27 @@ export function AdminSurveysPage() {
       setErrorMessage(error.message)
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  async function handleDeleteSurvey(survey) {
+    const confirmed = window.confirm(`Excluir a pesquisa "${survey.name}"? Esta acao remove versoes, perguntas, campanhas e respostas vinculadas.`)
+    if (!confirmed) {
+      return
+    }
+
+    setErrorMessage('')
+    setSuccessMessage('')
+    setDeletingSurveyId(survey.id)
+
+    try {
+      const result = await deleteAdminSurvey(token, survey.id)
+      setSurveys((current) => current.filter((item) => item.id !== survey.id))
+      setSuccessMessage(result.message)
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setDeletingSurveyId(null)
     }
   }
 
@@ -403,6 +425,7 @@ export function AdminSurveysPage() {
             <span>Perguntas</span>
             <span>Campanhas</span>
             <span>Status</span>
+            <span>Ações</span>
           </div>
 
           {filteredSurveys.length === 0 ? (
@@ -447,6 +470,17 @@ export function AdminSurveysPage() {
                     <span className={`status-pill ${survey.is_active ? 'active' : 'inactive'}`}>
                       {survey.is_active ? 'Ativa' : 'Inativa'}
                     </span>
+                  </div>
+                  <div>
+                    <button
+                      className="danger-button"
+                      type="button"
+                      onClick={() => handleDeleteSurvey(survey)}
+                      disabled={deletingSurveyId === survey.id}
+                      style={{ padding: '8px 12px', fontSize: 12 }}
+                    >
+                      {deletingSurveyId === survey.id ? 'Excluindo...' : 'Excluir'}
+                    </button>
                   </div>
                 </article>
               )

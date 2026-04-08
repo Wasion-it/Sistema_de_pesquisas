@@ -51,6 +51,10 @@ class SurveyManagementListResponse(BaseModel):
     items: list[SurveyManagementItemResponse]
 
 
+class AdminActionResponse(BaseModel):
+    message: str
+
+
 class SurveyCreateRequest(BaseModel):
     code: str = Field(min_length=3, max_length=60)
     name: str = Field(min_length=3, max_length=180)

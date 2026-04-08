@@ -79,6 +79,15 @@ export async function createAdminSurvey(token, payload) {
   return parseResponse(response)
 }
 
+export async function deleteAdminSurvey(token, surveyId) {
+  const response = await fetch(`${API_URL}/admin/surveys/${surveyId}`, {
+    method: 'DELETE',
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
 export async function getAdminSurveyDetail(token, surveyId) {
   const response = await fetch(`${API_URL}/admin/surveys/${surveyId}`, {
     headers: buildHeaders(token),

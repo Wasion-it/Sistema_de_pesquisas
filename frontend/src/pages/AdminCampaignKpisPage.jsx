@@ -1,356 +1,489 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { getAdminCampaignResponses } from '../services/admin'
 
-function formatPercent(value) {
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+function fmtPct(value) {
   return `${Math.round(value)}%`
 }
 
-function getBarColor(percentage) {
-  if (percentage >= 75) {
-    return 'linear-gradient(90deg, var(--green-600), #4ade80)'
-  }
-
-  if (percentage >= 50) {
-    return 'linear-gradient(90deg, var(--blue-600), var(--blue-400))'
-  }
-
-  if (percentage >= 25) {
-    return 'linear-gradient(90deg, var(--amber-500), var(--amber-400))'
-  }
-
-  return 'linear-gradient(90deg, var(--red-600), #f87171)'
+function fmtScore(value) {
+  return value.toFixed(2)
 }
 
-function buildQuestionMetrics(pageData) {
-  const submittedResponses = (pageData?.responses ?? []).filter((response) => response.status === 'SUBMITTED')
-  const submittedCount = submittedResponses.length
+function fmtDate(value) {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value))
+}
 
-  return (pageData?.questions ?? []).map((question) => {
-    const answers = submittedResponses
-      .map((response) => response.answers.find((answer) => answer.question_id === question.id))
-      .filter(Boolean)
+// ─── KPI computation ────────────────────────────────────────────────────────
 
-    const responseRate = submittedCount > 0 ? (answers.length / submittedCount) * 100 : 0
+function computeKpis(pageData) {
+  const submitted = (pageData.responses ?? []).filter((r) => r.status === 'SUBMITTED')
+  const { audience_count, submitted_responses, draft_responses, total_responses } = pageData.summary
 
-    if (question.question_type === 'SCALE_1_5') {
-      const numericAnswers = answers
-        .map((answer) => answer.numeric_answer)
-        .filter((value) => typeof value === 'number')
-      const average = numericAnswers.length > 0
-        ? numericAnswers.reduce((sum, value) => sum + value, 0) / numericAnswers.length
-        : null
-      const distribution = Array.from(
-        { length: question.scale_max - question.scale_min + 1 },
-        (_, index) => question.scale_min + index,
-      ).map((value) => {
-        const count = numericAnswers.filter((answer) => answer === value).length
-        const percentage = numericAnswers.length > 0 ? (count / numericAnswers.length) * 100 : 0
-        return { label: String(value), count, percentage }
-      })
+  // Taxa de adesão
+  const adhesionRate = audience_count > 0 ? (submitted_responses / audience_count) * 100 : 0
 
-      return {
-        ...question,
-        answeredCount: numericAnswers.length,
-        responseRate,
-        average,
-        distribution,
-        mode: 'scale',
-      }
-    }
+  // Taxa de conclusão (dos que iniciaram, quantos finalizaram)
+  const completionRate = total_responses > 0 ? (submitted_responses / total_responses) * 100 : 0
 
-    if (question.question_type === 'SINGLE_CHOICE') {
-      const selectedLabels = answers
-        .map((answer) => answer.selected_option_label)
-        .filter(Boolean)
-      const distribution = (question.options ?? []).map((option) => {
-        const count = selectedLabels.filter((label) => label === option.label).length
-        const percentage = selectedLabels.length > 0 ? (count / selectedLabels.length) * 100 : 0
-        return { label: option.label, count, percentage }
-      })
+  // Todos os itens de resposta de respondentes finalizados
+  const allItems = submitted.flatMap((r) => r.answers)
 
-      return {
-        ...question,
-        answeredCount: selectedLabels.length,
-        responseRate,
-        distribution,
-        mode: 'choice',
-      }
-    }
+  // Score médio geral (escala 1-5)
+  const scaleItems = allItems.filter((a) => a.question_type === 'SCALE_1_5' && a.numeric_answer != null)
+  const avgScore = scaleItems.length > 0
+    ? scaleItems.reduce((sum, a) => sum + a.numeric_answer, 0) / scaleItems.length
+    : null
 
-    const textAnswers = answers
-      .map((answer) => answer.text_answer?.trim())
-      .filter(Boolean)
-    const averageLength = textAnswers.length > 0
-      ? Math.round(textAnswers.reduce((sum, value) => sum + value.length, 0) / textAnswers.length)
-      : 0
+  // Distribuição Likert (1 a 5)
+  const likertDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  scaleItems.forEach((a) => { likertDist[a.numeric_answer] = (likertDist[a.numeric_answer] ?? 0) + 1 })
+  const likertTotal = scaleItems.length
 
-    return {
-      ...question,
-      answeredCount: textAnswers.length,
-      responseRate,
-      averageLength,
-      sampleAnswers: textAnswers.slice(0, 3),
-      mode: 'text',
-    }
+  // eNPS a partir de perguntas SINGLE_CHOICE com "RECOMMEND" no código
+  // Mapeamento: opções YES/AGREE_FULL = Promotor, MAYBE/NEUTRAL = Neutro, NO/DISAGREE = Detrator
+  const npsItems = allItems.filter((a) => {
+    const code = (a.question_code ?? '').toUpperCase()
+    return a.question_type === 'SINGLE_CHOICE' && (code.includes('RECOMMEND') || code.includes('NPS') || code.includes('INDICAR'))
   })
+
+  let enps = null
+  let promoters = 0, passives = 0, detractors = 0
+  if (npsItems.length > 0) {
+    npsItems.forEach((a) => {
+      const opt = (a.selected_option_label ?? '').toUpperCase()
+      if (opt.includes('YES') || opt.includes('SIM') || opt.includes('TOTAL') || opt.includes('CONCORDO')) {
+        promoters++
+      } else if (opt.includes('MAYBE') || opt.includes('TALVEZ') || opt.includes('NEUTRO') || opt.includes('PARCIAL')) {
+        passives++
+      } else {
+        detractors++
+      }
+    })
+    const total = npsItems.length
+    enps = Math.round(((promoters - detractors) / total) * 100)
+  }
+
+  // Score por pergunta
+  const questionMap = {}
+  scaleItems.forEach((a) => {
+    const key = a.question_code
+    if (!questionMap[key]) {
+      questionMap[key] = { text: a.question_text, code: key, scores: [] }
+    }
+    questionMap[key].scores.push(a.numeric_answer)
+  })
+
+  const questionScores = Object.values(questionMap)
+    .map((q) => ({
+      code: q.code,
+      text: q.text,
+      avg: q.scores.reduce((s, v) => s + v, 0) / q.scores.length,
+      count: q.scores.length,
+    }))
+    .sort((a, b) => b.avg - a.avg)
+
+  return {
+    adhesionRate,
+    completionRate,
+    avgScore,
+    likertDist,
+    likertTotal,
+    enps,
+    promoters,
+    passives,
+    detractors,
+    npsTotal: npsItems.length,
+    questionScores,
+    submittedCount: submitted_responses,
+    audienceCount: audience_count,
+    draftCount: draft_responses,
+    totalStarted: total_responses,
+  }
 }
 
-function renderDistributionBars(items) {
+// ─── Sub-components ─────────────────────────────────────────────────────────
+
+function MetricCard({ label, value, sub, color }) {
+  return (
+    <article
+      className="stat-card"
+      style={color ? { '--accent': color, borderTop: `3px solid ${color}` } : {}}
+    >
+      <span>{label}</span>
+      <strong style={color ? { color } : {}}>{value}</strong>
+      {sub && <span style={{ fontSize: 12, color: 'var(--slate-400)', marginTop: -8 }}>{sub}</span>}
+    </article>
+  )
+}
+
+function LikertBar({ dist, total }) {
+  const LABELS = { 1: 'Discordo totalmente', 2: 'Discordo', 3: 'Neutro', 4: 'Concordo', 5: 'Concordo totalmente' }
+  const COLORS = {
+    1: '#dc2626',
+    2: '#ea580c',
+    3: '#d97706',
+    4: '#16a34a',
+    5: '#2563eb',
+  }
+
   return (
     <div style={{ display: 'grid', gap: 10 }}>
-      {items.map((item) => (
-        <div key={item.label} style={{ display: 'grid', gap: 6 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: 'var(--slate-500)' }}>
-            <span style={{ color: 'var(--slate-700)', fontWeight: 600 }}>{item.label}</span>
-            <span>{item.count} · {formatPercent(item.percentage)}</span>
+      {[1, 2, 3, 4, 5].map((v) => {
+        const count = dist[v] ?? 0
+        const pct = total > 0 ? (count / total) * 100 : 0
+        return (
+          <div key={v} style={{ display: 'grid', gridTemplateColumns: '160px 1fr 48px', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 13, color: 'var(--slate-600)', fontWeight: 500 }}>
+              <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: COLORS[v], marginRight: 6, verticalAlign: 'middle' }} />
+              {v} — {LABELS[v]}
+            </span>
+            <div style={{ height: 8, borderRadius: 4, background: 'var(--slate-100)', overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: COLORS[v], borderRadius: 4, transition: 'width .5s ease' }} />
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-700)', textAlign: 'right' }}>
+              {count} <span style={{ fontWeight: 400, color: 'var(--slate-400)', fontSize: 11 }}>({Math.round(pct)}%)</span>
+            </span>
           </div>
-          <div style={{ height: 8, borderRadius: 999, background: 'var(--slate-100)', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: `${item.percentage}%`,
-                height: '100%',
-                borderRadius: 999,
-                background: getBarColor(item.percentage),
-              }}
-            />
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
+function ENPSGauge({ enps, promoters, passives, detractors, total }) {
+  const score = Math.max(-100, Math.min(100, enps))
+  const pct = (score + 100) / 200 // 0..1
+  const color = score >= 50 ? '#16a34a' : score >= 0 ? '#d97706' : '#dc2626'
+  const label = score >= 75 ? 'Excelente' : score >= 50 ? 'Ótimo' : score >= 0 ? 'Regular' : 'Crítico'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
+        <span style={{ fontSize: '3rem', fontWeight: 800, color, lineHeight: 1, fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
+          {score > 0 ? '+' : ''}{score}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 700, color, paddingBottom: 6, background: color + '18', padding: '4px 10px', borderRadius: 999 }}>
+          {label}
+        </span>
+      </div>
+
+      {/* Track */}
+      <div style={{ position: 'relative', height: 10, borderRadius: 5, background: 'linear-gradient(90deg, #dc2626 0%, #d97706 45%, #16a34a 100%)' }}>
+        <div style={{
+          position: 'absolute',
+          top: '50%', left: `${pct * 100}%`,
+          transform: 'translate(-50%, -50%)',
+          width: 18, height: 18,
+          borderRadius: '50%',
+          background: '#fff',
+          border: `3px solid ${color}`,
+          boxShadow: '0 2px 6px rgba(0,0,0,.15)',
+        }} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 4 }}>
+        {[
+          { label: 'Promotores', count: promoters, color: '#16a34a', bg: '#f0fdf4' },
+          { label: 'Neutros', count: passives, color: '#d97706', bg: '#fffbeb' },
+          { label: 'Detratores', count: detractors, color: '#dc2626', bg: '#fef2f2' },
+        ].map((item) => (
+          <div key={item.label} style={{ padding: '12px 14px', borderRadius: 10, background: item.bg, border: `1px solid ${item.color}22` }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: item.color, lineHeight: 1 }}>{item.count}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: item.color, marginTop: 4, opacity: .8 }}>{item.label}</div>
+            <div style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 2 }}>
+              {total > 0 ? Math.round((item.count / total) * 100) : 0}%
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function QuestionRanking({ questions }) {
+  if (questions.length === 0) {
+    return <div className="empty-state"><strong>Sem perguntas de escala</strong></div>
+  }
+  const max = 5
+  return (
+    <div style={{ display: 'grid', gap: 12 }}>
+      {questions.map((q, i) => {
+        const pct = (q.avg / max) * 100
+        const color = q.avg >= 4 ? '#16a34a' : q.avg >= 3 ? '#d97706' : '#dc2626'
+        return (
+          <div key={q.code} style={{ display: 'grid', gap: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ fontSize: 13, color: 'var(--slate-700)', fontWeight: 500, lineHeight: 1.4, flex: 1 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-400)', marginRight: 6 }}>{i + 1}.</span>
+                {q.text}
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{fmtScore(q.avg)}</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: 'var(--slate-100)', overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .5s ease' }} />
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>{q.count} resposta{q.count !== 1 ? 's' : ''}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
+
 export function AdminCampaignKpisPage() {
   const { campaignId } = useParams()
   const { token } = useAuth()
+
   const [pageData, setPageData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    let isMounted = true
-
+    let mounted = true
     setIsLoading(true)
-    setErrorMessage('')
+    setError('')
 
     getAdminCampaignResponses(token, campaignId)
-      .then((data) => {
-        if (isMounted) {
-          setPageData(data)
-        }
-      })
-      .catch((error) => {
-        if (isMounted) {
-          setErrorMessage(error.message)
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      })
+      .then((data) => { if (mounted) setPageData(data) })
+      .catch((err) => { if (mounted) setError(err.message) })
+      .finally(() => { if (mounted) setIsLoading(false) })
 
-    return () => {
-      isMounted = false
-    }
+    return () => { mounted = false }
   }, [campaignId, token])
 
-  const campaign = pageData?.campaign
-  const summary = pageData?.summary
-
   const kpis = useMemo(() => {
-    const audienceCount = summary?.audience_count ?? 0
-    const totalResponses = summary?.total_responses ?? 0
-    const submittedResponses = summary?.submitted_responses ?? 0
-    const draftResponses = summary?.draft_responses ?? 0
-    const adhesionRate = audienceCount > 0 ? Math.round((submittedResponses / audienceCount) * 100) : 0
-    const engagementRate = audienceCount > 0 ? Math.round((totalResponses / audienceCount) * 100) : 0
+    if (!pageData) return null
+    return computeKpis(pageData)
+  }, [pageData])
 
-    return {
-      audienceCount,
-      totalResponses,
-      submittedResponses,
-      draftResponses,
-      adhesionRate,
-      engagementRate,
-    }
-  }, [summary])
-
-  const questionMetrics = useMemo(() => buildQuestionMetrics(pageData), [pageData])
-
-  const statusLabel = campaign?.status === 'ACTIVE' ? 'Ativa' : campaign?.status === 'CLOSED' ? 'Encerrada' : 'Inativa'
+  const campaign = pageData?.campaign
+  const hasData = kpis && kpis.submittedCount > 0
 
   return (
     <div className="admin-view">
+      {/* Header */}
       <div className="admin-view-header">
         <div>
           <span className="eyebrow">KPIs da Campanha</span>
           <h2>{campaign?.name ?? `Campanha #${campaignId}`}</h2>
-          <p>Visão consolidada inicial da campanha com os indicadores principais de participação.</p>
+          <p>
+            {campaign
+              ? `${campaign.code} · ${fmtDate(campaign.start_at)} até ${fmtDate(campaign.end_at)}`
+              : 'Visão consolidada dos indicadores desta campanha.'}
+          </p>
         </div>
 
         <div className="admin-header-actions">
           <Link className="secondary-link-button" to={`/admin/campaigns/${campaignId}/responses`}>
-            Ver respostas
+            Ver respostas individuais
           </Link>
+          {pageData?.survey_id && (
+            <Link className="secondary-link-button" to={`/admin/surveys/${pageData.survey_id}`}>
+              ← Pesquisa
+            </Link>
+          )}
         </div>
       </div>
 
-      {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
+      {/* Error */}
+      {error && <div className="form-error">{error}</div>}
 
-      {isLoading ? (
+      {/* Loading */}
+      {isLoading && (
         <section className="admin-panel-card">
-          <p>Carregando KPIs da campanha...</p>
+          <p style={{ color: 'var(--slate-400)' }}>Calculando indicadores...</p>
         </section>
-      ) : pageData ? (
+      )}
+
+      {/* Empty — sem dados ainda */}
+      {!isLoading && !error && kpis && !hasData && (
         <>
-          <section className="admin-panel-card">
-            <div className="panel-header-row">
-              <div>
-                <h3>{campaign?.code}</h3>
-                <p>{pageData.survey_name} · {pageData.version_title}</p>
-              </div>
-              <span className={`status-pill ${campaign?.status === 'ACTIVE' ? 'active' : 'inactive'}`}>
-                {statusLabel}
-              </span>
-            </div>
-
-            <div className="mini-metrics-grid">
-              <div className="mini-metric-card">
-                <strong>{pageData.total_questions}</strong>
-                <span>Perguntas</span>
-              </div>
-              <div className="mini-metric-card">
-                <strong>{kpis.engagementRate}%</strong>
-                <span>Engajamento bruto</span>
-              </div>
-            </div>
-          </section>
-
+          {/* Métricas de participação mesmo sem respostas submetidas */}
           <section className="dashboard-stats-grid">
-            <article className="stat-card">
-              <span>Público previsto</span>
-              <strong>{kpis.audienceCount}</strong>
-            </article>
-            <article className="stat-card">
-              <span>Respostas criadas</span>
-              <strong>{kpis.totalResponses}</strong>
-            </article>
-            <article className="stat-card">
-              <span>Respostas enviadas</span>
-              <strong>{kpis.submittedResponses}</strong>
-            </article>
-            <article className="stat-card">
-              <span>Taxa de adesão</span>
-              <strong>{kpis.adhesionRate}%</strong>
-            </article>
+            <MetricCard label="Público previsto" value={kpis.audienceCount} />
+            <MetricCard label="Iniciaram" value={kpis.totalStarted} sub={`${kpis.draftCount} rascunho(s)`} />
+            <MetricCard label="Finalizaram" value={kpis.submittedCount} color="#2563eb" />
+            <MetricCard
+              label="Taxa de adesão"
+              value={fmtPct(kpis.adhesionRate)}
+              color={kpis.adhesionRate >= 70 ? '#16a34a' : kpis.adhesionRate >= 40 ? '#d97706' : '#dc2626'}
+            />
           </section>
 
           <section className="admin-panel-card">
-            <div className="panel-header-row">
-              <div>
-                <h3>Leitura rápida</h3>
-                <p>Resumo textual para apoiar a leitura inicial da performance da campanha.</p>
-              </div>
+            <div className="empty-state" style={{ minHeight: 200 }}>
+              <strong>Nenhuma resposta finalizada ainda</strong>
+              <span>Os indicadores de score, distribuição e eNPS aparecerão aqui conforme os colaboradores enviarem suas respostas.</span>
             </div>
-
-            <div className="stack-list compact-list">
-              <article className="stack-item-card">
-                <div>
-                  <strong>Participação confirmada</strong>
-                  <span>{kpis.submittedResponses} colaborador(es) concluíram a pesquisa.</span>
-                </div>
-              </article>
-              <article className="stack-item-card">
-                <div>
-                  <strong>Alcance atual</strong>
-                  <span>{kpis.adhesionRate}% do público previsto já respondeu.</span>
-                </div>
-              </article>
-              <article className="stack-item-card">
-                <div>
-                  <strong>Rascunhos remanescentes</strong>
-                  <span>{kpis.draftResponses} registro(s) em rascunho ainda constam para esta campanha.</span>
-                </div>
-              </article>
-            </div>
-          </section>
-
-          <section className="admin-panel-card">
-            <div className="panel-header-row">
-              <div>
-                <h3>KPIs por pergunta</h3>
-                <p>Métricas básicas por questão conforme o tipo de resposta configurado.</p>
-              </div>
-            </div>
-
-            {questionMetrics.length === 0 ? (
-              <div className="empty-state">
-                <strong>Nenhuma pergunta disponível</strong>
-                <span>Publique uma campanha com perguntas para visualizar os indicadores por questão.</span>
-              </div>
-            ) : (
-              <div className="stack-list">
-                {questionMetrics.map((question) => (
-                  <article className="stack-item-card" key={question.id} style={{ alignItems: 'stretch', flexDirection: 'column' }}>
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                        <div style={{ display: 'grid', gap: 4 }}>
-                          <strong>{question.question_text}</strong>
-                          <span>{question.code} · {question.question_type === 'SCALE_1_5' ? 'Escala' : question.question_type === 'TEXT' ? 'Texto' : 'Opções'}</span>
-                        </div>
-                        <span className="status-pill active">{formatPercent(question.responseRate)} de resposta</span>
-                      </div>
-
-                      <div className="mini-metrics-grid" style={{ marginTop: 0 }}>
-                        <div className="mini-metric-card">
-                          <strong>{question.answeredCount}</strong>
-                          <span>Respostas válidas</span>
-                        </div>
-                        <div className="mini-metric-card">
-                          <strong>
-                            {question.mode === 'scale'
-                              ? (question.average?.toFixed(1) ?? '-')
-                              : question.mode === 'text'
-                                ? `${question.averageLength}`
-                                : `${question.distribution?.reduce((best, item) => item.count > best.count ? item : best, question.distribution?.[0] ?? { label: '-', count: 0 }).label}`}
-                          </strong>
-                          <span>
-                            {question.mode === 'scale'
-                              ? 'Média'
-                              : question.mode === 'text'
-                                ? 'Tamanho médio'
-                                : 'Opção líder'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {question.mode === 'scale' || question.mode === 'choice' ? (
-                        renderDistributionBars(question.distribution)
-                      ) : (
-                        <div style={{ display: 'grid', gap: 8 }}>
-                          {question.sampleAnswers.length > 0 ? question.sampleAnswers.map((answer, index) => (
-                            <div key={`${question.id}-${index}`} style={{ padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'var(--slate-50)', border: '1px solid var(--slate-200)', fontSize: 13, color: 'var(--slate-600)', lineHeight: 1.6 }}>
-                              {answer}
-                            </div>
-                          )) : (
-                            <div style={{ padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'var(--slate-50)', border: '1px solid var(--slate-200)', fontSize: 13, color: 'var(--slate-500)' }}>
-                              Nenhuma resposta textual enviada para esta pergunta.
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
           </section>
         </>
-      ) : null}
+      )}
+
+      {/* Dashboard completo */}
+      {!isLoading && !error && hasData && (
+        <>
+          {/* ── Métricas de participação ── */}
+          <section className="dashboard-stats-grid">
+            <MetricCard
+              label="Taxa de adesão"
+              value={fmtPct(kpis.adhesionRate)}
+              sub={`${kpis.submittedCount} de ${kpis.audienceCount}`}
+              color={kpis.adhesionRate >= 70 ? '#16a34a' : kpis.adhesionRate >= 40 ? '#d97706' : '#dc2626'}
+            />
+            <MetricCard
+              label="Taxa de conclusão"
+              value={fmtPct(kpis.completionRate)}
+              sub={`dos que iniciaram`}
+              color={kpis.completionRate >= 85 ? '#16a34a' : '#d97706'}
+            />
+            <MetricCard
+              label="Score médio geral"
+              value={kpis.avgScore != null ? fmtScore(kpis.avgScore) : '—'}
+              sub="escala 1–5"
+              color={
+                kpis.avgScore == null ? undefined
+                  : kpis.avgScore >= 4 ? '#16a34a'
+                  : kpis.avgScore >= 3 ? '#d97706'
+                  : '#dc2626'
+              }
+            />
+            <MetricCard
+              label="eNPS"
+              value={kpis.enps != null ? (kpis.enps > 0 ? `+${kpis.enps}` : String(kpis.enps)) : '—'}
+              sub={kpis.enps != null
+                ? kpis.enps >= 75 ? 'Excelente' : kpis.enps >= 50 ? 'Ótimo' : kpis.enps >= 0 ? 'Regular' : 'Crítico'
+                : 'sem pergunta NPS'}
+              color={
+                kpis.enps == null ? undefined
+                  : kpis.enps >= 50 ? '#16a34a'
+                  : kpis.enps >= 0 ? '#d97706'
+                  : '#dc2626'
+              }
+            />
+          </section>
+
+          {/* ── Distribuição Likert + eNPS ── */}
+          <section className="dashboard-detail-grid">
+            {/* Distribuição de respostas por escala */}
+            <article className="admin-panel-card">
+              <div className="panel-header-row" style={{ marginBottom: 20 }}>
+                <div>
+                  <h3>Distribuição por escala</h3>
+                  <p>{kpis.likertTotal} resposta(s) em perguntas de escala 1–5</p>
+                </div>
+              </div>
+              <LikertBar dist={kpis.likertDist} total={kpis.likertTotal} />
+
+              {/* % de favorabilidade */}
+              {kpis.likertTotal > 0 && (
+                <div style={{
+                  marginTop: 20,
+                  padding: '14px 16px',
+                  borderRadius: 10,
+                  background: 'var(--slate-50)',
+                  border: '1px solid var(--slate-200)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                      Favorabilidade
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--slate-500)', marginTop: 2 }}>
+                      Respostas 4 ou 5 (Concordo / Concordo totalmente)
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '1.8rem', fontWeight: 800,
+                    color: (() => {
+                      const fav = ((kpis.likertDist[4] + kpis.likertDist[5]) / kpis.likertTotal) * 100
+                      return fav >= 70 ? '#16a34a' : fav >= 50 ? '#d97706' : '#dc2626'
+                    })(),
+                    fontFamily: 'var(--font-display)',
+                  }}>
+                    {fmtPct(((kpis.likertDist[4] + kpis.likertDist[5]) / kpis.likertTotal) * 100)}
+                  </div>
+                </div>
+              )}
+            </article>
+
+            {/* eNPS */}
+            <article className="admin-panel-card">
+              <div className="panel-header-row" style={{ marginBottom: 20 }}>
+                <div>
+                  <h3>eNPS — Employee Net Promoter Score</h3>
+                  <p>
+                    {kpis.enps != null
+                      ? `Baseado em ${kpis.npsTotal} resposta(s) à pergunta de recomendação`
+                      : 'Adicione uma pergunta SINGLE_CHOICE com "RECOMMEND" no código para calcular o eNPS'}
+                  </p>
+                </div>
+              </div>
+              {kpis.enps != null ? (
+                <ENPSGauge
+                  enps={kpis.enps}
+                  promoters={kpis.promoters}
+                  passives={kpis.passives}
+                  detractors={kpis.detractors}
+                  total={kpis.npsTotal}
+                />
+              ) : (
+                <div className="empty-state" style={{ minHeight: 160 }}>
+                  <strong>eNPS não disponível</strong>
+                  <span>Crie uma pergunta de escala única com código contendo "RECOMMEND" ou "NPS" na sua pesquisa.</span>
+                </div>
+              )}
+            </article>
+          </section>
+
+          {/* ── Ranking por pergunta ── */}
+          <article className="admin-panel-card">
+            <div className="panel-header-row" style={{ marginBottom: 20 }}>
+              <div>
+                <h3>Score por pergunta</h3>
+                <p>Média de respostas em escala 1–5 — ordenado do maior para o menor score</p>
+              </div>
+            </div>
+            <QuestionRanking questions={kpis.questionScores} />
+          </article>
+
+          {/* ── Contexto da campanha ── */}
+          <article className="admin-panel-card">
+            <div className="panel-header-row" style={{ marginBottom: 16 }}>
+              <div>
+                <h3>Participação detalhada</h3>
+              </div>
+            </div>
+            <div className="mini-metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              <div className="mini-metric-card">
+                <strong>{kpis.audienceCount}</strong>
+                <span>Público total</span>
+              </div>
+              <div className="mini-metric-card">
+                <strong>{kpis.totalStarted}</strong>
+                <span>Iniciaram</span>
+              </div>
+              <div className="mini-metric-card">
+                <strong>{kpis.draftCount}</strong>
+                <span>Rascunhos</span>
+              </div>
+              <div className="mini-metric-card">
+                <strong>{kpis.submittedCount}</strong>
+                <span>Finalizados</span>
+              </div>
+            </div>
+          </article>
+        </>
+      )}
     </div>
   )
 }

@@ -215,8 +215,8 @@ def _serialize_survey_detail(survey: Survey) -> SurveyDetailResponse:
     )
 
 
-def _get_survey_with_related(db: Session, survey_id: int) -> Survey | None:
-    return db.scalar(
+def _get_survey_with_related(db: Session, survey_id: int, *, refresh: bool = False) -> Survey | None:
+    query = (
         select(Survey)
         .options(
             selectinload(Survey.dimensions),
@@ -229,6 +229,11 @@ def _get_survey_with_related(db: Session, survey_id: int) -> Survey | None:
         )
         .where(Survey.id == survey_id)
     )
+
+    if refresh:
+        query = query.execution_options(populate_existing=True)
+
+    return db.scalar(query)
 
 
 def _ensure_dimension_belongs_to_survey(
@@ -547,7 +552,7 @@ def update_admin_survey(
     )
     db.commit()
 
-    updated_survey = _get_survey_with_related(db, survey_id)
+    updated_survey = _get_survey_with_related(db, survey_id, refresh=True)
     if updated_survey is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Updated survey could not be loaded")
 
@@ -602,7 +607,7 @@ def create_survey_dimension(
     )
     db.commit()
 
-    updated_survey = _get_survey_with_related(db, survey_id)
+    updated_survey = _get_survey_with_related(db, survey_id, refresh=True)
     return _serialize_survey_detail(updated_survey)
 
 
@@ -677,7 +682,7 @@ def delete_survey_dimension(
     )
     db.commit()
 
-    survey = _get_survey_with_related(db, survey_id)
+    survey = _get_survey_with_related(db, survey_id, refresh=True)
     return _serialize_survey_detail(survey)
 
 
@@ -737,7 +742,7 @@ def create_survey_question(
     )
     db.commit()
 
-    updated_survey = _get_survey_with_related(db, survey_id)
+    updated_survey = _get_survey_with_related(db, survey_id, refresh=True)
     return _serialize_survey_detail(updated_survey)
 
 
@@ -802,7 +807,7 @@ def update_survey_question(
     )
     db.commit()
 
-    updated_survey = _get_survey_with_related(db, survey.id)
+    updated_survey = _get_survey_with_related(db, survey.id, refresh=True)
     return _serialize_survey_detail(updated_survey)
 
 
@@ -836,7 +841,7 @@ def delete_survey_question(
     )
     db.commit()
 
-    updated_survey = _get_survey_with_related(db, survey_id)
+    updated_survey = _get_survey_with_related(db, survey_id, refresh=True)
     return _serialize_survey_detail(updated_survey)
 
 
@@ -926,5 +931,5 @@ def publish_survey_version(
     )
     db.commit()
 
-    updated_survey = _get_survey_with_related(db, survey_id)
+    updated_survey = _get_survey_with_related(db, survey_id, refresh=True)
     return _serialize_survey_detail(updated_survey)

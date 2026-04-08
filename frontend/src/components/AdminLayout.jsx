@@ -2,6 +2,16 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 
+function getInitials(name) {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('')
+}
+
 export function AdminLayout() {
   const navigate = useNavigate()
   const { signOut, user } = useAuth()
@@ -15,26 +25,42 @@ export function AdminLayout() {
     <main className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand-block">
-          <span className="eyebrow">Portal Administrativo</span>
-          <h1>Sistema de Pesquisas</h1>
-          <p>Operacao interna do RH para pesquisas organizacionais.</p>
+          <div className="admin-brand-logo">RH</div>
+          <span className="admin-brand-name">Sistema de Pesquisas</span>
         </div>
 
         <nav className="admin-nav">
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} end to="/admin">
+            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+              <rect height="9" rx="1.5" width="9" x="3" y="3" />
+              <rect height="9" rx="1.5" width="9" x="14" y="3" />
+              <rect height="9" rx="1.5" width="9" x="3" y="14" />
+              <rect height="9" rx="1.5" width="9" x="14" y="14" />
+            </svg>
             Dashboard
           </NavLink>
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
+            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+              <line x1="3" x2="21" y1="6" y2="6" />
+              <line x1="3" x2="21" y1="12" y2="12" />
+              <line x1="3" x2="15" y1="18" y2="18" />
+            </svg>
             Pesquisas
           </NavLink>
         </nav>
 
         <div className="admin-user-card">
-          <strong>{user?.full_name}</strong>
-          <span>{user?.role}</span>
-          <span>{user?.email}</span>
-          <button className="secondary-button" onClick={handleSignOut} type="button">
-            Sair
+          <div className="admin-user-avatar">{getInitials(user?.full_name)}</div>
+          <div className="admin-user-info">
+            <strong>{user?.full_name}</strong>
+            <span>{user?.email}</span>
+          </div>
+          <button aria-label="Sair da conta" className="admin-signout-button" onClick={handleSignOut} title="Sair" type="button">
+            <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" x2="9" y1="12" y2="12" />
+            </svg>
           </button>
         </div>
       </aside>

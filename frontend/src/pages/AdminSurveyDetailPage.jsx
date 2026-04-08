@@ -315,7 +315,7 @@ export function AdminSurveyDetailPage() {
         </div>
 
         <Link className="secondary-link-button" to="/admin/surveys">
-          Voltar
+          ← Voltar
         </Link>
       </div>
 

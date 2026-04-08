@@ -114,13 +114,12 @@ export function AdminSurveysPage() {
           <span className="eyebrow">Gestao de Pesquisas</span>
           <h2>Pesquisas cadastradas</h2>
           <p>
-            Visao inicial para acompanhar pesquisas, versoes publicadas e campanhas
-            ativas do portal.
+            Acompanhe pesquisas, versoes publicadas e campanhas ativas do portal.
           </p>
         </div>
 
         <button className="primary-button" onClick={() => setIsFormOpen((current) => !current)} type="button">
-          {isFormOpen ? 'Fechar formulario' : 'Nova pesquisa'}
+          {isFormOpen ? 'Fechar formulario' : '+ Nova pesquisa'}
         </button>
       </div>
 
@@ -290,7 +289,7 @@ export function AdminSurveysPage() {
           {filteredSurveys.length === 0 ? (
             <div className="empty-state">
               <strong>Nenhuma pesquisa encontrada</strong>
-              <span>Ajuste a busca para encontrar uma pesquisa cadastrada.</span>
+              <span>Ajuste a busca ou crie uma nova pesquisa para comecar.</span>
             </div>
           ) : (
             filteredSurveys.map((survey) => (
@@ -299,23 +298,23 @@ export function AdminSurveysPage() {
                   <strong>{survey.name}</strong>
                   <span>{survey.code} · {survey.category}</span>
                   <Link className="inline-link" to={`/admin/surveys/${survey.id}`}>
-                    Abrir detalhes
+                    Abrir →
                   </Link>
                 </div>
                 <div>
-                  <strong>{survey.current_version ?? 'Sem versao'}</strong>
+                  <strong>{survey.current_version ?? '—'}</strong>
                   <span>{survey.current_version_status ?? 'Nao publicada'}</span>
                 </div>
                 <div>
                   <strong>{survey.total_questions}</strong>
-                  <span>{survey.total_dimensions} dimensoes</span>
+                  <span>{survey.total_dimensions} dim.</span>
                 </div>
                 <div>
                   <strong>{survey.active_campaigns} ativa(s)</strong>
                   <span>{survey.latest_campaign_name ?? 'Sem campanha'}</span>
                   {survey.latest_campaign_id ? (
                     <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/responses`}>
-                      Ver respostas
+                      Ver respostas →
                     </Link>
                   ) : null}
                 </div>

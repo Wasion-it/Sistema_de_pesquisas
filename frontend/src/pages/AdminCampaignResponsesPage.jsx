@@ -74,23 +74,19 @@ export function AdminCampaignResponsesPage() {
     <div className="admin-view">
       <div className="admin-view-header">
         <div>
-          <span className="eyebrow">Campanha</span>
-          <h2>Respostas da campanha</h2>
+          <span className="eyebrow">Respostas da Campanha</span>
+          <h2>{campaign?.name ?? 'Campanha'}</h2>
           <p>
-            Acompanhe a adesao da campanha, o volume de envios e o detalhamento
-            das respostas recebidas.
+            Adesao, volume de envios e detalhamento das respostas recebidas.
           </p>
         </div>
 
         <div className="admin-header-actions">
           {pageData?.survey_id ? (
             <Link className="secondary-link-button" to={`/admin/surveys/${pageData.survey_id}`}>
-              Voltar para pesquisa
+              ← Voltar para pesquisa
             </Link>
           ) : null}
-          <Link className="back-link" to="/admin/surveys">
-            Ver pesquisas
-          </Link>
         </div>
       </div>
 
@@ -105,29 +101,27 @@ export function AdminCampaignResponsesPage() {
           <section className="admin-panel-card">
             <div className="panel-header-row">
               <div>
-                <h3>{campaign?.name}</h3>
-                <p>{campaign?.code} · {campaign?.status}</p>
+                <h3>{campaign?.code}</h3>
+                <p>{pageData.survey_name} · {pageData.version_title}</p>
               </div>
-              <div className="admin-highlight-card">
-                <strong>{pageData.survey_name}</strong>
-                <span>{pageData.survey_code}</span>
-                <span>{pageData.version_title}</span>
-              </div>
+              <span className={`status-pill ${campaign?.status === 'ACTIVE' ? 'active' : 'inactive'}`}>
+                {campaign?.status}
+              </span>
             </div>
 
             <div className="mini-metrics-grid">
               <div className="mini-metric-card">
                 <strong>{formatDateTime(campaign?.start_at)}</strong>
-                <span>Inicio da campanha</span>
+                <span>Abertura</span>
               </div>
               <div className="mini-metric-card">
                 <strong>{formatDateTime(campaign?.end_at)}</strong>
-                <span>Fim da campanha</span>
+                <span>Encerramento</span>
               </div>
             </div>
           </section>
 
-          <section className="admin-summary-grid">
+          <section className="dashboard-stats-grid">
             <article className="stat-card">
               <span>Publico previsto</span>
               <strong>{summary?.audience_count ?? 0}</strong>
@@ -137,7 +131,7 @@ export function AdminCampaignResponsesPage() {
               <strong>{summary?.total_responses ?? 0}</strong>
             </article>
             <article className="stat-card">
-              <span>Respostas enviadas</span>
+              <span>Enviadas</span>
               <strong>{summary?.submitted_responses ?? 0}</strong>
             </article>
             <article className="stat-card">
@@ -149,16 +143,16 @@ export function AdminCampaignResponsesPage() {
           <section className="admin-panel-card">
             <div className="panel-header-row">
               <div>
-                <h3>Detalhamento das respostas</h3>
+                <h3>Respostas recebidas</h3>
                 <p>
-                  {responses.length} resposta(s) registrada(s) para {pageData.total_questions} pergunta(s) da versao.
+                  {responses.length} resposta(s) · {pageData.total_questions} pergunta(s) na versao
                 </p>
               </div>
             </div>
 
             {responses.length === 0 ? (
               <div className="empty-state">
-                <strong>Nenhuma resposta encontrada</strong>
+                <strong>Nenhuma resposta ainda</strong>
                 <span>A campanha ainda nao recebeu participacoes.</span>
               </div>
             ) : (
@@ -174,7 +168,7 @@ export function AdminCampaignResponsesPage() {
                         </p>
                       </div>
                       <span className={`status-pill ${response.status === 'SUBMITTED' ? 'active' : 'inactive'}`}>
-                        {response.status}
+                        {response.status === 'SUBMITTED' ? 'Enviada' : 'Rascunho'}
                       </span>
                     </div>
 
@@ -184,7 +178,7 @@ export function AdminCampaignResponsesPage() {
                           <strong>{answer.question_text}</strong>
                           <div className="admin-answer-meta">
                             <span>{answer.question_code}</span>
-                            <span>{answer.question_type}</span>
+                            <span>{answer.question_type === 'SCALE_1_5' ? 'Escala' : answer.question_type === 'TEXT' ? 'Texto' : 'Opcoes'}</span>
                           </div>
                           <div className="admin-answer-value">{getAnswerValue(answer)}</div>
                         </div>

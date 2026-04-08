@@ -4,6 +4,13 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { getAdminDashboard } from '../services/admin'
 
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Bom dia'
+  if (hour < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
 export function AdminDashboardPage() {
   const { token, user } = useAuth()
   const [dashboard, setDashboard] = useState(null)
@@ -43,17 +50,11 @@ export function AdminDashboardPage() {
       <div className="admin-view-header">
         <div>
           <span className="eyebrow">Dashboard</span>
-          <h2>Visao geral do portal RH</h2>
+          <h2>{getGreeting()}, {user?.full_name?.split(' ')[0] ?? 'Administrador'}</h2>
           <p>
             Painel inicial com leitura rapida do ambiente administrativo e das
             pesquisas ativas no sistema.
           </p>
-        </div>
-
-        <div className="admin-highlight-card">
-          <strong>{user?.full_name}</strong>
-          <span>{user?.role}</span>
-          <span>{user?.email}</span>
         </div>
       </div>
 
@@ -79,8 +80,8 @@ export function AdminDashboardPage() {
               <strong>{summary?.active_campaigns ?? 0}</strong>
             </article>
             <article className="stat-card">
-              <span>Respostas</span>
-              <strong>{summary?.total_responses ?? 0}</strong>
+              <span>Respostas enviadas</span>
+              <strong>{summary?.submitted_responses ?? 0}</strong>
             </article>
           </section>
 

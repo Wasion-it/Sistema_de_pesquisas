@@ -921,7 +921,15 @@ def publish_survey_version(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campaign start date must be before end date")
 
     campaign_code = payload.campaign_code.strip().upper()
-    if db.scalar(select(Campaign.id).where(Campaign.code == campaign_code)) is not None:
+    active_campaigns_for_version = sorted(
+        [campaign for campaign in current_version.campaigns if campaign.status == CampaignStatusEnum.ACTIVE],
+        key=lambda item: (item.published_at or item.created_at, item.id),
+        reverse=True,
+    )
+    current_campaign = active_campaigns_for_version[0] if active_campaigns_for_version else None
+
+    duplicate_campaign = db.scalar(select(Campaign).where(Campaign.code == campaign_code))
+    if duplicate_campaign is not None and (current_campaign is None or duplicate_campaign.id != current_campaign.id):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Campaign code already exists")
 
     for version in survey.versions:
@@ -931,21 +939,37 @@ def publish_survey_version(
     current_version.status = SurveyVersionStatusEnum.PUBLISHED
     current_version.published_at = datetime.now(UTC)
 
-    campaign = Campaign(
-        survey_version_id=current_version.id,
-        code=campaign_code,
-        name=payload.campaign_name.strip(),
-        description=payload.campaign_description.strip() if payload.campaign_description else None,
-        start_at=payload.start_at,
-        end_at=payload.end_at,
-        published_at=datetime.now(UTC),
-        status=CampaignStatusEnum.ACTIVE,
-        is_anonymous=True,
-        allows_draft=payload.allows_draft,
-        created_by_user_id=user.id,
-    )
-    db.add(campaign)
-    db.flush()
+    for archived_campaign in active_campaigns_for_version[1:]:
+        archived_campaign.status = CampaignStatusEnum.CLOSED
+
+    if current_campaign is None:
+        campaign = Campaign(
+            survey_version_id=current_version.id,
+            code=campaign_code,
+            name=payload.campaign_name.strip(),
+            description=payload.campaign_description.strip() if payload.campaign_description else None,
+            start_at=payload.start_at,
+            end_at=payload.end_at,
+            published_at=datetime.now(UTC),
+            status=CampaignStatusEnum.ACTIVE,
+            is_anonymous=True,
+            allows_draft=payload.allows_draft,
+            created_by_user_id=user.id,
+        )
+        db.add(campaign)
+        db.flush()
+    else:
+        campaign = current_campaign
+        campaign.code = campaign_code
+        campaign.name = payload.campaign_name.strip()
+        campaign.description = payload.campaign_description.strip() if payload.campaign_description else None
+        campaign.start_at = payload.start_at
+        campaign.end_at = payload.end_at
+        campaign.published_at = datetime.now(UTC)
+        campaign.status = CampaignStatusEnum.ACTIVE
+        campaign.is_anonymous = payload.is_anonymous
+        campaign.allows_draft = payload.allows_draft
+        campaign.created_by_user_id = user.id
 
     employees = db.scalars(
         select(Employee)
@@ -959,19 +983,31 @@ def publish_survey_version(
         .order_by(Employee.id.asc())
     ).all()
 
+    existing_audiences_by_employee_id = {audience.employee_id: audience for audience in campaign.audiences}
+
     for employee in employees:
-        db.add(
-            CampaignAudience(
-                campaign_id=campaign.id,
-                employee_id=employee.id,
-                employee_name_snapshot=employee.full_name,
-                work_email_snapshot=employee.work_email or (employee.user.email if employee.user else ""),
-                department_name_snapshot=employee.department.name,
-                job_title_name_snapshot=employee.job_title.name,
-                manager_name_snapshot=employee.manager.full_name if employee.manager else None,
-                published_at=campaign.published_at,
+        audience = existing_audiences_by_employee_id.get(employee.id)
+        if audience is None:
+            db.add(
+                CampaignAudience(
+                    campaign_id=campaign.id,
+                    employee_id=employee.id,
+                    employee_name_snapshot=employee.full_name,
+                    work_email_snapshot=employee.work_email or (employee.user.email if employee.user else ""),
+                    department_name_snapshot=employee.department.name,
+                    job_title_name_snapshot=employee.job_title.name,
+                    manager_name_snapshot=employee.manager.full_name if employee.manager else None,
+                    published_at=campaign.published_at,
+                )
             )
-        )
+            continue
+
+        audience.employee_name_snapshot = employee.full_name
+        audience.work_email_snapshot = employee.work_email or (employee.user.email if employee.user else "")
+        audience.department_name_snapshot = employee.department.name
+        audience.job_title_name_snapshot = employee.job_title.name
+        audience.manager_name_snapshot = employee.manager.full_name if employee.manager else None
+        audience.published_at = campaign.published_at
 
     db.add(
         AuditLog(
@@ -979,8 +1015,8 @@ def publish_survey_version(
             action=AuditActionEnum.PUBLISH,
             entity_name="survey_version",
             entity_id=str(current_version.id),
-            description="Survey version published and campaign created from administrative portal.",
-            details_json=json.dumps({"survey_id": survey.id, "campaign_code": campaign.code}),
+            description="Survey version published or updated from administrative portal.",
+            details_json=json.dumps({"survey_id": survey.id, "campaign_code": campaign.code, "campaign_id": campaign.id}),
             ip_address="127.0.0.1",
             created_at=datetime.now(UTC),
         )

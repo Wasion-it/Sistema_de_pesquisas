@@ -422,9 +422,14 @@ export function AdminSurveyDetailPage() {
                         <strong>{campaign.name}</strong>
                         <span>{campaign.status} · {campaign.audience_count} colaboradores</span>
                       </div>
-                      <Link className="secondary-link-button" to={`/admin/campaigns/${campaign.id}/responses`}>
-                        Ver respostas
-                      </Link>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <Link className="secondary-link-button" to={`/admin/campaigns/${campaign.id}/responses`}>
+                          Ver respostas
+                        </Link>
+                        <Link className="secondary-link-button" to={`/admin/campaigns/${campaign.id}/kpis`}>
+                          KPIs
+                        </Link>
+                      </div>
                     </article>
                   ))}
                 </div>

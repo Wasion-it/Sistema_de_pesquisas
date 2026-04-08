@@ -451,9 +451,14 @@ export function AdminSurveysPage() {
                       {survey.latest_campaign_name ?? 'Sem campanha'}
                     </span>
                     {survey.latest_campaign_id && (
-                      <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/responses`} style={{ marginTop: 3, display: 'inline-block', fontSize: 12 }}>
-                        Ver respostas →
-                      </Link>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 3 }}>
+                        <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/responses`} style={{ display: 'inline-block', fontSize: 12 }}>
+                          Ver respostas →
+                        </Link>
+                        <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/kpis`} style={{ display: 'inline-block', fontSize: 12 }}>
+                          KPIs →
+                        </Link>
+                      </div>
                     )}
                   </div>
                   <div>

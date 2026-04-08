@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './auth/AuthProvider'
+import { AdminCampaignKpisPage } from './pages/AdminCampaignKpisPage'
 import { AdminLayout } from './components/AdminLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminCampaignResponsesPage } from './pages/AdminCampaignResponsesPage'
@@ -31,6 +32,7 @@ export default function App() {
           >
             <Route index element={<AdminDashboardPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />
+            <Route path="campaigns/:campaignId/kpis" element={<AdminCampaignKpisPage />} />
             <Route path="campaigns/:campaignId/responses" element={<AdminCampaignResponsesPage />} />
             <Route path="surveys/:surveyId" element={<AdminSurveyDetailPage />} />
           </Route>

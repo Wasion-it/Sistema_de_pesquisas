@@ -22,6 +22,7 @@ from app.models import (
     QuestionOption,
     QuestionTypeEnum,
     Response,
+    ResponseItem,
     ResponseStatusEnum,
     Survey,
     SurveyDimension,
@@ -31,6 +32,10 @@ from app.models import (
     User,
 )
 from app.schemas.admin import (
+    CampaignResponseAnswerResponse,
+    CampaignResponseEntryResponse,
+    CampaignResponsesPageResponse,
+    CampaignResponsesSummaryResponse,
     CampaignSummaryResponse,
     DashboardRecentSurveyResponse,
     DashboardResponse,
@@ -112,6 +117,29 @@ def _serialize_campaign(campaign: Campaign) -> CampaignSummaryResponse:
     )
 
 
+def _serialize_campaign_response(response: Response) -> CampaignResponseEntryResponse:
+    items = sorted(response.items, key=lambda item: item.question.display_order)
+    return CampaignResponseEntryResponse(
+        response_id=response.id,
+        status=response.status.value,
+        started_at=response.started_at,
+        submitted_at=response.submitted_at,
+        total_answers=len(items),
+        answers=[
+            CampaignResponseAnswerResponse(
+                question_id=item.question_id,
+                question_code=item.question.code,
+                question_text=item.question.question_text,
+                question_type=item.question.question_type,
+                selected_option_label=item.selected_option.label if item.selected_option else None,
+                numeric_answer=item.numeric_answer,
+                text_answer=item.text_answer,
+            )
+            for item in items
+        ],
+    )
+
+
 def _serialize_survey_item(survey: Survey) -> SurveyManagementItemResponse:
     versions = sorted(survey.versions, key=lambda item: item.version_number, reverse=True)
     current_version = versions[0] if versions else None
@@ -137,6 +165,7 @@ def _serialize_survey_item(survey: Survey) -> SurveyManagementItemResponse:
         total_questions=total_questions,
         total_dimensions=len(survey.dimensions),
         active_campaigns=active_campaigns,
+        latest_campaign_id=latest_campaign.id if latest_campaign else None,
         latest_campaign_name=latest_campaign.name if latest_campaign else None,
         latest_campaign_status=latest_campaign.status if latest_campaign else None,
         updated_at=survey.updated_at,
@@ -314,6 +343,53 @@ def read_admin_survey_detail(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
 
     return _serialize_survey_detail(survey)
+
+
+@router.get("/campaigns/{campaign_id}/responses", response_model=CampaignResponsesPageResponse)
+def read_admin_campaign_responses(
+    campaign_id: int,
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> CampaignResponsesPageResponse:
+    campaign = db.scalar(
+        select(Campaign)
+        .options(
+            selectinload(Campaign.audiences),
+            selectinload(Campaign.survey_version).selectinload(SurveyVersion.survey),
+            selectinload(Campaign.survey_version).selectinload(SurveyVersion.questions),
+            selectinload(Campaign.responses)
+            .selectinload(Response.items)
+            .selectinload(ResponseItem.question),
+            selectinload(Campaign.responses)
+            .selectinload(Response.items)
+            .selectinload(ResponseItem.selected_option),
+        )
+        .where(Campaign.id == campaign_id)
+    )
+
+    if campaign is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
+
+    responses = sorted(campaign.responses, key=lambda item: item.started_at, reverse=True)
+    submitted_responses = sum(1 for item in responses if item.status == ResponseStatusEnum.SUBMITTED)
+    draft_responses = sum(1 for item in responses if item.status == ResponseStatusEnum.DRAFT)
+
+    return CampaignResponsesPageResponse(
+        campaign=_serialize_campaign(campaign),
+        survey_id=campaign.survey_version.survey.id,
+        survey_code=campaign.survey_version.survey.code,
+        survey_name=campaign.survey_version.survey.name,
+        version_id=campaign.survey_version.id,
+        version_title=campaign.survey_version.title,
+        total_questions=len(campaign.survey_version.questions),
+        summary=CampaignResponsesSummaryResponse(
+            audience_count=len(campaign.audiences),
+            total_responses=len(responses),
+            submitted_responses=submitted_responses,
+            draft_responses=draft_responses,
+        ),
+        responses=[_serialize_campaign_response(response) for response in responses],
+    )
 
 
 @router.get("/surveys", response_model=SurveyManagementListResponse)

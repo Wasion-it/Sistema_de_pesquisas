@@ -41,6 +41,7 @@ class SurveyManagementItemResponse(BaseModel):
     total_questions: int
     total_dimensions: int
     active_campaigns: int
+    latest_campaign_id: int | None
     latest_campaign_name: str | None
     latest_campaign_status: CampaignStatusEnum | None
     updated_at: datetime
@@ -173,6 +174,44 @@ class CampaignSummaryResponse(BaseModel):
     is_anonymous: bool
     allows_draft: bool
     audience_count: int
+
+
+class CampaignResponseAnswerResponse(BaseModel):
+    question_id: int
+    question_code: str
+    question_text: str
+    question_type: QuestionTypeEnum
+    selected_option_label: str | None
+    numeric_answer: int | None
+    text_answer: str | None
+
+
+class CampaignResponseEntryResponse(BaseModel):
+    response_id: int
+    status: str
+    started_at: datetime
+    submitted_at: datetime | None
+    total_answers: int
+    answers: list[CampaignResponseAnswerResponse]
+
+
+class CampaignResponsesSummaryResponse(BaseModel):
+    audience_count: int
+    total_responses: int
+    submitted_responses: int
+    draft_responses: int
+
+
+class CampaignResponsesPageResponse(BaseModel):
+    campaign: CampaignSummaryResponse
+    survey_id: int
+    survey_code: str
+    survey_name: str
+    version_id: int
+    version_title: str
+    total_questions: int
+    summary: CampaignResponsesSummaryResponse
+    responses: list[CampaignResponseEntryResponse]
 
 
 class SurveyDetailResponse(BaseModel):

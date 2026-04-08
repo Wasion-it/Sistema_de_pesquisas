@@ -128,3 +128,11 @@ export async function publishAdminSurvey(token, surveyId, payload) {
 
   return parseResponse(response)
 }
+
+export async function getAdminCampaignResponses(token, campaignId) {
+  const response = await fetch(`${API_URL}/admin/campaigns/${campaignId}/responses`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}

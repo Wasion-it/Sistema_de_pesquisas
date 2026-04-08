@@ -313,6 +313,11 @@ export function AdminSurveysPage() {
                 <div>
                   <strong>{survey.active_campaigns} ativa(s)</strong>
                   <span>{survey.latest_campaign_name ?? 'Sem campanha'}</span>
+                  {survey.latest_campaign_id ? (
+                    <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/responses`}>
+                      Ver respostas
+                    </Link>
+                  ) : null}
                 </div>
                 <div>
                   <span className={`status-pill ${survey.is_active ? 'active' : 'inactive'}`}>

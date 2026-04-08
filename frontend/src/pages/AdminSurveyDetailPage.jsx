@@ -568,7 +568,12 @@ export function AdminSurveyDetailPage() {
                   <strong>{campaign.name}</strong>
                   <span>{campaign.code} · {campaign.status}</span>
                 </div>
-                <span>{campaign.audience_count} colaboradores</span>
+                <div className="inline-actions aligned-actions">
+                  <span className="campaign-audience-count">{campaign.audience_count} colaboradores</span>
+                  <Link className="secondary-link-button" to={`/admin/campaigns/${campaign.id}/responses`}>
+                    Ver respostas
+                  </Link>
+                </div>
               </article>
             ))}
           </div>

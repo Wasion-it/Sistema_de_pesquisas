@@ -444,7 +444,6 @@ export function AdminSurveysPage() {
                   </div>
                   <div>
                     <strong>{survey.total_questions}</strong>
-                    <span>{survey.total_dimensions} dimensões</span>
                   </div>
                   <div>
                     <strong>{survey.active_campaigns} ativa{survey.active_campaigns !== 1 ? 's' : ''}</strong>

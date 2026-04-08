@@ -28,36 +28,25 @@ export function PublicCampaignThankYouPage() {
   }, [campaignId])
 
   return (
-    <main className="page-shell">
-      <div className="public-home-layout">
-        <section className="hero-card public-hero-card public-thank-you-card">
-          <span className="eyebrow">Participacao Concluida</span>
-          <h1>Obrigado pela sua resposta</h1>
+    <main className="collab-shell">
+      <header className="collab-header">
+        <div className="collab-header-inner">
+          <Link className="text-muted-link" to="/">← Todas as pesquisas</Link>
+        </div>
+      </header>
+
+      <div className="collab-content">
+        <div className="collab-thankyou-card">
+          <div className="collab-thankyou-icon">✓</div>
+          <h1>Obrigado pela sua participacao!</h1>
           <p>
-            Sua participacao foi registrada com sucesso. Nesta fase do produto, as
-            respostas da campanha sao tratadas como anonimas.
+            Sua resposta foi registrada com sucesso e de forma anonima.
+            {campaign ? ` A pesquisa "${campaign.survey_name}" agradece a sua contribuicao.` : ''}
           </p>
-
-          <div className="public-hero-metrics">
-            <article className="public-metric-card">
-              <span>Campanha</span>
-              <strong>{campaign?.name ?? 'Campanha publicada'}</strong>
-            </article>
-            <article className="public-metric-card">
-              <span>Status</span>
-              <strong>Enviada</strong>
-            </article>
-          </div>
-
-          <div className="form-actions-row public-detail-actions">
-            <Link className="primary-link-button" to="/">
-              Voltar para tela inicial
-            </Link>
-            <Link className="secondary-link-button" to={`/campaigns/${campaignId}`}>
-              Ver campanha
-            </Link>
-          </div>
-        </section>
+          <Link className="collab-start-button" to="/">
+            Voltar para o inicio
+          </Link>
+        </div>
       </div>
     </main>
   )

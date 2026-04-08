@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import {
@@ -8,11 +8,16 @@ import {
 } from '../services/api'
 import { getCampaignAvailability } from '../utils/campaignStatus'
 
-function formatDate(value) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value))
+function formatDateShort(value) {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date(value))
+}
+
+const SCALE_LABELS = {
+  1: 'Discordo totalmente',
+  2: 'Discordo',
+  3: 'Neutro',
+  4: 'Concordo',
+  5: 'Concordo totalmente',
 }
 
 export function PublicCampaignPage() {
@@ -32,6 +37,17 @@ export function PublicCampaignPage() {
     () => (campaign ? getCampaignAvailability(campaign) : { label: 'Carregando', variant: 'inactive', isOpen: false }),
     [campaign],
   )
+
+  const answeredCount = useMemo(() => {
+    if (!participation) return 0
+    return participation.questions.filter((q) => {
+      const a = answers[q.id]
+      if (!a) return false
+      if (q.question_type === 'SCALE_1_5') return Boolean(a.numeric_answer)
+      if (q.question_type === 'SINGLE_CHOICE') return Boolean(a.selected_option_id)
+      return Boolean(a.text_answer?.trim())
+    }).length
+  }, [participation, answers])
 
   useEffect(() => {
     let isMounted = true
@@ -98,9 +114,7 @@ export function PublicCampaignPage() {
 
   async function handleSubmitResponses(event) {
     event.preventDefault()
-    if (!participation) {
-      return
-    }
+    if (!participation) return
 
     setIsSubmitting(true)
     setSubmitErrorMessage('')
@@ -116,12 +130,11 @@ export function PublicCampaignPage() {
         }
       })
 
-      const result = await submitPublishedCampaignResponse(campaignId, {
+      await submitPublishedCampaignResponse(campaignId, {
         response_id: participation.response_id,
         answers: payloadAnswers,
       })
 
-      setParticipation((current) => (current ? { ...current, status: result.status } : current))
       navigate(`/campaigns/${campaignId}/thank-you`, { replace: true })
     } catch (error) {
       setSubmitErrorMessage(error.message)
@@ -144,16 +157,20 @@ export function PublicCampaignPage() {
       )
 
       return (
-        <div className="question-options-grid">
+        <div className="scale-option-row">
           {values.map((value) => (
-            <label className="checkbox-field public-option-chip" key={value}>
+            <label
+              key={value}
+              className={`scale-option${answer.numeric_answer === String(value) ? ' selected' : ''}`}
+            >
               <input
                 checked={answer.numeric_answer === String(value)}
                 name={`question-${question.id}`}
                 type="radio"
                 onChange={() => handleAnswerChange(question.id, 'numeric_answer', String(value))}
               />
-              <span>{value}</span>
+              <span className="scale-option-number">{value}</span>
+              <span className="scale-option-label">{SCALE_LABELS[value] ?? value}</span>
             </label>
           ))}
         </div>
@@ -162,9 +179,12 @@ export function PublicCampaignPage() {
 
     if (question.question_type === 'SINGLE_CHOICE') {
       return (
-        <div className="question-options-grid single-choice-grid">
+        <div className="choice-option-list">
           {question.options.map((option) => (
-            <label className="checkbox-field public-option-chip" key={option.id}>
+            <label
+              key={option.id}
+              className={`choice-option${answer.selected_option_id === String(option.id) ? ' selected' : ''}`}
+            >
               <input
                 checked={answer.selected_option_id === String(option.id)}
                 name={`question-${question.id}`}
@@ -180,6 +200,8 @@ export function PublicCampaignPage() {
 
     return (
       <textarea
+        className="text-answer-field"
+        placeholder="Escreva sua resposta aqui..."
         rows="4"
         value={answer.text_answer}
         onChange={(event) => handleAnswerChange(question.id, 'text_answer', event.target.value)}
@@ -187,126 +209,128 @@ export function PublicCampaignPage() {
     )
   }
 
+  if (isLoading) {
+    return (
+      <main className="collab-shell">
+        <header className="collab-header">
+          <div className="collab-header-inner">
+            <Link className="text-muted-link" to="/">← Voltar</Link>
+          </div>
+        </header>
+        <div className="collab-loading"><span>Carregando pesquisa...</span></div>
+      </main>
+    )
+  }
+
+  if (errorMessage || !campaign) {
+    return (
+      <main className="collab-shell">
+        <header className="collab-header">
+          <div className="collab-header-inner">
+            <Link className="text-muted-link" to="/">← Voltar</Link>
+          </div>
+        </header>
+        <div className="collab-content">
+          <div className="form-error">{errorMessage || 'Pesquisa nao encontrada.'}</div>
+        </div>
+      </main>
+    )
+  }
+
   return (
-    <main className="page-shell">
-      <div className="public-home-layout">
-        <section className="hero-card public-hero-card">
-          <Link className="back-link" to="/">
-            Voltar para campanhas
-          </Link>
-
-          {isLoading ? (
-            <div className="public-empty-state">
-              <strong>Carregando campanha...</strong>
-            </div>
-          ) : errorMessage ? (
-            <div className="form-error">{errorMessage}</div>
-          ) : campaign ? (
-            <>
-              <span className="eyebrow">Entrada da Campanha</span>
-              <h1>{campaign.name}</h1>
-              <p>
-                Esta e a porta de entrada da jornada do colaborador. O inicio da
-                participacao acontece sem identificacao explicita nesta fase.
-              </p>
-
-              <div className="public-hero-metrics">
-                <article className="public-metric-card">
-                  <span>Status</span>
-                  <strong>{availability.label}</strong>
-                </article>
-                <article className="public-metric-card">
-                  <span>Perguntas nesta versao</span>
-                  <strong>{campaign.total_questions}</strong>
-                </article>
-              </div>
-
-              <div className="public-campaign-meta public-detail-meta">
-                <span>Pesquisa: {campaign.survey_name}</span>
-                <span>Categoria: {campaign.survey_category}</span>
-                <span>Versao: {campaign.version_title}</span>
-                <span>Publico-alvo: {campaign.audience_count} colaborador(es)</span>
-                <span>Anonima: Sim</span>
-                <span>Permite rascunho: {campaign.allows_draft ? 'Sim' : 'Nao'}</span>
-              </div>
-
-              <div className="public-campaign-dates public-detail-dates">
-                <span>Publicada em {formatDate(campaign.published_at)}</span>
-                <span>Inicio: {formatDate(campaign.start_at)}</span>
-                <span>Fim: {formatDate(campaign.end_at)}</span>
-              </div>
-
-              <section className="public-campaigns-panel public-detail-panel">
-                <h2>Sobre esta campanha</h2>
-                <p>{campaign.description ?? 'Campanha publicada sem descricao adicional.'}</p>
-                <p>{campaign.version_description ?? 'A versao atual ainda nao possui uma descricao detalhada.'}</p>
-                <p>As respostas desta campanha sao tratadas como anonimas nesta fase do produto.</p>
-
-                {availability.isOpen ? (
-                  <form className="survey-create-form" onSubmit={handleStartParticipation}>
-                    {startErrorMessage ? <div className="form-error">{startErrorMessage}</div> : null}
-
-                    <div className="form-actions-row public-detail-actions">
-                      <button className="primary-button" disabled={isStarting} type="submit">
-                        {isStarting ? 'Carregando questionario...' : 'Iniciar participacao'}
-                      </button>
-                      <span className="public-action-hint">
-                        Nenhum dado de identificacao e solicitado do colaborador neste fluxo.
-                      </span>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="public-empty-state">
-                    <strong>Campanha indisponivel para participacao</strong>
-                    <span>O periodo atual desta campanha nao permite iniciar respostas.</span>
-                  </div>
-                )}
-              </section>
-
-              {participation ? (
-                <section className="public-campaigns-panel public-questionnaire-panel">
-                  <div className="panel-header-row">
-                    <div>
-                      <h2>Questionario</h2>
-                      <p>Identidade ocultada. Respostas anonimas em processamento.</p>
-                    </div>
-                  </div>
-
-                  {submitErrorMessage ? <div className="form-error">{submitErrorMessage}</div> : null}
-
-                  <form className="survey-create-form" onSubmit={handleSubmitResponses}>
-                    {participation.questions.map((question) => (
-                      <article className="public-question-card" key={question.id}>
-                        <div className="public-question-header">
-                          <strong>
-                            {question.display_order}. {question.question_text}
-                          </strong>
-                          {question.is_required ? <span className="public-required-badge">Obrigatoria</span> : null}
-                        </div>
-                        {question.help_text ? <p>{question.help_text}</p> : null}
-                        {renderQuestionField(question)}
-                      </article>
-                    ))}
-
-                    <div className="form-actions-row public-detail-actions">
-                      <button
-                        className="primary-button"
-                        disabled={isSubmitting || participation.status === 'SUBMITTED'}
-                        type="submit"
-                      >
-                        {participation.status === 'SUBMITTED'
-                          ? 'Questionario enviado'
-                          : isSubmitting
-                            ? 'Enviando respostas...'
-                            : 'Enviar respostas'}
-                      </button>
-                    </div>
-                  </form>
-                </section>
-              ) : null}
-            </>
+    <main className="collab-shell">
+      <header className="collab-header">
+        <div className="collab-header-inner">
+          <Link className="text-muted-link" to="/">← Todas as pesquisas</Link>
+          {participation ? (
+            <span className="collab-progress-label">
+              {answeredCount} de {participation.questions.length} respondidas
+            </span>
           ) : null}
-        </section>
+        </div>
+        {participation ? (
+          <div className="collab-progress-bar">
+            <div
+              className="collab-progress-fill"
+              style={{ width: `${(answeredCount / participation.questions.length) * 100}%` }}
+            />
+          </div>
+        ) : null}
+      </header>
+
+      <div className="collab-content">
+        {!participation ? (
+          <div className="collab-entry-card">
+            <div className="collab-entry-badge-row">
+              <span className={`status-pill ${availability.variant}`}>{availability.label}</span>
+            </div>
+            <h1 className="collab-entry-title">{campaign.survey_name}</h1>
+            <p className="collab-entry-desc">
+              {campaign.description ?? 'Sua participacao e importante para melhorarmos o ambiente de trabalho.'}
+            </p>
+
+            <div className="collab-entry-meta">
+              <div className="collab-meta-item">
+                <span className="collab-meta-label">Periodo</span>
+                <span className="collab-meta-value">{formatDateShort(campaign.start_at)} ate {formatDateShort(campaign.end_at)}</span>
+              </div>
+              <div className="collab-meta-item">
+                <span className="collab-meta-label">Perguntas</span>
+                <span className="collab-meta-value">{campaign.total_questions}</span>
+              </div>
+              <div className="collab-meta-item">
+                <span className="collab-meta-label">Anonimato</span>
+                <span className="collab-meta-value">Suas respostas sao anonimas</span>
+              </div>
+            </div>
+
+            {availability.isOpen ? (
+              <form onSubmit={handleStartParticipation}>
+                {startErrorMessage ? <div className="form-error" style={{ marginBottom: 14 }}>{startErrorMessage}</div> : null}
+                <button className="collab-start-button" disabled={isStarting} type="submit">
+                  {isStarting ? 'Preparando...' : 'Iniciar pesquisa'}
+                </button>
+              </form>
+            ) : (
+              <div className="collab-unavailable">
+                Esta pesquisa nao esta disponivel para participacao no momento.
+              </div>
+            )}
+          </div>
+        ) : (
+          <form className="collab-questionnaire" onSubmit={handleSubmitResponses}>
+            {participation.questions.map((question, index) => (
+              <article className="collab-question-card" key={question.id}>
+                <div className="collab-question-header">
+                  <span className="collab-question-num">{index + 1}</span>
+                  <div className="collab-question-body">
+                    <p className="collab-question-text">{question.question_text}</p>
+                    {question.help_text ? (
+                      <p className="collab-question-hint">{question.help_text}</p>
+                    ) : null}
+                  </div>
+                  {question.is_required ? <span className="collab-required-dot" title="Obrigatoria" /> : null}
+                </div>
+                <div className="collab-question-answer">
+                  {renderQuestionField(question)}
+                </div>
+              </article>
+            ))}
+
+            {submitErrorMessage ? <div className="form-error">{submitErrorMessage}</div> : null}
+
+            <div className="collab-submit-row">
+              <span className="collab-submit-hint">{answeredCount} de {participation.questions.length} respondidas</span>
+              <button
+                className="collab-start-button"
+                disabled={isSubmitting}
+                type="submit"
+              >
+                {isSubmitting ? 'Enviando...' : 'Enviar respostas'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </main>
   )

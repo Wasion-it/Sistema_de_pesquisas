@@ -122,7 +122,7 @@ export function PublicCampaignPage() {
       })
 
       setParticipation((current) => (current ? { ...current, status: result.status } : current))
-      navigate(`/campaigns/${campaignId}/thank-you`)
+      navigate(`/campaigns/${campaignId}/thank-you`, { replace: true })
     } catch (error) {
       setSubmitErrorMessage(error.message)
     } finally {

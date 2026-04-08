@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import {
   getPublishedCampaignDetail,
@@ -17,13 +17,13 @@ function formatDate(value) {
 
 export function PublicCampaignPage() {
   const { campaignId } = useParams()
+  const navigate = useNavigate()
   const [campaign, setCampaign] = useState(null)
   const [participation, setParticipation] = useState(null)
   const [answers, setAnswers] = useState({})
   const [errorMessage, setErrorMessage] = useState('')
   const [startErrorMessage, setStartErrorMessage] = useState('')
   const [submitErrorMessage, setSubmitErrorMessage] = useState('')
-  const [submitSuccessMessage, setSubmitSuccessMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isStarting, setIsStarting] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -74,7 +74,6 @@ export function PublicCampaignPage() {
     event.preventDefault()
     setIsStarting(true)
     setStartErrorMessage('')
-    setSubmitSuccessMessage('')
 
     try {
       const data = await startPublishedCampaignParticipation(campaignId)
@@ -105,7 +104,6 @@ export function PublicCampaignPage() {
 
     setIsSubmitting(true)
     setSubmitErrorMessage('')
-    setSubmitSuccessMessage('')
 
     try {
       const payloadAnswers = participation.questions.map((question) => {
@@ -123,8 +121,8 @@ export function PublicCampaignPage() {
         answers: payloadAnswers,
       })
 
-      setSubmitSuccessMessage(result.message)
       setParticipation((current) => (current ? { ...current, status: result.status } : current))
+      navigate(`/campaigns/${campaignId}/thank-you`)
     } catch (error) {
       setSubmitErrorMessage(error.message)
     } finally {
@@ -275,7 +273,6 @@ export function PublicCampaignPage() {
                   </div>
 
                   {submitErrorMessage ? <div className="form-error">{submitErrorMessage}</div> : null}
-                  {submitSuccessMessage ? <div className="form-success">{submitSuccessMessage}</div> : null}
 
                   <form className="survey-create-form" onSubmit={handleSubmitResponses}>
                     {participation.questions.map((question) => (

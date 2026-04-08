@@ -10,6 +10,7 @@ import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
 import { HomePage } from './pages/HomePage'
 import { PublicCampaignPage } from './pages/PublicCampaignPage'
+import { PublicCampaignThankYouPage } from './pages/PublicCampaignThankYouPage'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/campaigns/:campaignId" element={<PublicCampaignPage />} />
+          <Route path="/campaigns/:campaignId/thank-you" element={<PublicCampaignThankYouPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route
             path="/admin"

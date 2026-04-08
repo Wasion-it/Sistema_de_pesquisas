@@ -232,6 +232,10 @@ p {
   margin-top: 24px;
 }
 
+.public-thank-you-card {
+  text-align: left;
+}
+
 .public-question-card {
   display: grid;
   gap: 14px;

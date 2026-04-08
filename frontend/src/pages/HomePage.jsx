@@ -17,12 +17,6 @@ function formatDaysLeft(endAt) {
   return `${diff} dias restantes`
 }
 
-const CATEGORY_LABELS = {
-  GPTW: 'Great Place to Work',
-  PULSE: 'Pulso',
-  CUSTOM: 'Personalizada',
-}
-
 const CATEGORY_COLORS = {
   GPTW: '#2563eb',
   PULSE: '#7c3aed',
@@ -140,9 +134,6 @@ export function HomePage() {
                         </div>
 
                         <div>
-                          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: 6 }}>
-                            {CATEGORY_LABELS[campaign.survey_category] || campaign.survey_category}
-                          </p>
                           <h3 className="collab-card-title">{campaign.survey_name}</h3>
                         </div>
 

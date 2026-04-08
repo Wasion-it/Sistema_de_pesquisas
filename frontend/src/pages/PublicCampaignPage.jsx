@@ -262,10 +262,7 @@ export function PublicCampaignPage() {
             </div>
 
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: 6 }}>
-                {campaign.survey_name}
-              </p>
-              <h1 className="collab-entry-title">{campaign.name}</h1>
+              <h1 className="collab-entry-title">{campaign.survey_name}</h1>
               <p className="collab-entry-desc" style={{ marginTop: 10, marginBottom: 0 }}>
                 {campaign.survey_description ?? campaign.description ?? campaign.version_description ?? 'Sua participação é importante para melhorarmos o ambiente de trabalho.'}
               </p>

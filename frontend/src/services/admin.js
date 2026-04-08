@@ -116,7 +116,7 @@ export async function createSurveyDimension(token, surveyId, payload) {
 
 export async function updateSurveyDimension(token, dimensionId, payload) {
   const response = await fetch(
-    `${API_URL}/dimensions/${dimensionId}`,
+    `${API_URL}/admin/dimensions/${dimensionId}`,
     buildJsonOptions(token, 'PATCH', payload),
   )
 
@@ -124,7 +124,7 @@ export async function updateSurveyDimension(token, dimensionId, payload) {
 }
 
 export async function deleteSurveyDimension(token, dimensionId) {
-  const response = await fetch(`${API_URL}/dimensions/${dimensionId}`, {
+  const response = await fetch(`${API_URL}/admin/dimensions/${dimensionId}`, {
     method: 'DELETE',
     headers: buildHeaders(token),
   })
@@ -143,7 +143,7 @@ export async function createSurveyQuestion(token, surveyId, payload) {
 
 export async function updateSurveyQuestion(token, questionId, payload) {
   const response = await fetch(
-    `${API_URL}/questions/${questionId}`,
+    `${API_URL}/admin/questions/${questionId}`,
     buildJsonOptions(token, 'PATCH', payload),
   )
 
@@ -151,7 +151,7 @@ export async function updateSurveyQuestion(token, questionId, payload) {
 }
 
 export async function deleteSurveyQuestion(token, questionId) {
-  const response = await fetch(`${API_URL}/questions/${questionId}`, {
+  const response = await fetch(`${API_URL}/admin/questions/${questionId}`, {
     method: 'DELETE',
     headers: buildHeaders(token),
   })

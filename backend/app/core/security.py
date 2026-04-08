@@ -20,6 +20,10 @@ ADMIN_PORTAL_ROLES: Final[set[RoleEnum]] = {
     RoleEnum.RH_ANALISTA,
     RoleEnum.TI_SUPORTE,
 }
+LDAP_AUTH_ROLES: Final[set[RoleEnum]] = {
+    RoleEnum.RH_ADMIN,
+    RoleEnum.RH_ANALISTA,
+}
 
 
 def hash_password(password: str) -> str:
@@ -75,6 +79,7 @@ def decode_access_token(token: str) -> dict:
 
 __all__ = [
     "ADMIN_PORTAL_ROLES",
+    "LDAP_AUTH_ROLES",
     "InvalidTokenError",
     "create_access_token",
     "decode_access_token",

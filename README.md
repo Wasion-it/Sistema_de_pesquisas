@@ -100,6 +100,50 @@ Credenciais de desenvolvimento já seedadas:
 - `rh.analyst@example.com` / `AnalistaRH123!`
 - `ti.suporte@example.com` / `SuporteTI123!`
 
+### Login corporativo via LDAP para RH
+
+O backend agora pode autenticar perfis de RH usando LDAP/Active Directory, enquanto a autorizacao continua baseada no usuario ja cadastrado no banco.
+
+Comportamento:
+
+- perfis `RH_ADMIN` e `RH_ANALISTA` usam LDAP quando `LDAP_ENABLED=true`
+- perfil `TI_SUPORTE` continua usando senha local do banco
+- o usuario precisa continuar existindo na tabela `users` para manter papel, ativo/inativo e auditoria
+
+Variaveis de ambiente suportadas no backend:
+
+- `LDAP_ENABLED=false`
+- `LDAP_SERVER_URI=ldap://servidor.corporativo.local:389`
+- `LDAP_USE_SSL=false`
+- `LDAP_START_TLS=true`
+- `LDAP_VALIDATE_CERTIFICATES=true`
+- `LDAP_BIND_DN=CN=svc_ldap,OU=Servicos,DC=empresa,DC=local`
+- `LDAP_BIND_PASSWORD=sua-senha-de-servico`
+- `LDAP_USER_BASE_DN=OU=Usuarios,DC=empresa,DC=local`
+- `LDAP_USER_FILTER=(mail={username})`
+- `LDAP_USER_DN_TEMPLATE=`
+- `LDAP_TIMEOUT_SECONDS=5`
+
+Existem dois modos de localizar o usuario:
+
+- busca + bind: informe `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_USER_BASE_DN` e `LDAP_USER_FILTER`
+- bind direto: informe `LDAP_USER_DN_TEMPLATE`, por exemplo `CN={username},OU=Usuarios,DC=empresa,DC=local`
+
+Exemplo de `.env` em `backend/.env`:
+
+```env
+LDAP_ENABLED=true
+LDAP_SERVER_URI=ldap://ad.empresa.local:389
+LDAP_USE_SSL=false
+LDAP_START_TLS=true
+LDAP_VALIDATE_CERTIFICATES=false
+LDAP_BIND_DN=CN=svc_ldap,OU=Servicos,DC=empresa,DC=local
+LDAP_BIND_PASSWORD=trocar-em-producao
+LDAP_USER_BASE_DN=OU=Usuarios,DC=empresa,DC=local
+LDAP_USER_FILTER=(mail={username})
+LDAP_TIMEOUT_SECONDS=5
+```
+
 ### Primeiras telas do portal administrativo
 
 O frontend administrativo agora possui uma base real protegida por JWT:

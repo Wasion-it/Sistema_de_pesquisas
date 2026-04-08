@@ -9,10 +9,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin_user
-from app.core.security import ADMIN_PORTAL_ROLES, create_access_token, verify_password
+from app.core.config import settings
+from app.core.security import ADMIN_PORTAL_ROLES, LDAP_AUTH_ROLES, create_access_token, verify_password
 from app.db.session import get_db
 from app.models import AuditActionEnum, AuditLog, User
 from app.schemas.auth import AdminSessionResponse, AuthUserResponse, LoginRequest, LoginResponse
+from app.services.ldap_auth import LdapAuthenticationError, LdapConfigurationError, authenticate_ldap_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -33,7 +35,7 @@ def login_admin(
     db: Annotated[Session, Depends(get_db)],
 ) -> LoginResponse:
     user = db.scalar(select(User).where(User.email == payload.email))
-    if user is None or not verify_password(payload.password, user.password_hash):
+    if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     if not user.is_active:
@@ -41,6 +43,19 @@ def login_admin(
 
     if user.role not in ADMIN_PORTAL_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrative access required")
+
+    if settings.ldap_enabled and user.role in LDAP_AUTH_ROLES:
+        try:
+            authenticate_ldap_user(payload.email, payload.password)
+        except LdapConfigurationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="LDAP authentication is not configured correctly",
+            ) from exc
+        except LdapAuthenticationError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from exc
+    elif not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     user.last_login_at = datetime.now(UTC)
     db.add(

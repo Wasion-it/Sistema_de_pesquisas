@@ -266,11 +266,10 @@ export function PublicCampaignPage() {
                 {campaign.survey_name}
               </p>
               <h1 className="collab-entry-title">{campaign.name}</h1>
+              <p className="collab-entry-desc" style={{ marginTop: 10, marginBottom: 0 }}>
+                {campaign.survey_description ?? campaign.description ?? campaign.version_description ?? 'Sua participação é importante para melhorarmos o ambiente de trabalho.'}
+              </p>
             </div>
-
-            <p className="collab-entry-desc">
-              {campaign.description ?? 'Sua participação é importante para melhorarmos o ambiente de trabalho.'}
-            </p>
 
             <div className="collab-entry-meta">
               <div className="collab-meta-item">

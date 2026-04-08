@@ -236,6 +236,7 @@ def _serialize_public_campaign(campaign: Campaign) -> PublicCampaignItemResponse
         survey_id=campaign.survey_version.survey.id,
         survey_code=campaign.survey_version.survey.code,
         survey_name=campaign.survey_version.survey.name,
+        survey_description=campaign.survey_version.survey.description,
         survey_category=campaign.survey_version.survey.category,
         version_id=campaign.survey_version.id,
         version_title=campaign.survey_version.title,

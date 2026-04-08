@@ -25,6 +25,7 @@ class PublicCampaignItemResponse(BaseModel):
     survey_id: int
     survey_code: str
     survey_name: str
+    survey_description: str | None
     survey_category: SurveyCategoryEnum
     version_id: int
     version_title: str
@@ -51,6 +52,7 @@ class PublicCampaignDetailResponse(BaseModel):
     survey_id: int
     survey_code: str
     survey_name: str
+    survey_description: str | None
     survey_category: SurveyCategoryEnum
     version_id: int
     version_title: str

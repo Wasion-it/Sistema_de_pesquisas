@@ -14,7 +14,7 @@ import {
 const INITIAL_METADATA_FORM = {
   name: '',
   description: '',
-  category: 'CUSTOM',
+  category: '',
   isActive: true,
   versionTitle: '',
   versionDescription: '',
@@ -353,6 +353,11 @@ export function AdminSurveyDetailPage() {
               <label className="field-group">
                 <span>Descricao</span>
                 <textarea name="description" rows="3" value={metadataForm.description} onChange={handleMetadataChange} />
+              </label>
+
+              <label className="field-group">
+                <span>Tipo de pesquisa</span>
+                <input name="category" value={metadataForm.category} onChange={handleMetadataChange} />
               </label>
 
               <div className="form-grid two-columns">

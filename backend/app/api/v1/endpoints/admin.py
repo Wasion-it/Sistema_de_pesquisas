@@ -432,7 +432,7 @@ def create_admin_survey(
         code=normalized_code,
         name=payload.name.strip(),
         description=payload.description.strip() if payload.description else None,
-        category=payload.category,
+        category=payload.category.strip(),
         is_active=payload.is_active,
     )
     db.add(survey)
@@ -583,7 +583,7 @@ def update_admin_survey(
 
     survey.name = payload.name.strip()
     survey.description = payload.description.strip() if payload.description else None
-    survey.category = payload.category
+    survey.category = payload.category.strip()
     survey.is_active = payload.is_active
     current_version.title = payload.version_title.strip()
     current_version.description = payload.version_description.strip() if payload.version_description else None

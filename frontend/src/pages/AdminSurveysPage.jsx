@@ -8,17 +8,11 @@ const INITIAL_FORM = {
   code: '',
   name: '',
   description: '',
-  category: 'CUSTOM',
+  category: '',
   versionTitle: 'Versão 1',
   versionDescription: '',
   dimensions: '',
   isActive: true,
-}
-
-const CATEGORY_INFO = {
-  CUSTOM: { label: 'Personalizada', desc: 'Formato livre para necessidades específicas' },
-  GPTW: { label: 'Great Place to Work', desc: 'Modelo padronizado GPTW' },
-  PULSE: { label: 'Pulso', desc: 'Pesquisa rápida de clima organizacional' },
 }
 
 const STATUS_LABELS = {
@@ -116,7 +110,10 @@ export function AdminSurveysPage() {
     }
   }
 
-  const step1Valid = formValues.code.trim().length >= 3 && formValues.name.trim().length >= 3 && formValues.versionTitle.trim().length >= 3
+  const step1Valid = formValues.code.trim().length >= 3
+    && formValues.category.trim().length >= 2
+    && formValues.name.trim().length >= 3
+    && formValues.versionTitle.trim().length >= 3
 
   return (
     <div className="admin-view">
@@ -225,22 +222,16 @@ export function AdminSurveysPage() {
 
                   <label className="field-group" htmlFor="survey-category">
                     <span>Tipo de pesquisa</span>
-                    <select id="survey-category" name="category" value={formValues.category} onChange={handleFieldChange}>
-                      {Object.entries(CATEGORY_INFO).map(([key, info]) => (
-                        <option key={key} value={key}>{info.label}</option>
-                      ))}
-                    </select>
+                    <input
+                      id="survey-category"
+                      name="category"
+                      placeholder="Ex: Great Place to Work, Clima, Onboarding"
+                      required
+                      minLength={2}
+                      value={formValues.category}
+                      onChange={handleFieldChange}
+                    />
                   </label>
-                </div>
-
-                {/* Category hint */}
-                <div style={{
-                  padding: '12px 16px', borderRadius: 'var(--r-md)',
-                  background: 'var(--blue-50)', border: '1px solid var(--blue-100)',
-                  fontSize: 13, color: 'var(--blue-700)',
-                }}>
-                  <strong style={{ fontWeight: 600 }}>{CATEGORY_INFO[formValues.category].label}:</strong>{' '}
-                  {CATEGORY_INFO[formValues.category].desc}
                 </div>
 
                 <label className="field-group" htmlFor="survey-name">

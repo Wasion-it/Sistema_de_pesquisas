@@ -25,7 +25,6 @@ from app.models import (
     ResponseStatusEnum,
     RoleEnum,
     Survey,
-    SurveyCategoryEnum,
     SurveyDimension,
     SurveyQuestion,
     SurveyVersion,
@@ -239,14 +238,14 @@ def seed_survey(session: Session, created_by: User) -> tuple[Survey, SurveyVersi
         defaults={
             "name": "GPTW Organizational Climate Survey",
             "description": "Initial survey focused on trust, leadership, pride and respect.",
-            "category": SurveyCategoryEnum.GPTW,
+            "category": "Great Place to Work",
             "is_active": True,
         },
         code="GPTW-2026",
     )
     survey.name = "GPTW Organizational Climate Survey"
     survey.description = "Initial survey focused on trust, leadership, pride and respect."
-    survey.category = SurveyCategoryEnum.GPTW
+    survey.category = "Great Place to Work"
 
     version, _ = get_or_create(
         session,

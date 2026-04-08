@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import CampaignStatusEnum, QuestionTypeEnum, SurveyCategoryEnum, SurveyVersionStatusEnum
+from app.models.enums import CampaignStatusEnum, QuestionTypeEnum, SurveyVersionStatusEnum
 
 
 class DashboardSummaryResponse(BaseModel):
@@ -18,7 +18,7 @@ class DashboardRecentSurveyResponse(BaseModel):
     id: int
     code: str
     name: str
-    category: SurveyCategoryEnum
+    category: str
     updated_at: datetime
     current_version: str | None
     active_campaigns: int
@@ -33,7 +33,7 @@ class SurveyManagementItemResponse(BaseModel):
     id: int
     code: str
     name: str
-    category: SurveyCategoryEnum
+    category: str
     is_active: bool
     total_versions: int
     current_version: str | None
@@ -59,7 +59,7 @@ class SurveyCreateRequest(BaseModel):
     code: str = Field(min_length=3, max_length=60)
     name: str = Field(min_length=3, max_length=180)
     description: str | None = Field(default=None, max_length=1000)
-    category: SurveyCategoryEnum
+    category: str = Field(min_length=2, max_length=120)
     is_active: bool = True
     version_title: str = Field(min_length=3, max_length=180)
     version_description: str | None = Field(default=None, max_length=1000)
@@ -69,7 +69,7 @@ class SurveyCreateRequest(BaseModel):
 class SurveyUpdateRequest(BaseModel):
     name: str = Field(min_length=3, max_length=180)
     description: str | None = Field(default=None, max_length=1000)
-    category: SurveyCategoryEnum
+    category: str = Field(min_length=2, max_length=120)
     is_active: bool = True
     version_title: str = Field(min_length=3, max_length=180)
     version_description: str | None = Field(default=None, max_length=1000)
@@ -223,7 +223,7 @@ class SurveyDetailResponse(BaseModel):
     code: str
     name: str
     description: str | None
-    category: SurveyCategoryEnum
+    category: str
     is_active: bool
     updated_at: datetime
     dimensions: list[SurveyDimensionResponse]

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.models.enums import CampaignStatusEnum, SurveyCategoryEnum
+from app.models.enums import CampaignStatusEnum
 
 
 class PublicCampaignSummaryResponse(BaseModel):
@@ -26,7 +26,7 @@ class PublicCampaignItemResponse(BaseModel):
     survey_code: str
     survey_name: str
     survey_description: str | None
-    survey_category: SurveyCategoryEnum
+    survey_category: str
     version_id: int
     version_title: str
     total_questions: int
@@ -53,7 +53,7 @@ class PublicCampaignDetailResponse(BaseModel):
     survey_code: str
     survey_name: str
     survey_description: str | None
-    survey_category: SurveyCategoryEnum
+    survey_category: str
     version_id: int
     version_title: str
     version_description: str | None

@@ -1,10 +1,9 @@
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import Boolean, Enum, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import BaseModel
-from app.models.enums import SurveyCategoryEnum
 
 if TYPE_CHECKING:
     from app.models.survey_dimension import SurveyDimension
@@ -18,11 +17,7 @@ class Survey(BaseModel):
     code: Mapped[str] = mapped_column(String(60), nullable=False)
     name: Mapped[str] = mapped_column(String(180), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    category: Mapped[SurveyCategoryEnum] = mapped_column(
-        Enum(SurveyCategoryEnum, native_enum=False, length=20),
-        nullable=False,
-        default=SurveyCategoryEnum.CUSTOM,
-    )
+    category: Mapped[str] = mapped_column(String(120), nullable=False, default="Personalizada")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     versions = relationship("SurveyVersion", back_populates="survey")

@@ -184,6 +184,7 @@ export function AdminSurveyDetailPage() {
       const data = await updateAdminSurvey(token, surveyId, {
         name: metadataForm.name,
         description: metadataForm.description || null,
+        category: metadataForm.category,
         is_active: metadataForm.isActive,
         version_title: metadataForm.versionTitle,
         version_description: metadataForm.versionDescription || null,

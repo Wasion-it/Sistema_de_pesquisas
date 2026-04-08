@@ -1,10 +1,40 @@
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api/v1'
 
+function formatErrorDetail(detail) {
+  if (typeof detail === 'string') {
+    return detail
+  }
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item
+        }
+
+        if (item && typeof item === 'object') {
+          const location = Array.isArray(item.loc) ? item.loc.join('.') : ''
+          const message = typeof item.msg === 'string' ? item.msg : JSON.stringify(item)
+          return location ? `${location}: ${message}` : message
+        }
+
+        return String(item)
+      })
+      .join(' | ')
+  }
+
+  if (detail && typeof detail === 'object') {
+    return JSON.stringify(detail)
+  }
+
+  return null
+}
+
 async function parseResponse(response) {
   const data = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    throw new Error(data.detail ?? 'Erro ao carregar dados administrativos')
+    throw new Error(formatErrorDetail(data.detail) ?? 'Erro ao carregar dados administrativos')
   }
 
   return data

@@ -803,7 +803,7 @@ def publish_survey_version(
         end_at=payload.end_at,
         published_at=datetime.now(UTC),
         status=CampaignStatusEnum.ACTIVE,
-        is_anonymous=payload.is_anonymous,
+        is_anonymous=True,
         allows_draft=payload.allows_draft,
         created_by_user_id=user.id,
     )

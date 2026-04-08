@@ -50,7 +50,6 @@ const INITIAL_PUBLISH_FORM = {
   campaignDescription: '',
   startAt: '',
   endAt: '',
-  isAnonymous: true,
   allowsDraft: true,
 }
 
@@ -338,7 +337,7 @@ export function AdminSurveyDetailPage() {
         campaign_description: publishForm.campaignDescription || null,
         start_at: publishForm.startAt,
         end_at: publishForm.endAt,
-        is_anonymous: publishForm.isAnonymous,
+        is_anonymous: true,
         allows_draft: publishForm.allowsDraft,
       })
       applySurveyUpdate(data, 'Versao publicada e campanha criada com sucesso.')
@@ -546,10 +545,9 @@ export function AdminSurveyDetailPage() {
             </div>
 
             <div className="form-grid two-columns">
-              <label className="checkbox-field">
-                <input checked={publishForm.isAnonymous} name="isAnonymous" type="checkbox" onChange={handlePublishFieldChange} />
-                <span>Campanha anonima</span>
-              </label>
+              <div className="checkbox-field">
+                <span>Campanha anonima fixa nesta fase do produto</span>
+              </div>
               <label className="checkbox-field">
                 <input checked={publishForm.allowsDraft} name="allowsDraft" type="checkbox" onChange={handlePublishFieldChange} />
                 <span>Permitir rascunho</span>

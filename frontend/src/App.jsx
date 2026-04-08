@@ -9,6 +9,7 @@ import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
 import { HomePage } from './pages/HomePage'
+import { PublicCampaignPage } from './pages/PublicCampaignPage'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <AdminAccessButton />
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/campaigns/:campaignId" element={<PublicCampaignPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route
             path="/admin"

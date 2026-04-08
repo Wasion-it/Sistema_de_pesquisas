@@ -38,9 +38,14 @@ body:has(.admin-shell) {
 
 .page-shell {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
   padding: 24px;
+}
+
+.public-home-layout {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
 }
 
 .admin-page-shell {
@@ -79,6 +84,39 @@ body:has(.admin-shell) {
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
 }
 
+.public-hero-card {
+  width: 100%;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 249, 255, 0.94) 100%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%);
+}
+
+.public-hero-metrics {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.public-metric-card {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.public-metric-card span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.public-metric-card strong {
+  color: #0f172a;
+  font-size: 2rem;
+}
+
 .eyebrow {
   display: inline-block;
   margin-bottom: 12px;
@@ -112,6 +150,156 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.public-campaigns-panel {
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+}
+
+.public-campaigns-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.public-campaign-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.public-campaign-card-muted {
+  opacity: 0.82;
+}
+
+.public-campaign-card h3 {
+  margin: 12px 0 0;
+  color: #0f172a;
+}
+
+.public-campaign-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.public-campaign-code {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.public-campaign-meta,
+.public-campaign-dates {
+  display: grid;
+  gap: 8px;
+}
+
+.public-card-actions {
+  margin-top: 4px;
+}
+
+.public-detail-panel {
+  margin-top: 24px;
+}
+
+.public-detail-panel h2 {
+  margin: 0 0 12px;
+}
+
+.public-detail-meta,
+.public-detail-dates {
+  margin-top: 20px;
+}
+
+.public-detail-actions {
+  align-items: center;
+}
+
+.public-action-hint {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.public-questionnaire-panel {
+  margin-top: 24px;
+}
+
+.public-question-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.public-question-card textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+  background: #fff;
+  color: #0f172a;
+  resize: vertical;
+}
+
+.public-question-card textarea:focus {
+  outline: 2px solid rgba(3, 105, 161, 0.22);
+  border-color: #0284c7;
+}
+
+.public-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.public-required-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.question-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 12px;
+}
+
+.single-choice-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.public-option-chip {
+  justify-content: flex-start;
+}
+
+.public-campaign-meta span,
+.public-campaign-dates span {
+  color: #475569;
+}
+
+.public-empty-state {
+  display: grid;
+  gap: 8px;
+  padding: 28px 0 8px;
+  color: #64748b;
 }
 
 .status-badge {
@@ -197,6 +385,24 @@ p {
 .primary-button:disabled {
   cursor: wait;
   opacity: 0.75;
+}
+
+.primary-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #0369a1 0%, #0f172a 100%);
+  color: #f8fafc;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.primary-link-button:hover {
+  filter: brightness(1.03);
 }
 
 .secondary-button {
@@ -677,7 +883,8 @@ p {
 
   .dashboard-stats-grid,
   .dashboard-detail-grid,
-  .survey-detail-grid {
+  .survey-detail-grid,
+  .public-campaigns-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -719,6 +926,8 @@ p {
   .survey-detail-grid,
   .dashboard-stats-grid,
   .mini-metrics-grid,
+  .public-hero-metrics,
+  .public-campaigns-grid,
   .form-grid.two-columns {
     grid-template-columns: 1fr;
     display: grid;

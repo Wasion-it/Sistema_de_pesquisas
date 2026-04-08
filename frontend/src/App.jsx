@@ -1,7 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './auth/AuthProvider'
-import { AdminAccessButton } from './components/AdminAccessButton'
 import { AdminLayout } from './components/AdminLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminCampaignResponsesPage } from './pages/AdminCampaignResponsesPage'
@@ -17,7 +16,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AdminAccessButton />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/campaigns/:campaignId" element={<PublicCampaignPage />} />

@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthProvider'
 export function AdminLoginPage() {
   const navigate = useNavigate()
   const { isAuthenticated, isLoading, signIn } = useAuth()
-  const [email, setEmail] = useState('rh.admin@example.com')
+  const [login, setLogin] = useState('rh.admin')
   const [password, setPassword] = useState('AdminRH123!')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -18,7 +18,7 @@ export function AdminLoginPage() {
     setErrorMessage('')
     setIsSubmitting(true)
     try {
-      await signIn({ email, password })
+      await signIn({ login, password })
       navigate('/admin')
     } catch (error) {
       setErrorMessage(error.message)
@@ -57,16 +57,16 @@ export function AdminLoginPage() {
         </p>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          <label className="field-group" htmlFor="email">
-            <span>E-mail corporativo</span>
+          <label className="field-group" htmlFor="login">
+            <span>Usuario corporativo</span>
             <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="seu@empresa.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="login"
+              name="login"
+              type="text"
+              autoComplete="username"
+              placeholder="seu.usuario"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
             />
           </label>
 
@@ -111,7 +111,7 @@ export function AdminLoginPage() {
 
         <div className="login-footer">
           <p className="credentials-hint">
-            Desenvolvimento: rh.admin@example.com / AdminRH123!
+            Desenvolvimento: rh.admin / AdminRH123!
           </p>
           <Link className="back-link" to="/">← Voltar para a página inicial</Link>
         </div>

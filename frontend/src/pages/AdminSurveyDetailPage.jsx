@@ -3,11 +3,14 @@ import { Link, useParams } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import {
+  createSurveyDimension,
   createSurveyQuestion,
+  deleteSurveyDimension,
   deleteSurveyQuestion,
   getAdminSurveyDetail,
   publishAdminSurvey,
   updateAdminSurvey,
+  updateSurveyDimension,
   updateSurveyQuestion,
 } from '../services/admin'
 
@@ -26,6 +29,7 @@ const INITIAL_QUESTION_FORM = {
   questionText: '',
   helpText: '',
   questionType: 'SCALE_1_5',
+  dimensionId: '',
   isRequired: true,
   displayOrder: '',
   scaleMin: 1,
@@ -33,6 +37,13 @@ const INITIAL_QUESTION_FORM = {
   allowComment: false,
   isActive: true,
   optionsText: '',
+}
+
+const INITIAL_DIMENSION_FORM = {
+  id: null,
+  name: '',
+  description: '',
+  isActive: true,
 }
 
 const INITIAL_PUBLISH_FORM = {
@@ -51,6 +62,7 @@ function buildQuestionForm(question) {
     questionText: question.question_text,
     helpText: question.help_text ?? '',
     questionType: question.question_type,
+    dimensionId: question.dimension_id ? String(question.dimension_id) : '',
     isRequired: question.is_required,
     displayOrder: String(question.display_order),
     scaleMin: question.scale_min ?? 1,
@@ -127,18 +139,33 @@ function buildMetadataForm(data) {
   }
 }
 
+function buildDimensionForm(dimension) {
+  if (!dimension) {
+    return INITIAL_DIMENSION_FORM
+  }
+
+  return {
+    id: dimension.id,
+    name: dimension.name,
+    description: dimension.description ?? '',
+    isActive: dimension.is_active,
+  }
+}
+
 export function AdminSurveyDetailPage() {
   const { surveyId } = useParams()
   const { token } = useAuth()
   const [survey, setSurvey] = useState(null)
   const [metadataForm, setMetadataForm] = useState(INITIAL_METADATA_FORM)
   const [questionForm, setQuestionForm] = useState(INITIAL_QUESTION_FORM)
+  const [dimensionForm, setDimensionForm] = useState(INITIAL_DIMENSION_FORM)
   const [publishForm, setPublishForm] = useState(INITIAL_PUBLISH_FORM)
   const [activeTab, setActiveTab] = useState('pesquisa')
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isSavingMetadata, setIsSavingMetadata] = useState(false)
+  const [isSavingDimension, setIsSavingDimension] = useState(false)
   const [isSavingQuestion, setIsSavingQuestion] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
 
@@ -175,6 +202,11 @@ export function AdminSurveyDetailPage() {
   }, [surveyId, token])
 
   const questions = useMemo(() => survey?.current_version?.questions ?? [], [survey])
+  const dimensions = useMemo(() => survey?.dimensions ?? [], [survey])
+  const dimensionMap = useMemo(
+    () => new Map(dimensions.map((dimension) => [dimension.id, dimension])),
+    [dimensions],
+  )
   const campaigns = useMemo(() => survey?.campaigns ?? [], [survey])
   const hasDates = Boolean(publishForm.startAt && publishForm.endAt)
   const hasValidDateRange = hasDates && new Date(publishForm.endAt) >= new Date(publishForm.startAt)
@@ -198,6 +230,14 @@ export function AdminSurveyDetailPage() {
   function handleQuestionFieldChange(event) {
     const { name, value, type, checked } = event.target
     setQuestionForm((current) => ({
+      ...current,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
+  function handleDimensionFieldChange(event) {
+    const { name, value, type, checked } = event.target
+    setDimensionForm((current) => ({
       ...current,
       [name]: type === 'checkbox' ? checked : value,
     }))
@@ -238,6 +278,54 @@ export function AdminSurveyDetailPage() {
     setQuestionForm(buildQuestionForm(question))
   }
 
+  function startEditDimension(dimension) {
+    setDimensionForm(buildDimensionForm(dimension))
+  }
+
+  async function handleDimensionSubmit(event) {
+    event.preventDefault()
+    setIsSavingDimension(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      const payload = {
+        name: dimensionForm.name,
+        description: dimensionForm.description || null,
+        ...(dimensionForm.id ? { is_active: dimensionForm.isActive } : {}),
+      }
+
+      const data = dimensionForm.id
+        ? await updateSurveyDimension(token, dimensionForm.id, payload)
+        : await createSurveyDimension(token, surveyId, payload)
+
+      applySurveyUpdate(data, dimensionForm.id ? 'Dimensao atualizada.' : 'Dimensao criada.')
+      setDimensionForm(INITIAL_DIMENSION_FORM)
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSavingDimension(false)
+    }
+  }
+
+  async function handleDimensionDelete(dimensionId) {
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      const data = await deleteSurveyDimension(token, dimensionId)
+      applySurveyUpdate(data, 'Dimensao removida.')
+      if (dimensionForm.id === dimensionId) {
+        setDimensionForm(INITIAL_DIMENSION_FORM)
+      }
+      if (questionForm.dimensionId === String(dimensionId)) {
+        setQuestionForm((current) => ({ ...current, dimensionId: '' }))
+      }
+    } catch (error) {
+      setErrorMessage(error.message)
+    }
+  }
+
   async function handleQuestionSubmit(event) {
     event.preventDefault()
     setIsSavingQuestion(true)
@@ -254,7 +342,7 @@ export function AdminSurveyDetailPage() {
         question_text: questionForm.questionText,
         help_text: questionForm.helpText || null,
         question_type: questionForm.questionType,
-        dimension_id: null,
+        dimension_id: questionForm.dimensionId ? Number(questionForm.dimensionId) : null,
         is_required: questionForm.isRequired,
         display_order: order,
         scale_min: Number(questionForm.scaleMin),
@@ -367,6 +455,7 @@ export function AdminSurveyDetailPage() {
         <nav className="workspace-tabs" role="tablist">
           {[
             { id: 'pesquisa', label: 'Pesquisa', badge: null },
+            { id: 'dimensoes', label: 'Dimensoes', badge: dimensions.length || null },
             { id: 'perguntas', label: 'Perguntas', badge: questions.length },
             { id: 'publicar', label: 'Publicar', badge: campaigns.length || null },
           ].map((tab) => (
@@ -423,6 +512,91 @@ export function AdminSurveyDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        ) : null}
+
+        {activeTab === 'dimensoes' ? (
+          <div className="workspace-panel dimension-workspace">
+            <div className="dimension-editor-layout">
+              <aside className="question-form-pane dimension-form-pane">
+                <div className="question-form-pane-header">
+                  <strong>{dimensionForm.id ? 'Editando dimensao' : 'Nova dimensao'}</strong>
+                  {dimensionForm.id ? (
+                    <button className="text-button" type="button" onClick={() => setDimensionForm(INITIAL_DIMENSION_FORM)}>
+                      Cancelar
+                    </button>
+                  ) : null}
+                </div>
+
+                <form className="survey-create-form" onSubmit={handleDimensionSubmit}>
+                  <label className="field-group">
+                    <span>Nome da dimensao</span>
+                    <input
+                      name="name"
+                      placeholder="Ex: Lideranca"
+                      value={dimensionForm.name}
+                      onChange={handleDimensionFieldChange}
+                    />
+                  </label>
+
+                  <label className="field-group">
+                    <span>Descricao <span className="field-optional">(opcional)</span></span>
+                    <textarea
+                      name="description"
+                      rows="3"
+                      placeholder="Descreva o objetivo desta dimensao"
+                      value={dimensionForm.description}
+                      onChange={handleDimensionFieldChange}
+                    />
+                  </label>
+
+                  {dimensionForm.id ? (
+                    <label className="flag-toggle">
+                      <input checked={dimensionForm.isActive} name="isActive" type="checkbox" onChange={handleDimensionFieldChange} />
+                      <span>Dimensao ativa</span>
+                    </label>
+                  ) : null}
+
+                  <button className="primary-button full-width-button" disabled={isSavingDimension || !dimensionForm.name.trim()} type="submit">
+                    {isSavingDimension ? 'Salvando...' : dimensionForm.id ? 'Salvar dimensao' : 'Adicionar dimensao'}
+                  </button>
+                </form>
+              </aside>
+
+              <div className="question-list-pane">
+                {dimensions.length === 0 ? (
+                  <div className="empty-state">
+                    <strong>Nenhuma dimensao cadastrada</strong>
+                    <span>Crie dimensoes para organizar as perguntas por tema.</span>
+                  </div>
+                ) : (
+                  <div className="stack-list">
+                    {dimensions.map((dimension) => (
+                      <article className="stack-item-card dimension-card" key={dimension.id}>
+                        <div>
+                          <div className="dimension-card-header">
+                            <strong>{dimension.name}</strong>
+                            <span className={`status-pill ${dimension.is_active ? 'active' : 'inactive'}`}>
+                              {dimension.is_active ? 'Ativa' : 'Inativa'}
+                            </span>
+                          </div>
+                          <span>{dimension.code} · ordem {dimension.display_order}</span>
+                          {dimension.description ? <p className="dimension-card-description">{dimension.description}</p> : null}
+                        </div>
+                        <div className="question-card-actions">
+                          <button className="icon-button" title="Editar" type="button" onClick={() => startEditDimension(dimension)}>
+                            ✎
+                          </button>
+                          <button className="icon-button danger" title="Excluir" type="button" onClick={() => handleDimensionDelete(dimension.id)}>
+                            ✕
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -547,6 +721,18 @@ export function AdminSurveyDetailPage() {
                   />
                 </label>
 
+                <label className="field-group">
+                  <span>Dimensao</span>
+                  <select name="dimensionId" value={questionForm.dimensionId} onChange={handleQuestionFieldChange}>
+                    <option value="">Sem dimensao</option>
+                    {dimensions.map((dimension) => (
+                      <option key={dimension.id} value={dimension.id}>
+                        {dimension.name}{dimension.is_active ? '' : ' (inativa)'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 {questionForm.questionType === 'SCALE_1_5' ? (
                   <div className="form-grid two-columns">
                     <label className="field-group">
@@ -615,6 +801,11 @@ export function AdminSurveyDetailPage() {
                             {question.question_type === 'SCALE_1_5' ? 'Escala' : question.question_type === 'TEXT' ? 'Texto' : 'Opcoes'}
                           </span>
                           <span className="question-card-code">{question.code}</span>
+                          {question.dimension_id ? (
+                            <span className="question-card-tag dimension-tag">
+                              {dimensionMap.get(question.dimension_id)?.name ?? 'Dimensao vinculada'}
+                            </span>
+                          ) : null}
                           {question.is_required ? <span className="question-card-tag">Obrigatoria</span> : null}
                           {question.allow_comment ? <span className="question-card-tag">Comentario</span> : null}
                         </div>

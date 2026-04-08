@@ -8,7 +8,7 @@ import {
 } from '../services/api'
 import { getCampaignAvailability } from '../utils/campaignStatus'
 
-function formatDateShort(value) {
+function formatDateLong(value) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date(value))
 }
 
@@ -18,6 +18,14 @@ const SCALE_LABELS = {
   3: 'Neutro',
   4: 'Concordo',
   5: 'Concordo totalmente',
+}
+
+const SCALE_COLORS = {
+  1: { bg: '#fef2f2', border: '#fecaca', num: '#dc2626', numBg: '#fee2e2' },
+  2: { bg: '#fff7ed', border: '#fed7aa', num: '#ea580c', numBg: '#ffedd5' },
+  3: { bg: '#fffbeb', border: '#fde68a', num: '#d97706', numBg: '#fef3c7' },
+  4: { bg: '#f0fdf4', border: '#bbf7d0', num: '#16a34a', numBg: '#dcfce7' },
+  5: { bg: '#eff6ff', border: '#bfdbfe', num: '#2563eb', numBg: '#dbeafe' },
 }
 
 export function PublicCampaignPage() {
@@ -49,40 +57,27 @@ export function PublicCampaignPage() {
     }).length
   }, [participation, answers])
 
+  const progressPct = participation
+    ? Math.round((answeredCount / participation.questions.length) * 100)
+    : 0
+
   useEffect(() => {
     let isMounted = true
-
     getPublishedCampaignDetail(campaignId)
-      .then((data) => {
-        if (isMounted) {
-          setCampaign(data)
-          setErrorMessage('')
-        }
-      })
-      .catch((error) => {
-        if (isMounted) {
-          setErrorMessage(error.message)
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      })
-
-    return () => {
-      isMounted = false
-    }
+      .then((data) => { if (isMounted) { setCampaign(data); setErrorMessage('') } })
+      .catch((error) => { if (isMounted) setErrorMessage(error.message) })
+      .finally(() => { if (isMounted) setIsLoading(false) })
+    return () => { isMounted = false }
   }, [campaignId])
 
   function buildInitialAnswers(participationData) {
-    return participationData.answers.reduce((accumulator, item) => {
-      accumulator[item.question_id] = {
+    return participationData.answers.reduce((acc, item) => {
+      acc[item.question_id] = {
         selected_option_id: item.selected_option_id ? String(item.selected_option_id) : '',
         numeric_answer: item.numeric_answer ? String(item.numeric_answer) : '',
         text_answer: item.text_answer ?? '',
       }
-      return accumulator
+      return acc
     }, {})
   }
 
@@ -90,7 +85,6 @@ export function PublicCampaignPage() {
     event.preventDefault()
     setIsStarting(true)
     setStartErrorMessage('')
-
     try {
       const data = await startPublishedCampaignParticipation(campaignId)
       setParticipation(data)
@@ -103,22 +97,14 @@ export function PublicCampaignPage() {
   }
 
   function handleAnswerChange(questionId, field, value) {
-    setAnswers((current) => ({
-      ...current,
-      [questionId]: {
-        ...current[questionId],
-        [field]: value,
-      },
-    }))
+    setAnswers((cur) => ({ ...cur, [questionId]: { ...cur[questionId], [field]: value } }))
   }
 
   async function handleSubmitResponses(event) {
     event.preventDefault()
     if (!participation) return
-
     setIsSubmitting(true)
     setSubmitErrorMessage('')
-
     try {
       const payloadAnswers = participation.questions.map((question) => {
         const answer = answers[question.id] ?? {}
@@ -126,15 +112,13 @@ export function PublicCampaignPage() {
           question_id: question.id,
           selected_option_id: answer.selected_option_id ? Number(answer.selected_option_id) : null,
           numeric_answer: answer.numeric_answer ? Number(answer.numeric_answer) : null,
-          text_answer: answer.text_answer?.trim() ? answer.text_answer.trim() : null,
+          text_answer: answer.text_answer?.trim() || null,
         }
       })
-
       await submitPublishedCampaignResponse(campaignId, {
         response_id: participation.response_id,
         answers: payloadAnswers,
       })
-
       navigate(`/campaigns/${campaignId}/thank-you`, { replace: true })
     } catch (error) {
       setSubmitErrorMessage(error.message)
@@ -144,35 +128,45 @@ export function PublicCampaignPage() {
   }
 
   function renderQuestionField(question) {
-    const answer = answers[question.id] ?? {
-      selected_option_id: '',
-      numeric_answer: '',
-      text_answer: '',
-    }
+    const answer = answers[question.id] ?? { selected_option_id: '', numeric_answer: '', text_answer: '' }
 
     if (question.question_type === 'SCALE_1_5') {
       const values = Array.from(
         { length: question.scale_max - question.scale_min + 1 },
-        (_, index) => question.scale_min + index,
+        (_, i) => question.scale_min + i,
       )
-
       return (
         <div className="scale-option-row">
-          {values.map((value) => (
-            <label
-              key={value}
-              className={`scale-option${answer.numeric_answer === String(value) ? ' selected' : ''}`}
-            >
-              <input
-                checked={answer.numeric_answer === String(value)}
-                name={`question-${question.id}`}
-                type="radio"
-                onChange={() => handleAnswerChange(question.id, 'numeric_answer', String(value))}
-              />
-              <span className="scale-option-number">{value}</span>
-              <span className="scale-option-label">{SCALE_LABELS[value] ?? value}</span>
-            </label>
-          ))}
+          {values.map((value) => {
+            const isSelected = answer.numeric_answer === String(value)
+            const colors = SCALE_COLORS[value] || {}
+            return (
+              <label
+                key={value}
+                className={`scale-option${isSelected ? ' selected' : ''}`}
+                style={isSelected ? { background: colors.bg, borderColor: colors.border } : {}}
+              >
+                <input
+                  checked={isSelected}
+                  name={`question-${question.id}`}
+                  type="radio"
+                  onChange={() => handleAnswerChange(question.id, 'numeric_answer', String(value))}
+                />
+                <span
+                  className="scale-option-number"
+                  style={isSelected ? { background: colors.numBg, color: colors.num, boxShadow: 'none' } : {}}
+                >
+                  {value}
+                </span>
+                <span className="scale-option-label">{SCALE_LABELS[value] ?? value}</span>
+                {isSelected && (
+                  <svg style={{ marginLeft: 'auto', flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.num} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
+              </label>
+            )
+          })}
         </div>
       )
     }
@@ -204,7 +198,7 @@ export function PublicCampaignPage() {
         placeholder="Escreva sua resposta aqui..."
         rows="4"
         value={answer.text_answer}
-        onChange={(event) => handleAnswerChange(question.id, 'text_answer', event.target.value)}
+        onChange={(e) => handleAnswerChange(question.id, 'text_answer', e.target.value)}
       />
     )
   }
@@ -231,7 +225,7 @@ export function PublicCampaignPage() {
           </div>
         </header>
         <div className="collab-content">
-          <div className="form-error">{errorMessage || 'Pesquisa nao encontrada.'}</div>
+          <div className="form-error">{errorMessage || 'Pesquisa não encontrada.'}</div>
         </div>
       </main>
     )
@@ -241,21 +235,23 @@ export function PublicCampaignPage() {
     <main className="collab-shell">
       <header className="collab-header">
         <div className="collab-header-inner">
-          <Link className="text-muted-link" to="/">← Todas as pesquisas</Link>
-          {participation ? (
+          <Link className="text-muted-link" to="/">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+            </svg>
+            Todas as pesquisas
+          </Link>
+          {participation && (
             <span className="collab-progress-label">
-              {answeredCount} de {participation.questions.length} respondidas
+              {answeredCount} / {participation.questions.length} respondidas
             </span>
-          ) : null}
+          )}
         </div>
-        {participation ? (
+        {participation && (
           <div className="collab-progress-bar">
-            <div
-              className="collab-progress-fill"
-              style={{ width: `${(answeredCount / participation.questions.length) * 100}%` }}
-            />
+            <div className="collab-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
-        ) : null}
+        )}
       </header>
 
       <div className="collab-content">
@@ -264,52 +260,97 @@ export function PublicCampaignPage() {
             <div className="collab-entry-badge-row">
               <span className={`status-pill ${availability.variant}`}>{availability.label}</span>
             </div>
-            <h1 className="collab-entry-title">{campaign.survey_name}</h1>
+
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: 6 }}>
+                {campaign.survey_name}
+              </p>
+              <h1 className="collab-entry-title">{campaign.name}</h1>
+            </div>
+
             <p className="collab-entry-desc">
-              {campaign.description ?? 'Sua participacao e importante para melhorarmos o ambiente de trabalho.'}
+              {campaign.description ?? 'Sua participação é importante para melhorarmos o ambiente de trabalho.'}
             </p>
 
             <div className="collab-entry-meta">
               <div className="collab-meta-item">
-                <span className="collab-meta-label">Periodo</span>
-                <span className="collab-meta-value">{formatDateShort(campaign.start_at)} ate {formatDateShort(campaign.end_at)}</span>
+                <span className="collab-meta-label">Período</span>
+                <span className="collab-meta-value">
+                  {formatDateLong(campaign.start_at)} até {formatDateLong(campaign.end_at)}
+                </span>
               </div>
               <div className="collab-meta-item">
                 <span className="collab-meta-label">Perguntas</span>
-                <span className="collab-meta-value">{campaign.total_questions}</span>
+                <span className="collab-meta-value">{campaign.total_questions} questões</span>
               </div>
               <div className="collab-meta-item">
-                <span className="collab-meta-label">Anonimato</span>
-                <span className="collab-meta-value">Suas respostas sao anonimas</span>
+                <span className="collab-meta-label">Privacidade</span>
+                <span className="collab-meta-value">
+                  Respostas 100% anônimas — nenhuma informação pessoal é coletada
+                </span>
               </div>
             </div>
 
             {availability.isOpen ? (
               <form onSubmit={handleStartParticipation}>
-                {startErrorMessage ? <div className="form-error" style={{ marginBottom: 14 }}>{startErrorMessage}</div> : null}
+                {startErrorMessage && <div className="form-error" style={{ marginBottom: 14 }}>{startErrorMessage}</div>}
                 <button className="collab-start-button" disabled={isStarting} type="submit">
-                  {isStarting ? 'Preparando...' : 'Iniciar pesquisa'}
+                  {isStarting ? (
+                    <>
+                      <svg width="16" height="16" style={{ animation: 'spin .7s linear infinite' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                      </svg>
+                      Preparando...
+                    </>
+                  ) : (
+                    <>
+                      Iniciar pesquisa
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
+                      </svg>
+                    </>
+                  )}
                 </button>
               </form>
             ) : (
               <div className="collab-unavailable">
-                Esta pesquisa nao esta disponivel para participacao no momento.
+                Esta pesquisa não está disponível para participação no momento.
               </div>
             )}
           </div>
         ) : (
           <form className="collab-questionnaire" onSubmit={handleSubmitResponses}>
+            {/* Instrução rápida */}
+            <div style={{
+              padding: '14px 18px',
+              borderRadius: 'var(--r-lg)',
+              background: 'var(--blue-50)',
+              border: '1px solid var(--blue-100)',
+              fontSize: 13, color: 'var(--blue-700)', fontWeight: 500,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Todas as respostas são confidenciais. Seja honesto — suas opiniões constroem um ambiente melhor.
+            </div>
+
             {participation.questions.map((question, index) => (
               <article className="collab-question-card" key={question.id}>
                 <div className="collab-question-header">
                   <span className="collab-question-num">{index + 1}</span>
                   <div className="collab-question-body">
                     <p className="collab-question-text">{question.question_text}</p>
-                    {question.help_text ? (
+                    {question.help_text && (
                       <p className="collab-question-hint">{question.help_text}</p>
-                    ) : null}
+                    )}
                   </div>
-                  {question.is_required ? <span className="collab-required-dot" title="Obrigatoria" /> : null}
+                  {question.is_required && (
+                    <span
+                      className="collab-required-dot"
+                      title="Obrigatória"
+                    />
+                  )}
                 </div>
                 <div className="collab-question-answer">
                   {renderQuestionField(question)}
@@ -317,10 +358,14 @@ export function PublicCampaignPage() {
               </article>
             ))}
 
-            {submitErrorMessage ? <div className="form-error">{submitErrorMessage}</div> : null}
+            {submitErrorMessage && <div className="form-error">{submitErrorMessage}</div>}
 
             <div className="collab-submit-row">
-              <span className="collab-submit-hint">{answeredCount} de {participation.questions.length} respondidas</span>
+              <span className="collab-submit-hint">
+                {answeredCount === participation.questions.length
+                  ? '✓ Todas as perguntas respondidas'
+                  : `${answeredCount} de ${participation.questions.length} respondidas`}
+              </span>
               <button
                 className="collab-start-button"
                 disabled={isSubmitting}

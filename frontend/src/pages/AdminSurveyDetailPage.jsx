@@ -57,23 +57,61 @@ function buildQuestionForm(question) {
     scaleMax: question.scale_max ?? 5,
     allowComment: question.allow_comment,
     isActive: question.is_active,
-    optionsText: (question.options ?? [])
-      .map((option) => `${option.label}|${option.value}|${option.score_value ?? ''}`)
-      .join('\n'),
+    optionsText: (question.options ?? []).map((option) => option.label).join('\n'),
   }
 }
 
-function parseOptions(optionsText) {
+function buildOptionValue(label, usedValues, index) {
+  const normalizedBase = label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+
+  const fallbackBase = normalizedBase || `OPTION_${index + 1}`
+  let candidate = fallbackBase
+  let suffix = 2
+
+  while (usedValues.has(candidate)) {
+    candidate = `${fallbackBase}_${suffix}`
+    suffix += 1
+  }
+
+  usedValues.add(candidate)
+  return candidate
+}
+
+function parseOptions(optionsText, existingOptions = []) {
+  const existingByLabel = new Map(
+    existingOptions.map((option) => [option.label.trim().toLowerCase(), option]),
+  )
+  const usedValues = new Set(
+    existingOptions
+      .map((option) => option.value?.trim().toUpperCase())
+      .filter(Boolean),
+  )
+
   return optionsText
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => {
-      const [label, value, scoreValue] = line.split('|').map((item) => item.trim())
+    .map((label, index) => {
+      const existingOption = existingByLabel.get(label.toLowerCase())
+
+      if (existingOption) {
+        usedValues.add(existingOption.value.trim().toUpperCase())
+        return {
+          label,
+          value: existingOption.value,
+          score_value: existingOption.score_value,
+        }
+      }
+
       return {
         label,
-        value,
-        score_value: scoreValue ? Number(scoreValue) : null,
+        value: buildOptionValue(label, usedValues, index),
+        score_value: null,
       }
     })
 }
@@ -208,6 +246,9 @@ export function AdminSurveyDetailPage() {
 
     try {
       const order = questionForm.displayOrder ? Number(questionForm.displayOrder) : questions.length + 1
+      const currentQuestion = questionForm.id
+        ? questions.find((question) => question.id === questionForm.id)
+        : null
       const payload = {
         code: questionForm.code || `Q${order}`,
         question_text: questionForm.questionText,
@@ -220,7 +261,7 @@ export function AdminSurveyDetailPage() {
         scale_max: Number(questionForm.scaleMax),
         allow_comment: questionForm.allowComment,
         is_active: questionForm.isActive,
-        options: parseOptions(questionForm.optionsText),
+        options: parseOptions(questionForm.optionsText, currentQuestion?.options ?? []),
       }
 
       const data = questionForm.id
@@ -521,11 +562,11 @@ export function AdminSurveyDetailPage() {
 
                 {questionForm.questionType === 'SINGLE_CHOICE' ? (
                   <label className="field-group">
-                    <span>Opcoes <span className="field-hint">Uma por linha: Label|VALOR|Pontuacao</span></span>
+                    <span>Opcoes <span className="field-hint">Uma opcao por linha</span></span>
                     <textarea
                       name="optionsText"
                       rows="4"
-                      placeholder={"Concordo totalmente|AGREE_FULL|5\nConcordo|AGREE|4\nNeutro|NEUTRAL|3"}
+                      placeholder={"Concordo totalmente\nConcordo\nNeutro"}
                       value={questionForm.optionsText}
                       onChange={handleQuestionFieldChange}
                     />

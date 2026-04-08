@@ -23,8 +23,10 @@ from app.models import (
     Response,
     ResponseItem,
     ResponseStatusEnum,
+    Survey,
     SurveyQuestion,
     SurveyVersion,
+    SurveyVersionStatusEnum,
 )
 from app.schemas.public import (
     PublicCampaignAnswerInput,
@@ -107,6 +109,8 @@ def _serialize_public_answer(item: ResponseItem) -> PublicResponseAnswerResponse
 def _load_public_campaign(db: Session, campaign_id: int) -> Campaign | None:
     return db.scalar(
         select(Campaign)
+        .join(Campaign.survey_version)
+        .join(SurveyVersion.survey)
         .options(
             selectinload(Campaign.audiences)
             .selectinload(CampaignAudience.employee)
@@ -122,6 +126,8 @@ def _load_public_campaign(db: Session, campaign_id: int) -> Campaign | None:
         )
         .where(Campaign.id == campaign_id)
         .where(Campaign.published_at.is_not(None))
+        .where(Survey.is_active.is_(True))
+        .where(SurveyVersion.status == SurveyVersionStatusEnum.PUBLISHED)
     )
 
 
@@ -243,19 +249,27 @@ def read_published_campaigns(
 ) -> PublicCampaignListResponse:
     campaigns = db.scalars(
         select(Campaign)
+        .join(Campaign.survey_version)
+        .join(SurveyVersion.survey)
         .options(
             selectinload(Campaign.audiences),
             selectinload(Campaign.survey_version).selectinload(SurveyVersion.questions),
             selectinload(Campaign.survey_version).selectinload(SurveyVersion.survey),
         )
         .where(Campaign.published_at.is_not(None))
+        .where(Survey.is_active.is_(True))
+        .where(SurveyVersion.status == SurveyVersionStatusEnum.PUBLISHED)
         .order_by(Campaign.published_at.desc(), Campaign.id.desc())
     ).all()
 
     active_campaigns = db.scalar(
         select(func.count(Campaign.id))
+        .join(Campaign.survey_version)
+        .join(SurveyVersion.survey)
         .where(Campaign.published_at.is_not(None))
         .where(Campaign.status == CampaignStatusEnum.ACTIVE)
+        .where(Survey.is_active.is_(True))
+        .where(SurveyVersion.status == SurveyVersionStatusEnum.PUBLISHED)
     ) or 0
 
     items = [_serialize_public_campaign(campaign) for campaign in campaigns]

@@ -538,6 +538,12 @@ def update_admin_survey(
     current_version.title = payload.version_title.strip()
     current_version.description = payload.version_description.strip() if payload.version_description else None
 
+    if not payload.is_active:
+        for version in survey.versions:
+            for campaign in version.campaigns:
+                if campaign.status == CampaignStatusEnum.ACTIVE:
+                    campaign.status = CampaignStatusEnum.CLOSED
+
     db.add(
         AuditLog(
             actor_user_id=user.id,

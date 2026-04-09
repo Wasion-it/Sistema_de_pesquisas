@@ -37,6 +37,8 @@ class SurveyQuestion(BaseModel):
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     scale_min: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     scale_max: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    score_weight: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_negative: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     allow_comment: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 

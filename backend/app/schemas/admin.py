@@ -120,6 +120,8 @@ class SurveyQuestionCreateRequest(BaseModel):
     display_order: int | None = None
     scale_min: int = 1
     scale_max: int = 5
+    score_weight: int = Field(default=1, ge=1, le=100)
+    is_negative: bool = False
     allow_comment: bool = False
     is_active: bool = True
     options: list[QuestionOptionInput] = Field(default_factory=list)
@@ -135,6 +137,8 @@ class SurveyQuestionUpdateRequest(BaseModel):
     display_order: int
     scale_min: int = 1
     scale_max: int = 5
+    score_weight: int = Field(default=1, ge=1, le=100)
+    is_negative: bool = False
     allow_comment: bool = False
     is_active: bool = True
     options: list[QuestionOptionInput] = Field(default_factory=list)
@@ -151,6 +155,8 @@ class SurveyQuestionResponse(BaseModel):
     display_order: int
     scale_min: int
     scale_max: int
+    score_weight: int
+    is_negative: bool
     allow_comment: bool
     is_active: bool
     options: list[QuestionOptionResponse]

@@ -96,6 +96,8 @@ def _serialize_question(question: SurveyQuestion) -> SurveyQuestionResponse:
         display_order=question.display_order,
         scale_min=question.scale_min,
         scale_max=question.scale_max,
+        score_weight=question.score_weight,
+        is_negative=question.is_negative,
         allow_comment=question.allow_comment,
         is_active=question.is_active,
         options=[_serialize_option(option) for option in options],
@@ -254,6 +256,12 @@ def _ensure_dimension_belongs_to_survey(
 def _validate_question_payload(payload: SurveyQuestionCreateRequest | SurveyQuestionUpdateRequest) -> None:
     if payload.scale_min > payload.scale_max:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Scale min cannot be greater than scale max")
+
+    if payload.question_type != QuestionTypeEnum.SCALE_1_5 and payload.is_negative:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only scale questions can be marked as negative")
+
+    if payload.question_type != QuestionTypeEnum.SCALE_1_5 and payload.score_weight != 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only scale questions can define score weight")
 
     if payload.question_type == QuestionTypeEnum.SINGLE_CHOICE and not payload.options:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Single choice questions require options")
@@ -784,6 +792,8 @@ def create_survey_question(
         display_order=display_order,
         scale_min=payload.scale_min,
         scale_max=payload.scale_max,
+        score_weight=payload.score_weight if payload.question_type == QuestionTypeEnum.SCALE_1_5 else 1,
+        is_negative=payload.is_negative if payload.question_type == QuestionTypeEnum.SCALE_1_5 else False,
         allow_comment=payload.allow_comment,
         is_active=payload.is_active,
     )
@@ -851,6 +861,8 @@ def update_survey_question(
     question.display_order = payload.display_order
     question.scale_min = payload.scale_min
     question.scale_max = payload.scale_max
+    question.score_weight = payload.score_weight if payload.question_type == QuestionTypeEnum.SCALE_1_5 else 1
+    question.is_negative = payload.is_negative if payload.question_type == QuestionTypeEnum.SCALE_1_5 else False
     question.allow_comment = payload.allow_comment
     question.is_active = payload.is_active
     _sync_question_options(question, payload.options)

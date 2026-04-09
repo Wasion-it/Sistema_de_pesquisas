@@ -19,9 +19,24 @@ function fmtDate(value) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value))
 }
 
+function getQuestionMetaMap(pageData) {
+  return new Map((pageData.questions ?? []).map((question) => [question.id, question]))
+}
+
+function getEffectiveScaleScore(question, numericAnswer) {
+  if (!question || numericAnswer == null) {
+    return null
+  }
+
+  const min = question.scale_min ?? 1
+  const max = question.scale_max ?? 5
+  return question.is_negative ? max + min - numericAnswer : numericAnswer
+}
+
 // ─── KPI computation ────────────────────────────────────────────────────────
 
 function computeKpis(pageData) {
+  const questionMetaMap = getQuestionMetaMap(pageData)
   const submitted = (pageData.responses ?? []).filter((r) => r.status === 'SUBMITTED')
   const { audience_count, submitted_responses, draft_responses, total_responses } = pageData.summary
 
@@ -35,14 +50,29 @@ function computeKpis(pageData) {
   const allItems = submitted.flatMap((r) => r.answers)
 
   // Score médio geral (escala 1-5)
-  const scaleItems = allItems.filter((a) => a.question_type === 'SCALE_1_5' && a.numeric_answer != null)
-  const avgScore = scaleItems.length > 0
-    ? scaleItems.reduce((sum, a) => sum + a.numeric_answer, 0) / scaleItems.length
+  const scaleItems = allItems
+    .filter((a) => a.question_type === 'SCALE_1_5' && a.numeric_answer != null)
+    .map((answer) => {
+      const question = questionMetaMap.get(answer.question_id)
+      const effectiveScore = getEffectiveScaleScore(question, answer.numeric_answer)
+      const scoreWeight = question?.score_weight ?? 1
+
+      return {
+        ...answer,
+        effectiveScore,
+        scoreWeight,
+      }
+    })
+    .filter((answer) => answer.effectiveScore != null)
+
+  const totalScaleWeight = scaleItems.reduce((sum, item) => sum + item.scoreWeight, 0)
+  const avgScore = totalScaleWeight > 0
+    ? scaleItems.reduce((sum, item) => sum + (item.effectiveScore * item.scoreWeight), 0) / totalScaleWeight
     : null
 
   // Distribuição Likert (1 a 5)
   const likertDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-  scaleItems.forEach((a) => { likertDist[a.numeric_answer] = (likertDist[a.numeric_answer] ?? 0) + 1 })
+  scaleItems.forEach((a) => { likertDist[a.effectiveScore] = (likertDist[a.effectiveScore] ?? 0) + 1 })
   const likertTotal = scaleItems.length
 
   // eNPS a partir de perguntas SINGLE_CHOICE com "RECOMMEND" no código
@@ -74,9 +104,15 @@ function computeKpis(pageData) {
   scaleItems.forEach((a) => {
     const key = a.question_code
     if (!questionMap[key]) {
-      questionMap[key] = { text: a.question_text, code: key, scores: [] }
+      questionMap[key] = {
+        text: a.question_text,
+        code: key,
+        scores: [],
+        scoreWeight: a.scoreWeight,
+        isNegative: questionMetaMap.get(a.question_id)?.is_negative ?? false,
+      }
     }
-    questionMap[key].scores.push(a.numeric_answer)
+    questionMap[key].scores.push(a.effectiveScore)
   })
 
   const questionScores = Object.values(questionMap)
@@ -85,6 +121,8 @@ function computeKpis(pageData) {
       text: q.text,
       avg: q.scores.reduce((s, v) => s + v, 0) / q.scores.length,
       count: q.scores.length,
+      scoreWeight: q.scoreWeight,
+      isNegative: q.isNegative,
     }))
     .sort((a, b) => b.avg - a.avg)
 
@@ -224,6 +262,10 @@ function QuestionRanking({ questions }) {
                 {q.text}
               </span>
               <span style={{ fontSize: 14, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{fmtScore(q.avg)}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: 999 }}>Peso {q.scoreWeight ?? 1}x</span>
+              {q.isNegative ? <span style={{ fontSize: 11, color: '#9a3412', background: '#ffedd5', padding: '2px 8px', borderRadius: 999 }}>Pontuação invertida</span> : null}
             </div>
             <div style={{ height: 6, borderRadius: 3, background: 'var(--slate-100)', overflow: 'hidden' }}>
               <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .5s ease' }} />

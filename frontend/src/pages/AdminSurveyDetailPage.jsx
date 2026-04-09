@@ -34,6 +34,8 @@ const INITIAL_QUESTION_FORM = {
   displayOrder: '',
   scaleMin: 1,
   scaleMax: 5,
+  scoreWeight: 1,
+  isNegative: false,
   allowComment: false,
   isActive: true,
   optionsText: '',
@@ -67,6 +69,8 @@ function buildQuestionForm(question) {
     displayOrder: String(question.display_order),
     scaleMin: question.scale_min ?? 1,
     scaleMax: question.scale_max ?? 5,
+    scoreWeight: question.score_weight ?? 1,
+    isNegative: question.is_negative ?? false,
     allowComment: question.allow_comment,
     isActive: question.is_active,
     optionsText: (question.options ?? []).map((option) => option.label).join('\n'),
@@ -347,6 +351,8 @@ export function AdminSurveyDetailPage() {
         display_order: order,
         scale_min: Number(questionForm.scaleMin),
         scale_max: Number(questionForm.scaleMax),
+        score_weight: questionForm.questionType === 'SCALE_1_5' ? Number(questionForm.scoreWeight) : 1,
+        is_negative: questionForm.questionType === 'SCALE_1_5' ? questionForm.isNegative : false,
         allow_comment: questionForm.allowComment,
         is_active: questionForm.isActive,
         options: parseOptions(questionForm.optionsText, currentQuestion?.options ?? []),
@@ -743,6 +749,14 @@ export function AdminSurveyDetailPage() {
                       <span>Escala maxima</span>
                       <input name="scaleMax" type="number" value={questionForm.scaleMax} onChange={handleQuestionFieldChange} />
                     </label>
+                    <label className="field-group">
+                      <span>Peso da pergunta</span>
+                      <input name="scoreWeight" min="1" max="100" type="number" value={questionForm.scoreWeight} onChange={handleQuestionFieldChange} />
+                    </label>
+                    <label className="checkbox-field">
+                      <input checked={questionForm.isNegative} name="isNegative" type="checkbox" onChange={handleQuestionFieldChange} />
+                      <span>Pergunta negativa com pontuacao invertida</span>
+                    </label>
                   </div>
                 ) : null}
 
@@ -806,6 +820,8 @@ export function AdminSurveyDetailPage() {
                               {dimensionMap.get(question.dimension_id)?.name ?? 'Dimensao vinculada'}
                             </span>
                           ) : null}
+                          {question.question_type === 'SCALE_1_5' ? <span className="question-card-tag">Peso {question.score_weight ?? 1}x</span> : null}
+                          {question.question_type === 'SCALE_1_5' && question.is_negative ? <span className="question-card-tag negative-tag">Invertida</span> : null}
                           {question.is_required ? <span className="question-card-tag">Obrigatoria</span> : null}
                           {question.allow_comment ? <span className="question-card-tag">Comentario</span> : null}
                         </div>

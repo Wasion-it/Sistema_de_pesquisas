@@ -114,23 +114,25 @@ function computeKpis(pageData) {
         text: a.question_text,
         code: key,
         scores: [],
+        weightedScores: [],
         scoreWeight: a.scoreWeight,
         isNegative: questionMetaMap.get(a.question_id)?.is_negative ?? false,
         scaleMax: questionMetaMap.get(a.question_id)?.scale_max ?? 5,
       }
     }
     questionMap[key].scores.push(a.effectiveScore)
+    questionMap[key].weightedScores.push(a.weightedScore)
   })
 
   const questionScores = Object.values(questionMap)
     .map((q) => ({
       code: q.code,
       text: q.text,
-      avg: q.scoreWeight,
+      avg: q.weightedScores.reduce((sum, value) => sum + value, 0) / (q.weightedScores.length * q.scoreWeight),
       count: q.scores.length,
       scoreWeight: q.scoreWeight,
       isNegative: q.isNegative,
-      maxScore: Math.max(...Object.values(questionMap).map((item) => item.scoreWeight), 1),
+      maxScore: q.scaleMax,
     }))
     .sort((a, b) => b.avg - a.avg)
 

@@ -46,6 +46,12 @@ from app.schemas.public import (
 
 router = APIRouter(tags=["public"])
 
+PUBLIC_POSITION_OPTIONS = [
+    ("PUBLIC_ADMINISTRATIVE", "Administrativo"),
+    ("PUBLIC_OPERATIONAL", "Operacional"),
+    ("PUBLIC_LEADERSHIP", "Liderança"),
+]
+
 
 def _utc_now_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
@@ -150,13 +156,31 @@ def _list_active_departments(db: Session) -> list[Department]:
 
 
 def _list_active_job_titles(db: Session) -> list[JobTitle]:
-    return list(
-        db.scalars(
+    existing_by_code = {
+        item.code: item
+        for item in db.scalars(
             select(JobTitle)
-            .where(JobTitle.is_active.is_(True))
-            .order_by(JobTitle.name.asc())
+            .where(JobTitle.code.in_([code for code, _ in PUBLIC_POSITION_OPTIONS]))
         ).all()
-    )
+    }
+
+    created_any = False
+    for code, name in PUBLIC_POSITION_OPTIONS:
+        job_title = existing_by_code.get(code)
+        if job_title is None:
+            job_title = JobTitle(code=code, name=name, description="Posição disponível para participação pública.", is_active=True)
+            db.add(job_title)
+            db.flush()
+            existing_by_code[code] = job_title
+            created_any = True
+        else:
+            job_title.name = name
+            job_title.is_active = True
+
+    if created_any:
+        db.commit()
+
+    return [existing_by_code[code] for code, _ in PUBLIC_POSITION_OPTIONS]
 
 
 def _get_participation_profile(
@@ -169,11 +193,8 @@ def _get_participation_profile(
         .where(Department.id == department_id)
         .where(Department.is_active.is_(True))
     )
-    job_title = db.scalar(
-        select(JobTitle)
-        .where(JobTitle.id == job_title_id)
-        .where(JobTitle.is_active.is_(True))
-    )
+    allowed_job_titles = {item.id: item for item in _list_active_job_titles(db)}
+    job_title = allowed_job_titles.get(job_title_id)
 
     if department is None or job_title is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selecione um departamento e uma posição válidos")
@@ -210,9 +231,7 @@ def _build_participation_payload(campaign: Campaign, response: Response, audienc
         questions=[_serialize_public_question(question) for question in active_questions],
         answers=[_serialize_public_answer(item) for item in existing_items],
     )
-
-
-    def _build_transient_participation_payload(campaign: Campaign, db: Session) -> PublicCampaignStartResponse:
+def _build_transient_participation_payload(campaign: Campaign, db: Session) -> PublicCampaignStartResponse:
     active_questions = sorted(
         [question for question in campaign.survey_version.questions if question.is_active],
         key=lambda item: item.display_order,

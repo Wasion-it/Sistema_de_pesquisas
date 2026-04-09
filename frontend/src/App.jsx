@@ -5,6 +5,7 @@ import { AdminCampaignKpisPage } from './pages/AdminCampaignKpisPage'
 import { AdminLayout } from './components/AdminLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminCampaignResponsesPage } from './pages/AdminCampaignResponsesPage'
+import { AdminDepartmentsPage } from './pages/AdminDepartmentsPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
@@ -31,6 +32,7 @@ export default function App() {
             }
           >
             <Route index element={<AdminDashboardPage />} />
+            <Route path="departments" element={<AdminDepartmentsPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />
             <Route path="campaigns/:campaignId/kpis" element={<AdminCampaignKpisPage />} />
             <Route path="campaigns/:campaignId/responses" element={<AdminCampaignResponsesPage />} />

@@ -17,6 +17,7 @@ from app.models import (
     Campaign,
     CampaignAudience,
     CampaignStatusEnum,
+    Department,
     Employee,
     EmployeeStatusEnum,
     QuestionOption,
@@ -38,6 +39,10 @@ from app.schemas.admin import (
     CampaignResponsesPageResponse,
     CampaignResponsesSummaryResponse,
     CampaignSummaryResponse,
+    DepartmentCreateRequest,
+    DepartmentManagementItemResponse,
+    DepartmentManagementListResponse,
+    DepartmentUpdateRequest,
     DashboardRecentSurveyResponse,
     DashboardResponse,
     DashboardSummaryResponse,
@@ -117,6 +122,17 @@ def _serialize_campaign(campaign: Campaign) -> CampaignSummaryResponse:
         is_anonymous=campaign.is_anonymous,
         allows_draft=campaign.allows_draft,
         audience_count=len(campaign.audiences),
+    )
+
+
+def _serialize_department(department: Department) -> DepartmentManagementItemResponse:
+    return DepartmentManagementItemResponse(
+        id=department.id,
+        code=department.code,
+        name=department.name,
+        description=department.description,
+        is_active=department.is_active,
+        updated_at=department.updated_at,
     )
 
 
@@ -344,6 +360,98 @@ def read_admin_dashboard(
         ),
         recent_surveys=recent_surveys,
     )
+
+
+@router.get("/departments", response_model=DepartmentManagementListResponse)
+def read_admin_departments(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DepartmentManagementListResponse:
+    departments = db.scalars(select(Department).order_by(Department.name.asc(), Department.id.asc())).all()
+    return DepartmentManagementListResponse(items=[_serialize_department(item) for item in departments])
+
+
+@router.post("/departments", response_model=DepartmentManagementItemResponse, status_code=status.HTTP_201_CREATED)
+def create_admin_department(
+    payload: DepartmentCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DepartmentManagementItemResponse:
+    normalized_code = payload.code.strip().upper()
+    normalized_name = payload.name.strip()
+
+    duplicate = db.scalar(
+        select(Department)
+        .where((func.lower(Department.name) == normalized_name.lower()) | (Department.code == normalized_code))
+    )
+    if duplicate is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Department code or name already exists")
+
+    department = Department(
+        code=normalized_code,
+        name=normalized_name,
+        description=payload.description.strip() if payload.description else None,
+        is_active=payload.is_active,
+    )
+    db.add(department)
+    db.flush()
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="department",
+            entity_id=str(department.id),
+            description="Department created from administrative portal.",
+            details_json=json.dumps({"department_id": department.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(department)
+    return _serialize_department(department)
+
+
+@router.patch("/departments/{department_id}", response_model=DepartmentManagementItemResponse)
+def update_admin_department(
+    department_id: int,
+    payload: DepartmentUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DepartmentManagementItemResponse:
+    department = db.scalar(select(Department).where(Department.id == department_id))
+    if department is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Department not found")
+
+    normalized_code = payload.code.strip().upper()
+    normalized_name = payload.name.strip()
+    duplicate = db.scalar(
+        select(Department)
+        .where(Department.id != department_id)
+        .where((func.lower(Department.name) == normalized_name.lower()) | (Department.code == normalized_code))
+    )
+    if duplicate is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Department code or name already exists")
+
+    department.code = normalized_code
+    department.name = normalized_name
+    department.description = payload.description.strip() if payload.description else None
+    department.is_active = payload.is_active
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="department",
+            entity_id=str(department.id),
+            description="Department updated from administrative portal.",
+            details_json=json.dumps({"department_id": department.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(department)
+    return _serialize_department(department)
 
 
 @router.get("/surveys/{survey_id}", response_model=SurveyDetailResponse)

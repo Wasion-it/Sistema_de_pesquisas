@@ -51,6 +51,33 @@ class SurveyManagementListResponse(BaseModel):
     items: list[SurveyManagementItemResponse]
 
 
+class DepartmentManagementItemResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str | None
+    is_active: bool
+    updated_at: datetime
+
+
+class DepartmentManagementListResponse(BaseModel):
+    items: list[DepartmentManagementItemResponse]
+
+
+class DepartmentCreateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=50)
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool = True
+
+
+class DepartmentUpdateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=50)
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool = True
+
+
 class AdminActionResponse(BaseModel):
     message: str
 

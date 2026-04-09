@@ -65,6 +65,29 @@ export async function getAdminDashboard(token) {
   return parseResponse(response)
 }
 
+export async function getAdminDepartments(token) {
+  const response = await fetch(`${API_URL}/admin/departments`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function createAdminDepartment(token, payload) {
+  const response = await fetch(`${API_URL}/admin/departments`, buildJsonOptions(token, 'POST', payload))
+
+  return parseResponse(response)
+}
+
+export async function updateAdminDepartment(token, departmentId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/departments/${departmentId}`,
+    buildJsonOptions(token, 'PATCH', payload),
+  )
+
+  return parseResponse(response)
+}
+
 export async function getAdminSurveys(token) {
   const response = await fetch(`${API_URL}/admin/surveys`, {
     headers: buildHeaders(token),

@@ -47,6 +47,17 @@ export function AdminLayout() {
             </svg>
             Pesquisas
           </NavLink>
+          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/departments">
+            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M4 21h16" />
+              <path d="M6 21V7l6-4 6 4v14" />
+              <path d="M9 10h.01" />
+              <path d="M15 10h.01" />
+              <path d="M9 14h.01" />
+              <path d="M15 14h.01" />
+            </svg>
+            Departamentos
+          </NavLink>
         </nav>
 
         <div className="admin-user-card">

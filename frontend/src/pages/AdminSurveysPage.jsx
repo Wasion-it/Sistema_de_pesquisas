@@ -432,9 +432,6 @@ export function AdminSurveysPage() {
                   <div>
                     <strong>{survey.name}</strong>
                     <span>{survey.code} · {survey.category}</span>
-                    <Link className="inline-link" to={`/admin/surveys/${survey.id}`} style={{ marginTop: 4, display: 'inline-block', fontSize: 12 }}>
-                      Gerenciar →
-                    </Link>
                   </div>
                   <div>
                     <strong style={{ fontSize: 13 }}>{survey.current_version ?? '—'}</strong>
@@ -467,15 +464,24 @@ export function AdminSurveysPage() {
                     </span>
                   </div>
                   <div>
-                    <button
-                      className="danger-button"
-                      type="button"
-                      onClick={() => handleDeleteSurvey(survey)}
-                      disabled={deletingSurveyId === survey.id}
-                      style={{ padding: '8px 12px', fontSize: 12 }}
-                    >
-                      {deletingSurveyId === survey.id ? 'Excluindo...' : 'Excluir'}
-                    </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      <Link
+                        className="secondary-link-button"
+                        to={`/admin/surveys/${survey.id}`}
+                        style={{ padding: '8px 12px', fontSize: 12 }}
+                      >
+                        Gerenciar campanha
+                      </Link>
+                      <button
+                        className="danger-button"
+                        type="button"
+                        onClick={() => handleDeleteSurvey(survey)}
+                        disabled={deletingSurveyId === survey.id}
+                        style={{ padding: '8px 12px', fontSize: 12 }}
+                      >
+                        {deletingSurveyId === survey.id ? 'Excluindo...' : 'Excluir'}
+                      </button>
+                    </div>
                   </div>
                 </article>
               )

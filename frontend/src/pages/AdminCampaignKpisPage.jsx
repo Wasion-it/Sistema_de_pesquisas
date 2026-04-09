@@ -128,11 +128,11 @@ function computeKpis(pageData) {
     .map((q) => ({
       code: q.code,
       text: q.text,
-      avg: q.weightedScores.reduce((sum, value) => sum + value, 0) / (q.weightedScores.length * q.scoreWeight),
+      avg: ((q.scores.reduce((sum, value) => sum + value, 0) / q.scores.length) / q.scaleMax) * q.scoreWeight,
       count: q.scores.length,
       scoreWeight: q.scoreWeight,
       isNegative: q.isNegative,
-      maxScore: q.scaleMax,
+      maxScore: q.scoreWeight,
     }))
     .sort((a, b) => b.avg - a.avg)
 

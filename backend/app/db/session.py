@@ -54,10 +54,30 @@ def _ensure_survey_question_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_department_columns() -> None:
+    inspector = inspect(engine)
+    if "departments" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("departments")}
+    statements: list[str] = []
+
+    if "total_people" not in existing_columns:
+        statements.append("ALTER TABLE departments ADD COLUMN total_people INTEGER NOT NULL DEFAULT 0")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
 def create_tables() -> None:
     import_all_models()
     Base.metadata.create_all(bind=engine)
     _ensure_survey_question_columns()
+    _ensure_department_columns()
 
 
 def get_db() -> Generator[Session, None, None]:

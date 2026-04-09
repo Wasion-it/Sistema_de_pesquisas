@@ -755,7 +755,7 @@ export function AdminSurveyDetailPage() {
                     </label>
                     <label className="checkbox-field">
                       <input checked={questionForm.isNegative} name="isNegative" type="checkbox" onChange={handleQuestionFieldChange} />
-                      <span>Pergunta negativa com pontuacao invertida</span>
+                      <span>Pontuação Invertida</span>
                     </label>
                   </div>
                 ) : null}

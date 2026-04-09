@@ -278,7 +278,7 @@ export function AdminSurveysPage() {
                       type="checkbox"
                       onChange={handleFieldChange}
                     />
-                    <span>Pesquisa ativa para configuração</span>
+                    <span>Pesquisa ativa</span>
                   </label>
                 </div>
 

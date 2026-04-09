@@ -8,6 +8,7 @@ const INITIAL_FORM = {
   code: '',
   name: '',
   description: '',
+  totalPeople: '0',
   isActive: true,
 }
 
@@ -21,6 +22,7 @@ function buildForm(department) {
     code: department.code,
     name: department.name,
     description: department.description ?? '',
+    totalPeople: String(department.total_people ?? 0),
     isActive: department.is_active,
   }
 }
@@ -105,6 +107,7 @@ export function AdminDepartmentsPage() {
       code: formValues.code,
       name: formValues.name,
       description: formValues.description || null,
+      total_people: Number(formValues.totalPeople || 0),
       is_active: formValues.isActive,
     }
 
@@ -185,6 +188,18 @@ export function AdminDepartmentsPage() {
                 />
               </label>
 
+              <label className="field-group">
+                <span>Quantidade de pessoas no departamento</span>
+                <input
+                  min="0"
+                  name="totalPeople"
+                  placeholder="Ex: 42"
+                  type="number"
+                  value={formValues.totalPeople}
+                  onChange={handleFieldChange}
+                />
+              </label>
+
               <label className="flag-toggle">
                 <input checked={formValues.isActive} name="isActive" type="checkbox" onChange={handleFieldChange} />
                 <span>Departamento ativo</span>
@@ -192,7 +207,7 @@ export function AdminDepartmentsPage() {
 
               <button
                 className="primary-button full-width-button"
-                disabled={isSubmitting || formValues.code.trim().length < 2 || formValues.name.trim().length < 2}
+                disabled={isSubmitting || formValues.code.trim().length < 2 || formValues.name.trim().length < 2 || Number(formValues.totalPeople) < 0}
                 type="submit"
               >
                 {isSubmitting ? 'Salvando...' : formValues.id ? 'Salvar alterações' : 'Cadastrar departamento'}
@@ -228,6 +243,7 @@ export function AdminDepartmentsPage() {
                     <div>
                       <strong>{department.name}</strong>
                       <span>{department.code} · {department.is_active ? 'Ativo' : 'Inativo'}</span>
+                      <span style={{ color: 'var(--slate-500)', fontSize: 13 }}>Base cadastrada: {department.total_people ?? 0} pessoa(s)</span>
                       {department.description ? (
                         <span style={{ color: 'var(--slate-500)', fontSize: 13, lineHeight: 1.5 }}>{department.description}</span>
                       ) : null}

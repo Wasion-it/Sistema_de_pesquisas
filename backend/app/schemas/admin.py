@@ -56,6 +56,7 @@ class DepartmentManagementItemResponse(BaseModel):
     code: str
     name: str
     description: str | None
+    total_people: int
     is_active: bool
     updated_at: datetime
 
@@ -68,6 +69,7 @@ class DepartmentCreateRequest(BaseModel):
     code: str = Field(min_length=2, max_length=50)
     name: str = Field(min_length=2, max_length=120)
     description: str | None = Field(default=None, max_length=1000)
+    total_people: int = Field(default=0, ge=0, le=1000000)
     is_active: bool = True
 
 
@@ -75,6 +77,7 @@ class DepartmentUpdateRequest(BaseModel):
     code: str = Field(min_length=2, max_length=50)
     name: str = Field(min_length=2, max_length=120)
     description: str | None = Field(default=None, max_length=1000)
+    total_people: int = Field(default=0, ge=0, le=1000000)
     is_active: bool = True
 
 
@@ -239,6 +242,15 @@ class CampaignResponsesSummaryResponse(BaseModel):
     draft_responses: int
 
 
+class CampaignDepartmentProgressResponse(BaseModel):
+    department_id: int
+    department_name: str
+    total_people: int
+    submitted_responses: int
+    pending_people: int
+    participation_rate: float
+
+
 class CampaignResponsesPageResponse(BaseModel):
     campaign: CampaignSummaryResponse
     survey_id: int
@@ -249,6 +261,7 @@ class CampaignResponsesPageResponse(BaseModel):
     total_questions: int
     questions: list[SurveyQuestionResponse]
     summary: CampaignResponsesSummaryResponse
+    department_progress: list[CampaignDepartmentProgressResponse]
     responses: list[CampaignResponseEntryResponse]
 
 

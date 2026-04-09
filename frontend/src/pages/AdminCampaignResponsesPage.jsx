@@ -68,6 +68,7 @@ export function AdminCampaignResponsesPage() {
 
   const campaign = pageData?.campaign
   const summary = pageData?.summary
+  const departmentProgress = pageData?.department_progress ?? []
   const responses = pageData?.responses ?? []
 
   return (
@@ -138,6 +139,36 @@ export function AdminCampaignResponsesPage() {
               <span>Rascunhos</span>
               <strong>{summary?.draft_responses ?? 0}</strong>
             </article>
+          </section>
+
+          <section className="admin-panel-card">
+            <div className="panel-header-row">
+              <div>
+                <h3>Adesão por departamento</h3>
+                <p>Compara respostas enviadas com a base cadastrada em cada departamento.</p>
+              </div>
+            </div>
+
+            {departmentProgress.length === 0 ? (
+              <div className="empty-state">
+                <strong>Sem dados por departamento</strong>
+                <span>As participações ainda não geraram respostas com departamento identificado.</span>
+              </div>
+            ) : (
+              <div className="stack-list">
+                {departmentProgress.map((item) => (
+                  <article className="stack-item-card" key={item.department_id}>
+                    <div>
+                      <strong>{item.department_name}</strong>
+                      <span>{item.submitted_responses} enviada(s) de {item.total_people} pessoa(s)</span>
+                      <span style={{ color: 'var(--slate-500)', fontSize: 13 }}>
+                        Pendentes: {item.pending_people} · Adesão: {item.participation_rate.toFixed(1)}%
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="admin-panel-card">

@@ -35,6 +35,7 @@ from app.models import (
 from app.schemas.admin import (
     AdminActionResponse,
     CampaignResponseAnswerResponse,
+    CampaignDepartmentProgressResponse,
     CampaignResponseEntryResponse,
     CampaignResponsesPageResponse,
     CampaignResponsesSummaryResponse,
@@ -131,9 +132,61 @@ def _serialize_department(department: Department) -> DepartmentManagementItemRes
         code=department.code,
         name=department.name,
         description=department.description,
+        total_people=department.total_people,
         is_active=department.is_active,
         updated_at=department.updated_at,
     )
+
+
+def _build_department_progress(
+    departments: list[Department],
+    responses: list[Response],
+) -> list[CampaignDepartmentProgressResponse]:
+    grouped: dict[int, dict[str, int | str]] = {
+        department.id: {
+            "department_name": department.name,
+            "total_people": max(department.total_people, 0),
+            "submitted_responses": 0,
+        }
+        for department in departments
+    }
+
+    for response in responses:
+        employee = response.employee
+        department = employee.department if employee is not None else None
+        if department is None:
+            continue
+
+        current = grouped.get(department.id)
+        if current is None:
+            current = {
+                "department_name": department.name,
+                "total_people": max(department.total_people, 0),
+                "submitted_responses": 0,
+            }
+            grouped[department.id] = current
+
+        if response.status == ResponseStatusEnum.SUBMITTED:
+            current["submitted_responses"] = int(current["submitted_responses"]) + 1
+
+    items: list[CampaignDepartmentProgressResponse] = []
+    for department_id, values in grouped.items():
+        total_people = int(values["total_people"])
+        submitted_responses = int(values["submitted_responses"])
+        pending_people = max(total_people - submitted_responses, 0)
+        participation_rate = 0.0 if total_people <= 0 else round((submitted_responses / total_people) * 100, 1)
+        items.append(
+            CampaignDepartmentProgressResponse(
+                department_id=department_id,
+                department_name=str(values["department_name"]),
+                total_people=total_people,
+                submitted_responses=submitted_responses,
+                pending_people=pending_people,
+                participation_rate=participation_rate,
+            )
+        )
+
+    return sorted(items, key=lambda item: (item.department_name.casefold(), item.department_id))
 
 
 def _serialize_campaign_response(response: Response) -> CampaignResponseEntryResponse:
@@ -391,6 +444,7 @@ def create_admin_department(
         code=normalized_code,
         name=normalized_name,
         description=payload.description.strip() if payload.description else None,
+        total_people=payload.total_people,
         is_active=payload.is_active,
     )
     db.add(department)
@@ -436,6 +490,7 @@ def update_admin_department(
     department.code = normalized_code
     department.name = normalized_name
     department.description = payload.description.strip() if payload.description else None
+    department.total_people = payload.total_people
     department.is_active = payload.is_active
     db.add(
         AuditLog(
@@ -482,6 +537,9 @@ def read_admin_campaign_responses(
             .selectinload(SurveyVersion.questions)
             .selectinload(SurveyQuestion.options),
             selectinload(Campaign.responses)
+            .selectinload(Response.employee)
+            .selectinload(Employee.department),
+            selectinload(Campaign.responses)
             .selectinload(Response.items)
             .selectinload(ResponseItem.question),
             selectinload(Campaign.responses)
@@ -494,9 +552,11 @@ def read_admin_campaign_responses(
     if campaign is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
 
+    departments = db.scalars(select(Department).order_by(Department.name.asc(), Department.id.asc())).all()
     responses = sorted(campaign.responses, key=lambda item: item.started_at, reverse=True)
     submitted_responses = sum(1 for item in responses if item.status == ResponseStatusEnum.SUBMITTED)
     draft_responses = sum(1 for item in responses if item.status == ResponseStatusEnum.DRAFT)
+    department_progress = _build_department_progress(departments, responses)
 
     return CampaignResponsesPageResponse(
         campaign=_serialize_campaign(campaign),
@@ -516,6 +576,7 @@ def read_admin_campaign_responses(
             submitted_responses=submitted_responses,
             draft_responses=draft_responses,
         ),
+        department_progress=department_progress,
         responses=[_serialize_campaign_response(response) for response in responses],
     )
 

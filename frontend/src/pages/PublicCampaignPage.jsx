@@ -33,6 +33,7 @@ export function PublicCampaignPage() {
   const navigate = useNavigate()
   const [campaign, setCampaign] = useState(null)
   const [participation, setParticipation] = useState(null)
+  const [participantProfile, setParticipantProfile] = useState({ departmentId: '', jobTitleId: '' })
   const [answers, setAnswers] = useState({})
   const [errorMessage, setErrorMessage] = useState('')
   const [startErrorMessage, setStartErrorMessage] = useState('')
@@ -86,7 +87,10 @@ export function PublicCampaignPage() {
     setIsStarting(true)
     setStartErrorMessage('')
     try {
-      const data = await startPublishedCampaignParticipation(campaignId)
+      const data = await startPublishedCampaignParticipation(campaignId, {
+        department_id: Number(participantProfile.departmentId),
+        job_title_id: Number(participantProfile.jobTitleId),
+      })
       setParticipation(data)
       setAnswers(buildInitialAnswers(data))
     } catch (error) {
@@ -98,6 +102,14 @@ export function PublicCampaignPage() {
 
   function handleAnswerChange(questionId, field, value) {
     setAnswers((cur) => ({ ...cur, [questionId]: { ...cur[questionId], [field]: value } }))
+  }
+
+  function handleParticipantProfileChange(event) {
+    const { name, value } = event.target
+    setParticipantProfile((current) => ({
+      ...current,
+      [name]: value,
+    }))
   }
 
   async function handleSubmitResponses(event) {
@@ -117,6 +129,8 @@ export function PublicCampaignPage() {
       })
       await submitPublishedCampaignResponse(campaignId, {
         response_id: participation.response_id,
+        department_id: participantProfile.departmentId ? Number(participantProfile.departmentId) : null,
+        job_title_id: participantProfile.jobTitleId ? Number(participantProfile.jobTitleId) : null,
         answers: payloadAnswers,
       })
       navigate(`/campaigns/${campaignId}/thank-you`, { replace: true })
@@ -288,9 +302,39 @@ export function PublicCampaignPage() {
             </div>
 
             {availability.isOpen ? (
-              <form onSubmit={handleStartParticipation}>
+              <form className="collab-start-form" onSubmit={handleStartParticipation}>
+                <div className="form-grid two-columns">
+                  <label className="field-group">
+                    <span>Departamento</span>
+                    <select name="departmentId" value={participantProfile.departmentId} onChange={handleParticipantProfileChange}>
+                      <option value="">Selecione o departamento</option>
+                      {campaign.available_departments?.map((department) => (
+                        <option key={department.id} value={department.id}>
+                          {department.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="field-group">
+                    <span>Posição</span>
+                    <select name="jobTitleId" value={participantProfile.jobTitleId} onChange={handleParticipantProfileChange}>
+                      <option value="">Selecione a posição</option>
+                      {campaign.available_job_titles?.map((jobTitle) => (
+                        <option key={jobTitle.id} value={jobTitle.id}>
+                          {jobTitle.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <p className="collab-start-hint">
+                  Essas informações são usadas apenas para segmentação analítica. Nome e e-mail não são coletados nesta etapa.
+                </p>
+
                 {startErrorMessage && <div className="form-error" style={{ marginBottom: 14 }}>{startErrorMessage}</div>}
-                <button className="collab-start-button" disabled={isStarting} type="submit">
+                <button className="collab-start-button" disabled={isStarting || !participantProfile.departmentId || !participantProfile.jobTitleId} type="submit">
                   {isStarting ? (
                     <>
                       <svg width="16" height="16" style={{ animation: 'spin .7s linear infinite' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

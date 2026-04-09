@@ -58,6 +58,13 @@ class PublicCampaignDetailResponse(BaseModel):
     version_title: str
     version_description: str | None
     total_questions: int
+    available_departments: list["PublicLookupOptionResponse"]
+    available_job_titles: list["PublicLookupOptionResponse"]
+
+
+class PublicLookupOptionResponse(BaseModel):
+    id: int
+    name: str
 
 
 class PublicQuestionOptionResponse(BaseModel):
@@ -89,7 +96,8 @@ class PublicResponseAnswerResponse(BaseModel):
 
 
 class PublicCampaignStartRequest(BaseModel):
-    pass
+    department_id: int
+    job_title_id: int
 
 
 class PublicCampaignStartResponse(BaseModel):
@@ -112,6 +120,8 @@ class PublicCampaignAnswerInput(BaseModel):
 
 class PublicCampaignSubmitRequest(BaseModel):
     response_id: int | None = None
+    department_id: int | None = None
+    job_title_id: int | None = None
     answers: list[PublicCampaignAnswerInput]
 
 

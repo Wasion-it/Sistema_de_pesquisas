@@ -56,18 +56,24 @@ function computeKpis(pageData) {
       const question = questionMetaMap.get(answer.question_id)
       const effectiveScore = getEffectiveScaleScore(question, answer.numeric_answer)
       const scoreWeight = question?.score_weight ?? 1
+      const weightedScore = effectiveScore != null ? effectiveScore * scoreWeight : null
 
       return {
         ...answer,
         effectiveScore,
         scoreWeight,
+        weightedScore,
+        scaleMax: question?.scale_max ?? 5,
       }
     })
     .filter((answer) => answer.effectiveScore != null)
 
   const totalScaleWeight = scaleItems.reduce((sum, item) => sum + item.scoreWeight, 0)
   const avgScore = totalScaleWeight > 0
-    ? scaleItems.reduce((sum, item) => sum + (item.effectiveScore * item.scoreWeight), 0) / totalScaleWeight
+    ? scaleItems.reduce((sum, item) => sum + item.weightedScore, 0) / totalScaleWeight
+    : null
+  const avgScoreReference = totalScaleWeight > 0
+    ? scaleItems.reduce((sum, item) => sum + (item.scaleMax * item.scoreWeight), 0) / totalScaleWeight
     : null
 
   // Distribuição Likert (1 a 5)
@@ -99,7 +105,7 @@ function computeKpis(pageData) {
     enps = Math.round(((promoters - detractors) / total) * 100)
   }
 
-  // Score por pergunta
+  // Risco por pergunta
   const questionMap = {}
   scaleItems.forEach((a) => {
     const key = a.question_code
@@ -110,6 +116,7 @@ function computeKpis(pageData) {
         scores: [],
         scoreWeight: a.scoreWeight,
         isNegative: questionMetaMap.get(a.question_id)?.is_negative ?? false,
+        scaleMax: questionMetaMap.get(a.question_id)?.scale_max ?? 5,
       }
     }
     questionMap[key].scores.push(a.effectiveScore)
@@ -119,10 +126,11 @@ function computeKpis(pageData) {
     .map((q) => ({
       code: q.code,
       text: q.text,
-      avg: q.scores.reduce((s, v) => s + v, 0) / q.scores.length,
+      avg: q.scoreWeight,
       count: q.scores.length,
       scoreWeight: q.scoreWeight,
       isNegative: q.isNegative,
+      maxScore: Math.max(...Object.values(questionMap).map((item) => item.scoreWeight), 1),
     }))
     .sort((a, b) => b.avg - a.avg)
 
@@ -130,6 +138,7 @@ function computeKpis(pageData) {
     adhesionRate,
     completionRate,
     avgScore,
+    avgScoreReference,
     likertDist,
     likertTotal,
     enps,
@@ -248,12 +257,12 @@ function QuestionRanking({ questions }) {
   if (questions.length === 0) {
     return <div className="empty-state"><strong>Sem perguntas de escala</strong></div>
   }
-  const max = 5
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       {questions.map((q, i) => {
-        const pct = (q.avg / max) * 100
-        const color = q.avg >= 4 ? '#16a34a' : q.avg >= 3 ? '#d97706' : '#dc2626'
+        const ratio = q.maxScore > 0 ? q.avg / q.maxScore : 0
+        const pct = ratio * 100
+        const color = ratio >= 0.8 ? '#16a34a' : ratio >= 0.6 ? '#d97706' : '#dc2626'
         return (
           <div key={q.code} style={{ display: 'grid', gap: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
@@ -387,13 +396,13 @@ export function AdminCampaignKpisPage() {
               color={kpis.completionRate >= 85 ? '#16a34a' : '#d97706'}
             />
             <MetricCard
-              label="Score médio geral"
+              label="Risco médio geral"
               value={kpis.avgScore != null ? fmtScore(kpis.avgScore) : '—'}
-              sub="escala 1–5"
+              sub={kpis.avgScoreReference != null ? `média ponderada pelo peso · máximo ${fmtScore(kpis.avgScoreReference)}` : 'classificação de risco'}
               color={
                 kpis.avgScore == null ? undefined
-                  : kpis.avgScore >= 4 ? '#16a34a'
-                  : kpis.avgScore >= 3 ? '#d97706'
+                  : (kpis.avgScoreReference ? kpis.avgScore / kpis.avgScoreReference : 0) >= 0.8 ? '#16a34a'
+                  : (kpis.avgScoreReference ? kpis.avgScore / kpis.avgScoreReference : 0) >= 0.6 ? '#d97706'
                   : '#dc2626'
               }
             />
@@ -491,8 +500,8 @@ export function AdminCampaignKpisPage() {
           <article className="admin-panel-card">
             <div className="panel-header-row" style={{ marginBottom: 20 }}>
               <div>
-                <h3>Score por pergunta</h3>
-                <p>Média de respostas em escala 1–5 — ordenado do maior para o menor score</p>
+                <h3>Risco por pergunta</h3>
+                <p>O risco por pergunta considera a média do peso configurado como classificação de risco</p>
               </div>
             </div>
             <QuestionRanking questions={kpis.questionScores} />

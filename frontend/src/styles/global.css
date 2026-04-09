@@ -513,6 +513,18 @@ p { color: var(--slate-600); line-height: 1.7; }
   border: 1px solid var(--slate-200);
 }
 
+.collab-start-form {
+  display: grid;
+  gap: 16px;
+}
+
+.collab-start-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--slate-500);
+}
+
 .collab-meta-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 
 .collab-meta-label {

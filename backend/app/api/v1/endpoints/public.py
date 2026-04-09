@@ -32,6 +32,7 @@ from app.schemas.public import (
     PublicCampaignAnswerInput,
     PublicCampaignDetailResponse,
     PublicCampaignQuestionResponse,
+    PublicLookupOptionResponse,
     PublicCampaignStartRequest,
     PublicCampaignStartResponse,
     PublicCampaignItemResponse,
@@ -138,14 +139,61 @@ def _ensure_campaign_available(campaign: Campaign) -> None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campaign is outside the participation window")
 
 
-def _build_campaign_detail(campaign: Campaign) -> PublicCampaignDetailResponse:
-    return PublicCampaignDetailResponse(
-        **_serialize_public_campaign(campaign).model_dump(),
-        version_description=campaign.survey_version.description,
+def _list_active_departments(db: Session) -> list[Department]:
+    return list(
+        db.scalars(
+            select(Department)
+            .where(Department.is_active.is_(True))
+            .order_by(Department.name.asc())
+        ).all()
     )
 
 
-def _build_participation_payload(campaign: Campaign, response: Response, audience: CampaignAudience) -> PublicCampaignStartResponse:
+def _list_active_job_titles(db: Session) -> list[JobTitle]:
+    return list(
+        db.scalars(
+            select(JobTitle)
+            .where(JobTitle.is_active.is_(True))
+            .order_by(JobTitle.name.asc())
+        ).all()
+    )
+
+
+def _get_participation_profile(
+    db: Session,
+    department_id: int,
+    job_title_id: int,
+) -> tuple[Department, JobTitle]:
+    department = db.scalar(
+        select(Department)
+        .where(Department.id == department_id)
+        .where(Department.is_active.is_(True))
+    )
+    job_title = db.scalar(
+        select(JobTitle)
+        .where(JobTitle.id == job_title_id)
+        .where(JobTitle.is_active.is_(True))
+    )
+
+    if department is None or job_title is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selecione um departamento e uma posição válidos")
+
+    return department, job_title
+
+
+def _build_campaign_detail(campaign: Campaign, db: Session) -> PublicCampaignDetailResponse:
+    departments = _list_active_departments(db)
+    job_titles = _list_active_job_titles(db)
+
+    return PublicCampaignDetailResponse(
+        **_serialize_public_campaign(campaign).model_dump(),
+        version_description=campaign.survey_version.description,
+        available_departments=[PublicLookupOptionResponse(id=item.id, name=item.name) for item in departments],
+        available_job_titles=[PublicLookupOptionResponse(id=item.id, name=item.name) for item in job_titles],
+    )
+
+
+def _build_participation_payload(campaign: Campaign, response: Response, audience: CampaignAudience, db: Session) -> PublicCampaignStartResponse:
     active_questions = sorted(
         [question for question in campaign.survey_version.questions if question.is_active],
         key=lambda item: item.display_order,
@@ -158,13 +206,13 @@ def _build_participation_payload(campaign: Campaign, response: Response, audienc
         participant_name=None if campaign.is_anonymous else audience.employee_name_snapshot,
         participant_email=None if campaign.is_anonymous else audience.work_email_snapshot,
         started_at=response.started_at,
-        campaign=_build_campaign_detail(campaign),
+        campaign=_build_campaign_detail(campaign, db),
         questions=[_serialize_public_question(question) for question in active_questions],
         answers=[_serialize_public_answer(item) for item in existing_items],
     )
 
 
-def _build_transient_participation_payload(campaign: Campaign) -> PublicCampaignStartResponse:
+    def _build_transient_participation_payload(campaign: Campaign, db: Session) -> PublicCampaignStartResponse:
     active_questions = sorted(
         [question for question in campaign.survey_version.questions if question.is_active],
         key=lambda item: item.display_order,
@@ -176,18 +224,18 @@ def _build_transient_participation_payload(campaign: Campaign) -> PublicCampaign
         participant_name=None,
         participant_email=None,
         started_at=_utc_now_naive(),
-        campaign=_build_campaign_detail(campaign),
+        campaign=_build_campaign_detail(campaign, db),
         questions=[_serialize_public_question(question) for question in active_questions],
         answers=[],
     )
 
 
-def _create_anonymous_participation(db: Session, campaign: Campaign) -> tuple[CampaignAudience, Response]:
-    department = db.scalar(select(Department).where(Department.is_active.is_(True)).order_by(Department.id.asc()))
-    job_title = db.scalar(select(JobTitle).where(JobTitle.is_active.is_(True)).order_by(JobTitle.id.asc()))
-
-    if department is None or job_title is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Anonymous participation could not be initialized")
+def _create_anonymous_participation(
+    db: Session,
+    campaign: Campaign,
+    department: Department,
+    job_title: JobTitle,
+) -> tuple[CampaignAudience, Response]:
 
     token = uuid4().hex[:12].upper()
     anonymous_email = f"anonymous-{campaign.id}-{token.lower()}@local.invalid"
@@ -312,7 +360,7 @@ def read_published_campaign_detail(
     if campaign is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
 
-    return _build_campaign_detail(campaign)
+    return _build_campaign_detail(campaign, db)
 
 
 @router.post("/campaigns/published/{campaign_id}/start", response_model=PublicCampaignStartResponse)
@@ -326,11 +374,12 @@ def start_public_campaign_participation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
 
     _ensure_campaign_available(campaign)
+    department, job_title = _get_participation_profile(db, payload.department_id, payload.job_title_id)
 
     if not campaign.allows_draft:
-        return _build_transient_participation_payload(campaign)
+        return _build_transient_participation_payload(campaign, db)
 
-    audience, response = _create_anonymous_participation(db, campaign)
+    audience, response = _create_anonymous_participation(db, campaign, department, job_title)
 
     db.commit()
 
@@ -350,7 +399,7 @@ def start_public_campaign_participation(
     if refreshed_audience is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Participation could not be initialized")
 
-    return _build_participation_payload(refreshed_campaign, refreshed_response, refreshed_audience)
+    return _build_participation_payload(refreshed_campaign, refreshed_response, refreshed_audience, db)
 
 
 @router.post("/campaigns/published/{campaign_id}/submit", response_model=PublicCampaignSubmitResponse)
@@ -419,7 +468,11 @@ def submit_public_campaign_response(
         if response.status == ResponseStatusEnum.SUBMITTED:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This response was already submitted")
     else:
-        audience, response = _create_anonymous_participation(db, campaign)
+        if payload.department_id is None or payload.job_title_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Departamento e posição são obrigatórios para iniciar a pesquisa")
+
+        department, job_title = _get_participation_profile(db, payload.department_id, payload.job_title_id)
+        audience, response = _create_anonymous_participation(db, campaign, department, job_title)
 
     existing_items = {item.question_id: item for item in response.items}
     for question_id, answer in answers_by_question_id.items():

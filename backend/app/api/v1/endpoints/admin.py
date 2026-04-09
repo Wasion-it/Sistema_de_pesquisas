@@ -557,6 +557,7 @@ def read_admin_campaign_responses(
     submitted_responses = sum(1 for item in responses if item.status == ResponseStatusEnum.SUBMITTED)
     draft_responses = sum(1 for item in responses if item.status == ResponseStatusEnum.DRAFT)
     department_progress = _build_department_progress(departments, responses)
+    target_population = sum(item.total_people for item in department_progress)
 
     return CampaignResponsesPageResponse(
         campaign=_serialize_campaign(campaign),
@@ -571,7 +572,7 @@ def read_admin_campaign_responses(
             for question in sorted(campaign.survey_version.questions, key=lambda item: item.display_order)
         ],
         summary=CampaignResponsesSummaryResponse(
-            audience_count=len(campaign.audiences),
+            audience_count=target_population,
             total_responses=len(responses),
             submitted_responses=submitted_responses,
             draft_responses=draft_responses,

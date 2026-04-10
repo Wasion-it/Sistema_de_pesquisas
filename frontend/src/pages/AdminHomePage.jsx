@@ -41,10 +41,23 @@ const ADMIN_MODULES = [
     ),
   },
   {
-    title: 'Solicitações RH',
-    description: 'Acesse os módulos de admissão e demissão já configurados.',
+    title: 'Admissão',
+    description: 'Acesse a fila de solicitações de admissão.',
     to: '/admin/admission-requests',
     accent: 'amber',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 12H4" />
+        <path d="M20 6H4" />
+        <path d="M20 18H4" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Demissão',
+    description: 'Acesse a fila de solicitações de demissão.',
+    to: '/admin/dismissal-requests',
+    accent: 'slate',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 12H4" />

@@ -1730,6 +1730,68 @@ body:has(.admin-shell) { background: var(--slate-100); }
 
 .admin-toolbar-card { padding: 16px 20px; }
 
+.admin-request-tabs {
+  padding: 16px 18px;
+}
+
+.admin-request-tabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-request-tab {
+  min-width: 160px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--slate-200);
+  background: linear-gradient(180deg, #fff 0%, var(--slate-50) 100%);
+  color: var(--slate-600);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.admin-request-tab span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-request-tab strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--slate-200);
+  color: var(--slate-700);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-request-tab:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--blue-200);
+}
+
+.admin-request-tab.active {
+  border-color: var(--blue-300);
+  background: linear-gradient(180deg, var(--blue-50) 0%, #fff 100%);
+  color: var(--blue-800);
+  box-shadow: 0 8px 18px rgba(37,99,235,.08);
+}
+
+.admin-request-tab.active strong {
+  background: var(--blue-600);
+  color: #fff;
+}
+
 /* Stat cards */
 .dashboard-stats-grid {
   display: grid;

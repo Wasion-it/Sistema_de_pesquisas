@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { getAdminAdmissionRequests } from '../services/admin'
+import { getAdminAdmissionRequests, getAdminDismissalRequests } from '../services/admin'
 
 const STATUS_META = {
   PENDING: { label: 'Pendente', className: 'inactive' },
@@ -32,6 +32,136 @@ const CONTRACT_REGIME_LABELS = {
   PJ: 'PJ',
 }
 
+const DISMISSAL_TYPE_LABELS = {
+  JUST_CAUSE: 'Justa causa',
+  RESIGNATION: 'Pedido de demissão',
+  WITHOUT_JUST_CAUSE: 'Dispensa sem justa causa',
+  TERM_CONTRACT: 'Término de contrato',
+  CONSENSUAL: 'Demissão consensual',
+}
+
+const REQUEST_TABS = {
+  admission: {
+    label: 'Admissão',
+    title: 'Solicitações de admissão',
+    description: 'Controle o fluxo de pedidos de ingresso enviados pelo RH e acompanhe a situação de cada solicitação.',
+    emptyText: 'Quando o RH enviar solicitações de admissão, elas aparecerão aqui.',
+    searchPlaceholder: 'Filtrar por cargo, setor, tipo ou solicitante',
+    fetcher: getAdminAdmissionRequests,
+    getSearchValues(item) {
+      return [
+        item.cargo,
+        item.setor,
+        item.created_by_user_name,
+        item.created_by_user_email,
+        REQUEST_TYPE_LABELS[item.request_type],
+        RECRUITMENT_SCOPE_LABELS[item.recruitment_scope],
+        CONTRACT_REGIME_LABELS[item.contract_regime],
+        item.turno,
+      ]
+    },
+    renderHeaders() {
+      return (
+        <tr>
+          <th>Solicitante</th>
+          <th>Tipo</th>
+          <th>Cargo</th>
+          <th>Setor</th>
+          <th>Qtd.</th>
+          <th>Regime</th>
+          <th>Status</th>
+          <th>Criado em</th>
+        </tr>
+      )
+    },
+    renderRow(item) {
+      const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
+
+      return (
+        <tr key={item.id}>
+          <td>
+            <strong>{item.created_by_user_name}</strong>
+            <span>{item.created_by_user_email}</span>
+          </td>
+          <td>{REQUEST_TYPE_LABELS[item.request_type] ?? item.request_type}</td>
+          <td>
+            <strong>{item.cargo}</strong>
+            <span>{RECRUITMENT_SCOPE_LABELS[item.recruitment_scope] ?? item.recruitment_scope}</span>
+          </td>
+          <td>
+            <strong>{item.setor}</strong>
+            <span>{item.turno}</span>
+          </td>
+          <td>{item.quantity_people}</td>
+          <td>{CONTRACT_REGIME_LABELS[item.contract_regime] ?? item.contract_regime}</td>
+          <td>
+            <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
+          </td>
+          <td>{formatDateTime(item.created_at)}</td>
+        </tr>
+      )
+    },
+  },
+  dismissal: {
+    label: 'Demissão',
+    title: 'Solicitações de demissão',
+    description: 'Acompanhe desligamentos e mantenha o time de RH com visibilidade do status de cada pedido.',
+    emptyText: 'Quando o RH enviar solicitações de demissão, elas aparecerão aqui.',
+    searchPlaceholder: 'Filtrar por colaborador, cargo, departamento ou solicitante',
+    fetcher: getAdminDismissalRequests,
+    getSearchValues(item) {
+      return [
+        item.employee_name,
+        item.cargo,
+        item.departamento,
+        item.created_by_user_name,
+        item.created_by_user_email,
+        DISMISSAL_TYPE_LABELS[item.dismissal_type],
+        CONTRACT_REGIME_LABELS[item.contract_regime],
+        item.has_replacement ? 'Sim' : 'Não',
+      ]
+    },
+    renderHeaders() {
+      return (
+        <tr>
+          <th>Solicitante</th>
+          <th>Colaborador</th>
+          <th>Tipo</th>
+          <th>Cargo</th>
+          <th>Departamento</th>
+          <th>Substituição</th>
+          <th>Status</th>
+          <th>Criado em</th>
+        </tr>
+      )
+    },
+    renderRow(item) {
+      const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
+
+      return (
+        <tr key={item.id}>
+          <td>
+            <strong>{item.created_by_user_name}</strong>
+            <span>{item.created_by_user_email}</span>
+          </td>
+          <td>
+            <strong>{item.employee_name}</strong>
+            <span>{CONTRACT_REGIME_LABELS[item.contract_regime] ?? item.contract_regime}</span>
+          </td>
+          <td>{DISMISSAL_TYPE_LABELS[item.dismissal_type] ?? item.dismissal_type}</td>
+          <td>{item.cargo}</td>
+          <td>{item.departamento}</td>
+          <td>{item.has_replacement ? 'Sim' : 'Não'}</td>
+          <td>
+            <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
+          </td>
+          <td>{formatDateTime(item.created_at)}</td>
+        </tr>
+      )
+    },
+  },
+}
+
 function formatDateTime(value) {
   if (!value) return 'Não informado'
   return new Intl.DateTimeFormat('pt-BR', {
@@ -51,25 +181,51 @@ function getSummary(requests) {
 
 export function AdminAdmissionRequestsPage() {
   const { token } = useAuth()
-  const [requests, setRequests] = useState([])
+  const [activeTab, setActiveTab] = useState('admission')
+  const [requestsByTab, setRequestsByTab] = useState({
+    admission: [],
+    dismissal: [],
+  })
   const [query, setQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [errorMessages, setErrorMessages] = useState({
+    admission: '',
+    dismissal: '',
+  })
 
   useEffect(() => {
     let isMounted = true
 
-    getAdminAdmissionRequests(token)
-      .then((data) => {
-        if (isMounted) {
-          setRequests(data.items)
-          setErrorMessage('')
+    Promise.allSettled([
+      REQUEST_TABS.admission.fetcher(token),
+      REQUEST_TABS.dismissal.fetcher(token),
+    ])
+      .then(([admissionResult, dismissalResult]) => {
+        if (!isMounted) return
+
+        const nextRequests = {
+          admission: [],
+          dismissal: [],
         }
-      })
-      .catch((error) => {
-        if (isMounted) {
-          setErrorMessage(error.message)
+        const nextErrors = {
+          admission: '',
+          dismissal: '',
         }
+
+        if (admissionResult.status === 'fulfilled') {
+          nextRequests.admission = admissionResult.value.items ?? []
+        } else {
+          nextErrors.admission = admissionResult.reason?.message ?? 'Erro ao carregar solicitações de admissão.'
+        }
+
+        if (dismissalResult.status === 'fulfilled') {
+          nextRequests.dismissal = dismissalResult.value.items ?? []
+        } else {
+          nextErrors.dismissal = dismissalResult.reason?.message ?? 'Erro ao carregar solicitações de demissão.'
+        }
+
+        setRequestsByTab(nextRequests)
+        setErrorMessages(nextErrors)
       })
       .finally(() => {
         if (isMounted) {
@@ -82,41 +238,58 @@ export function AdminAdmissionRequestsPage() {
     }
   }, [token])
 
+  const activeConfig = REQUEST_TABS[activeTab]
+  const activeRequests = requestsByTab[activeTab]
+
   const filteredRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     if (!normalizedQuery) {
-      return requests
+      return activeRequests
     }
 
-    return requests.filter((item) => (
-      [
-        item.cargo,
-        item.setor,
-        item.created_by_user_name,
-        item.created_by_user_email,
-        REQUEST_TYPE_LABELS[item.request_type],
-      ]
+    return activeRequests.filter((item) => (
+      activeConfig.getSearchValues(item)
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(normalizedQuery))
     ))
-  }, [query, requests])
+  }, [activeConfig, activeRequests, query])
 
   const summary = getSummary(filteredRequests)
+  const activeTabCount = requestsByTab[activeTab].length
 
   return (
     <div className="admin-view">
       <div className="admin-view-header">
         <div>
           <span className="eyebrow">Solicitações RH</span>
-          <h2>Solicitações de admissão</h2>
-          <p>Controle o fluxo de pedidos enviados pelo RH e acompanhe a situação de cada solicitação.</p>
+          <h2>{activeConfig.title}</h2>
+          <p>{activeConfig.description}</p>
         </div>
         <Link className="secondary-link-button" to="/admin">
           Voltar ao início
         </Link>
       </div>
 
-      {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
+      <section className="admin-panel-card admin-request-tabs">
+        <div className="admin-request-tabs-row">
+          {Object.entries(REQUEST_TABS).map(([tabKey, tabConfig]) => {
+            const isActive = tabKey === activeTab
+            return (
+              <button
+                key={tabKey}
+                className={`admin-request-tab ${isActive ? 'active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab(tabKey)}
+              >
+                <span>{tabConfig.label}</span>
+                <strong>{requestsByTab[tabKey].length}</strong>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {errorMessages[activeTab] ? <div className="form-error">{errorMessages[activeTab]}</div> : null}
 
       <section className="dashboard-stats-grid">
         <article className="stat-card">
@@ -141,7 +314,7 @@ export function AdminAdmissionRequestsPage() {
         <label className="field-group">
           <span>Buscar solicitação</span>
           <input
-            placeholder="Filtrar por cargo, setor, tipo ou solicitante"
+            placeholder={activeConfig.searchPlaceholder}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -156,50 +329,16 @@ export function AdminAdmissionRequestsPage() {
         ) : filteredRequests.length === 0 ? (
           <div className="empty-state">
             <strong>Nenhuma solicitação encontrada</strong>
-            <span>Quando o RH enviar solicitações de admissão, elas aparecerão aqui.</span>
+            <span>{activeConfig.emptyText}</span>
           </div>
         ) : (
           <div className="requests-table-wrap">
             <table className="admin-table requests-table">
               <thead>
-                <tr>
-                  <th>Solicitante</th>
-                  <th>Tipo</th>
-                  <th>Cargo</th>
-                  <th>Setor</th>
-                  <th>Qtd.</th>
-                  <th>Regime</th>
-                  <th>Status</th>
-                  <th>Criado em</th>
-                </tr>
+                {activeConfig.renderHeaders()}
               </thead>
               <tbody>
-                {filteredRequests.map((item) => {
-                  const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
-                  return (
-                    <tr key={item.id}>
-                      <td>
-                        <strong>{item.created_by_user_name}</strong>
-                        <span>{item.created_by_user_email}</span>
-                      </td>
-                      <td>{REQUEST_TYPE_LABELS[item.request_type] ?? item.request_type}</td>
-                      <td>
-                        <strong>{item.cargo}</strong>
-                        <span>{RECRUITMENT_SCOPE_LABELS[item.recruitment_scope] ?? item.recruitment_scope}</span>
-                      </td>
-                      <td>
-                        <strong>{item.setor}</strong>
-                        <span>{item.turno}</span>
-                      </td>
-                      <td>{item.quantity_people}</td>
-                      <td>{CONTRACT_REGIME_LABELS[item.contract_regime] ?? item.contract_regime}</td>
-                      <td>
-                        <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
-                      </td>
-                      <td>{formatDateTime(item.created_at)}</td>
-                    </tr>
-                  )
-                })}
+                {filteredRequests.map((item) => activeConfig.renderRow(item))}
               </tbody>
             </table>
           </div>

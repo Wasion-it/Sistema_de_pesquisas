@@ -37,7 +37,14 @@ export function AdminLayout() {
               <rect height="9" rx="1.5" width="9" x="3" y="14" />
               <rect height="9" rx="1.5" width="9" x="14" y="14" />
             </svg>
-            Dashboard
+            Início
+          </NavLink>
+          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dashboard">
+            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M3 13l4-4 4 4 6-6 4 4" />
+              <path d="M21 7v6h-6" />
+            </svg>
+            Indicadores
           </NavLink>
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
             <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">

@@ -10,6 +10,7 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
+import { AdminHomePage } from './pages/AdminHomePage'
 import { HomePage } from './pages/HomePage'
 import { AdmissaoFormPage } from './pages/AdmissaoFormPage'
 import { RequestsPage } from './pages/RequestsPage'
@@ -39,7 +40,8 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<AdminDashboardPage />} />
+            <Route index element={<AdminHomePage />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />
             <Route path="campaigns/:campaignId/kpis" element={<AdminCampaignKpisPage />} />

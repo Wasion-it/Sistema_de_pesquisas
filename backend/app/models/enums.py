@@ -58,3 +58,31 @@ class AuditActionEnum(str, Enum):
     LOGIN = "LOGIN"
     PUBLISH = "PUBLISH"
     SUBMIT = "SUBMIT"
+
+
+class AdmissionRequestStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CANCELED = "CANCELED"
+
+
+class AdmissionRequestTypeEnum(str, Enum):
+    GROWTH = "GROWTH"
+    REPLACEMENT = "REPLACEMENT"
+
+
+class RecruitmentScopeEnum(str, Enum):
+    INTERNAL = "INTERNAL"
+    EXTERNAL = "EXTERNAL"
+    MIXED = "MIXED"
+
+
+class ContractRegimeEnum(str, Enum):
+    TEMPORARY = "TEMPORARY"
+    EFFECTIVE = "EFFECTIVE"
+    INTERN = "INTERN"
+    APPRENTICE = "APPRENTICE"
+    CLT = "CLT"
+    PJ = "PJ"

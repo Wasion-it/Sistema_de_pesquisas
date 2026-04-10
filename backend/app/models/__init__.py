@@ -1,15 +1,20 @@
 from app.models.audit_log import AuditLog
+from app.models.admission_request import AdmissionRequest
 from app.models.campaign import Campaign
 from app.models.campaign_audience import CampaignAudience
 from app.models.department import Department
 from app.models.employee import Employee
 from app.models.enums import (
+    AdmissionRequestStatusEnum,
+    AdmissionRequestTypeEnum,
     AuditActionEnum,
     CampaignAudienceStatusEnum,
     CampaignStatusEnum,
+    ContractRegimeEnum,
     EmployeeStatusEnum,
     QuestionTypeEnum,
     ResponseStatusEnum,
+    RecruitmentScopeEnum,
     RoleEnum,
     SurveyCategoryEnum,
     SurveyVersionStatusEnum,
@@ -25,12 +30,16 @@ from app.models.survey_version import SurveyVersion
 from app.models.user import User
 
 __all__ = [
+    "AdmissionRequest",
+    "AdmissionRequestStatusEnum",
+    "AdmissionRequestTypeEnum",
     "AuditActionEnum",
     "AuditLog",
     "Campaign",
     "CampaignAudience",
     "CampaignAudienceStatusEnum",
     "CampaignStatusEnum",
+    "ContractRegimeEnum",
     "Department",
     "Employee",
     "EmployeeStatusEnum",
@@ -40,6 +49,7 @@ __all__ = [
     "Response",
     "ResponseItem",
     "ResponseStatusEnum",
+    "RecruitmentScopeEnum",
     "RoleEnum",
     "Survey",
     "SurveyCategoryEnum",

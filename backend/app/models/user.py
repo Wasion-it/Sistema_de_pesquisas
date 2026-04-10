@@ -9,6 +9,7 @@ from app.models.enums import RoleEnum
 
 if TYPE_CHECKING:
     from app.models.audit_log import AuditLog
+    from app.models.admission_request import AdmissionRequest
     from app.models.campaign import Campaign
     from app.models.employee import Employee
 
@@ -33,3 +34,4 @@ class User(BaseModel):
     employee = relationship("Employee", back_populates="user", uselist=False)
     created_campaigns = relationship("Campaign", back_populates="created_by_user")
     audit_logs = relationship("AuditLog", back_populates="actor_user")
+    admission_requests = relationship("AdmissionRequest", back_populates="created_by_user")

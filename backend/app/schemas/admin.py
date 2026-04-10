@@ -2,7 +2,15 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import CampaignStatusEnum, QuestionTypeEnum, SurveyVersionStatusEnum
+from app.models.enums import (
+    AdmissionRequestStatusEnum,
+    AdmissionRequestTypeEnum,
+    CampaignStatusEnum,
+    ContractRegimeEnum,
+    QuestionTypeEnum,
+    RecruitmentScopeEnum,
+    SurveyVersionStatusEnum,
+)
 
 
 class DashboardSummaryResponse(BaseModel):
@@ -79,6 +87,44 @@ class DepartmentUpdateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     total_people: int = Field(default=0, ge=0, le=1000000)
     is_active: bool = True
+
+
+class AdmissionRequestCreateRequest(BaseModel):
+    request_type: AdmissionRequestTypeEnum
+    cargo: str = Field(min_length=2, max_length=150)
+    setor: str = Field(min_length=2, max_length=150)
+    recruitment_scope: RecruitmentScopeEnum
+    quantity_people: int = Field(default=1, ge=1, le=1000000)
+    turno: str = Field(min_length=2, max_length=80)
+    contract_regime: ContractRegimeEnum
+    substituted_employee_name: str | None = Field(default=None, max_length=150)
+    justification: str | None = Field(default=None, max_length=5000)
+    manager_reminder: str | None = Field(default=None, max_length=2000)
+
+
+class AdmissionRequestResponse(BaseModel):
+    id: int
+    status: AdmissionRequestStatusEnum
+    request_type: AdmissionRequestTypeEnum
+    cargo: str
+    setor: str
+    recruitment_scope: RecruitmentScopeEnum
+    quantity_people: int
+    turno: str
+    contract_regime: ContractRegimeEnum
+    substituted_employee_name: str | None
+    justification: str | None
+    manager_reminder: str | None
+    created_by_user_id: int
+    created_by_user_name: str
+    created_by_user_email: str
+    submitted_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdmissionRequestListResponse(BaseModel):
+    items: list[AdmissionRequestResponse]
 
 
 class AdminActionResponse(BaseModel):

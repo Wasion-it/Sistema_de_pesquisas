@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session, selectinload
 from app.api.deps import get_current_admin_user
 from app.db.session import get_db
 from app.models import (
+    AdmissionRequest,
+    AdmissionRequestStatusEnum,
+    AdmissionRequestTypeEnum,
     AuditActionEnum,
     AuditLog,
     Campaign,
@@ -34,6 +37,9 @@ from app.models import (
 )
 from app.schemas.admin import (
     AdminActionResponse,
+    AdmissionRequestCreateRequest,
+    AdmissionRequestListResponse,
+    AdmissionRequestResponse,
     CampaignResponseAnswerResponse,
     CampaignDepartmentProgressResponse,
     CampaignResponseEntryResponse,
@@ -135,6 +141,29 @@ def _serialize_department(department: Department) -> DepartmentManagementItemRes
         total_people=department.total_people,
         is_active=department.is_active,
         updated_at=department.updated_at,
+    )
+
+
+def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResponse:
+    return AdmissionRequestResponse(
+        id=item.id,
+        status=item.status,
+        request_type=item.request_type,
+        cargo=item.cargo,
+        setor=item.setor,
+        recruitment_scope=item.recruitment_scope,
+        quantity_people=item.quantity_people,
+        turno=item.turno,
+        contract_regime=item.contract_regime,
+        substituted_employee_name=item.substituted_employee_name,
+        justification=item.justification,
+        manager_reminder=item.manager_reminder,
+        created_by_user_id=item.created_by_user_id,
+        created_by_user_name=item.created_by_user.full_name,
+        created_by_user_email=item.created_by_user.email,
+        submitted_at=item.submitted_at,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
     )
 
 
@@ -464,6 +493,106 @@ def create_admin_department(
     db.commit()
     db.refresh(department)
     return _serialize_department(department)
+
+
+@router.get("/hr/admission-requests", response_model=AdmissionRequestListResponse)
+def read_admin_admission_requests(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionRequestListResponse:
+    items = db.scalars(
+        select(AdmissionRequest)
+        .options(selectinload(AdmissionRequest.created_by_user))
+        .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
+    ).all()
+    return AdmissionRequestListResponse(items=[_serialize_admission_request(item) for item in items])
+
+
+@router.get("/hr/admission-requests/{request_id}", response_model=AdmissionRequestResponse)
+def read_admin_admission_request_detail(
+    request_id: int,
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionRequestResponse:
+    item = db.scalar(
+        select(AdmissionRequest)
+        .options(selectinload(AdmissionRequest.created_by_user))
+        .where(AdmissionRequest.id == request_id)
+    )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    return _serialize_admission_request(item)
+
+
+@router.post("/hr/admission-requests", response_model=AdmissionRequestResponse, status_code=status.HTTP_201_CREATED)
+def create_admin_admission_request(
+    payload: AdmissionRequestCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionRequestResponse:
+    cargo = payload.cargo.strip()
+    setor = payload.setor.strip()
+    turno = payload.turno.strip()
+    substituted_employee_name = payload.substituted_employee_name.strip() if payload.substituted_employee_name else None
+    justification = payload.justification.strip() if payload.justification else None
+    manager_reminder = payload.manager_reminder.strip() if payload.manager_reminder else None
+
+    if payload.request_type == AdmissionRequestTypeEnum.REPLACEMENT and not substituted_employee_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Substituted employee name is required for replacements")
+
+    if payload.request_type == AdmissionRequestTypeEnum.GROWTH and not justification:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Justification is required for growth requests")
+
+    admission_request = AdmissionRequest(
+        status=AdmissionRequestStatusEnum.PENDING,
+        request_type=payload.request_type,
+        cargo=cargo,
+        setor=setor,
+        recruitment_scope=payload.recruitment_scope,
+        quantity_people=payload.quantity_people,
+        turno=turno,
+        contract_regime=payload.contract_regime,
+        substituted_employee_name=substituted_employee_name,
+        justification=justification,
+        manager_reminder=manager_reminder,
+        submitted_at=datetime.now(UTC),
+        created_by_user_id=user.id,
+    )
+
+    db.add(admission_request)
+    db.flush()
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="admission_request",
+            entity_id=str(admission_request.id),
+            description="Admission request created from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "request_id": admission_request.id,
+                    "request_type": admission_request.request_type.value,
+                    "cargo": admission_request.cargo,
+                    "setor": admission_request.setor,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(admission_request)
+
+    loaded_item = db.scalar(
+        select(AdmissionRequest)
+        .options(selectinload(AdmissionRequest.created_by_user))
+        .where(AdmissionRequest.id == admission_request.id)
+    )
+    if loaded_item is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was created but could not be loaded")
+
+    return _serialize_admission_request(loaded_item)
 
 
 @router.patch("/departments/{department_id}", response_model=DepartmentManagementItemResponse)

@@ -23,6 +23,8 @@ from app.models import (
     Department,
     Employee,
     EmployeeStatusEnum,
+    DismissalRequest,
+    DismissalRequestStatusEnum,
     QuestionOption,
     QuestionTypeEnum,
     Response,
@@ -53,6 +55,9 @@ from app.schemas.admin import (
     DashboardRecentSurveyResponse,
     DashboardResponse,
     DashboardSummaryResponse,
+    DismissalRequestCreateRequest,
+    DismissalRequestListResponse,
+    DismissalRequestResponse,
     PublishSurveyRequest,
     QuestionOptionResponse,
     SurveyCreateRequest,
@@ -157,6 +162,27 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         contract_regime=item.contract_regime,
         substituted_employee_name=item.substituted_employee_name,
         justification=item.justification,
+        manager_reminder=item.manager_reminder,
+        created_by_user_id=item.created_by_user_id,
+        created_by_user_name=item.created_by_user.full_name,
+        created_by_user_email=item.created_by_user.email,
+        submitted_at=item.submitted_at,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+    )
+
+
+def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResponse:
+    return DismissalRequestResponse(
+        id=item.id,
+        status=item.status,
+        employee_name=item.employee_name,
+        cargo=item.cargo,
+        departamento=item.departamento,
+        dismissal_type=item.dismissal_type,
+        has_replacement=item.has_replacement,
+        estimated_termination_date=item.estimated_termination_date,
+        contract_regime=item.contract_regime,
         manager_reminder=item.manager_reminder,
         created_by_user_id=item.created_by_user_id,
         created_by_user_name=item.created_by_user.full_name,
@@ -593,6 +619,84 @@ def create_admin_admission_request(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was created but could not be loaded")
 
     return _serialize_admission_request(loaded_item)
+
+
+@router.get("/hr/dismissal-requests", response_model=DismissalRequestListResponse)
+def read_admin_dismissal_requests(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalRequestListResponse:
+    items = db.scalars(
+        select(DismissalRequest)
+        .options(selectinload(DismissalRequest.created_by_user))
+        .order_by(DismissalRequest.submitted_at.desc().nullslast(), DismissalRequest.created_at.desc())
+    ).all()
+    return DismissalRequestListResponse(items=[_serialize_dismissal_request(item) for item in items])
+
+
+@router.post("/hr/dismissal-requests", response_model=DismissalRequestResponse, status_code=status.HTTP_201_CREATED)
+def create_admin_dismissal_request(
+    payload: DismissalRequestCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalRequestResponse:
+    employee_name = payload.employee_name.strip()
+    cargo = payload.cargo.strip()
+    departamento = payload.departamento.strip()
+    reminder = None
+
+    if payload.has_replacement:
+        reminder = (
+            "Caso seja substituição de funcionário, informe ao gestor que ele deve solicitar a demissão do substituído."
+        )
+
+    dismissal_request = DismissalRequest(
+        status=DismissalRequestStatusEnum.PENDING,
+        employee_name=employee_name,
+        cargo=cargo,
+        departamento=departamento,
+        dismissal_type=payload.dismissal_type,
+        has_replacement=payload.has_replacement,
+        estimated_termination_date=payload.estimated_termination_date,
+        contract_regime=payload.contract_regime,
+        manager_reminder=reminder,
+        created_by_user_id=user.id,
+        submitted_at=datetime.now(UTC),
+    )
+
+    db.add(dismissal_request)
+    db.flush()
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="dismissal_request",
+            entity_id=str(dismissal_request.id),
+            description="Dismissal request created from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "request_id": dismissal_request.id,
+                    "employee_name": dismissal_request.employee_name,
+                    "dismissal_type": dismissal_request.dismissal_type.value,
+                    "has_replacement": dismissal_request.has_replacement,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(dismissal_request)
+
+    loaded_item = db.scalar(
+        select(DismissalRequest)
+        .options(selectinload(DismissalRequest.created_by_user))
+        .where(DismissalRequest.id == dismissal_request.id)
+    )
+    if loaded_item is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Dismissal request was created but could not be loaded")
+
+    return _serialize_dismissal_request(loaded_item)
 
 
 @router.patch("/departments/{department_id}", response_model=DepartmentManagementItemResponse)

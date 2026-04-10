@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '../auth/AuthProvider'
+import { createAdminDismissalRequest } from '../services/admin'
+
 const INITIAL_FORM = {
   nome: '',
   cargo: '',
@@ -28,9 +31,29 @@ const REGIME_OPTIONS = [
   'PJ',
 ]
 
+const DismissalTypeMap = {
+  'Justa causa': 'JUST_CAUSE',
+  'Pedido de demissão': 'RESIGNATION',
+  'Dispensa sem justa causa': 'WITHOUT_JUST_CAUSE',
+  'Término de contrato': 'TERM_CONTRACT',
+  'Demissão consensual': 'CONSENSUAL',
+}
+
+const ContractRegimeMap = {
+  'Temporário': 'TEMPORARY',
+  'Efetivo': 'EFFECTIVE',
+  'Estagiário': 'INTERN',
+  'Aprendiz': 'APPRENTICE',
+  CLT: 'CLT',
+  PJ: 'PJ',
+}
+
 export function DemissaoFormPage() {
+  const { isAuthenticated, isLoading, token } = useAuth()
   const [formValues, setFormValues] = useState(INITIAL_FORM)
   const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isSubmitDisabled = useMemo(
     () => Object.values(formValues).some((value) => value.trim().length === 0),
@@ -46,11 +69,40 @@ export function DemissaoFormPage() {
     if (successMessage) {
       setSuccessMessage('')
     }
+    if (errorMessage) {
+      setErrorMessage('')
+    }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    setSuccessMessage('Solicitação de demissão preparada localmente. Integração com backend será o próximo passo.')
+    if (!token || !isAuthenticated) {
+      setErrorMessage('Você precisa estar autenticado no portal administrativo para salvar esta solicitação.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setErrorMessage('')
+
+    try {
+      const payload = {
+        employee_name: formValues.nome.trim(),
+        cargo: formValues.cargo.trim(),
+        departamento: formValues.departamento.trim(),
+        dismissal_type: DismissalTypeMap[formValues.tipo],
+        has_replacement: formValues.substituicao === 'Sim',
+        estimated_termination_date: formValues.dataDesligamento,
+        contract_regime: ContractRegimeMap[formValues.regimeContratacao],
+      }
+
+      await createAdminDismissalRequest(token, payload)
+      setSuccessMessage('Solicitação de demissão salva com sucesso.')
+      setFormValues(INITIAL_FORM)
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   function handleReset() {
@@ -83,6 +135,14 @@ export function DemissaoFormPage() {
           </p>
         </section>
 
+        {isLoading ? <div className="collab-loading"><span>Carregando acesso administrativo...</span></div> : null}
+        {!isLoading && !isAuthenticated ? (
+          <div className="form-error">
+            Acesso administrativo necessário. Faça login no portal RH para salvar esta solicitação.
+          </div>
+        ) : null}
+
+        {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
         {successMessage ? <div className="form-success">{successMessage}</div> : null}
 
         <section className="request-editor-layout admin-panel-card">
@@ -169,8 +229,8 @@ export function DemissaoFormPage() {
               </label>
 
               <div className="form-actions-row">
-                <button className="primary-button" disabled={isSubmitDisabled} type="submit">
-                  Salvar solicitação
+                <button className="primary-button" disabled={isSubmitDisabled || isSubmitting || !isAuthenticated} type="submit">
+                  {isSubmitting ? 'Salvando...' : 'Salvar solicitação'}
                 </button>
                 <button className="secondary-button" type="button" onClick={handleReset}>
                   Limpar campos

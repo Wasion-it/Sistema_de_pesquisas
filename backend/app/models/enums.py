@@ -86,3 +86,19 @@ class ContractRegimeEnum(str, Enum):
     APPRENTICE = "APPRENTICE"
     CLT = "CLT"
     PJ = "PJ"
+
+
+class DismissalRequestStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CANCELED = "CANCELED"
+
+
+class DismissalRequestTypeEnum(str, Enum):
+    JUST_CAUSE = "JUST_CAUSE"
+    RESIGNATION = "RESIGNATION"
+    WITHOUT_JUST_CAUSE = "WITHOUT_JUST_CAUSE"
+    TERM_CONTRACT = "TERM_CONTRACT"
+    CONSENSUAL = "CONSENSUAL"

@@ -11,6 +11,8 @@ from app.models.enums import (
     CampaignAudienceStatusEnum,
     CampaignStatusEnum,
     ContractRegimeEnum,
+    DismissalRequestStatusEnum,
+    DismissalRequestTypeEnum,
     EmployeeStatusEnum,
     QuestionTypeEnum,
     ResponseStatusEnum,
@@ -19,6 +21,7 @@ from app.models.enums import (
     SurveyCategoryEnum,
     SurveyVersionStatusEnum,
 )
+from app.models.dismissal_request import DismissalRequest
 from app.models.job_title import JobTitle
 from app.models.question_option import QuestionOption
 from app.models.response import Response
@@ -41,6 +44,9 @@ __all__ = [
     "CampaignStatusEnum",
     "ContractRegimeEnum",
     "Department",
+    "DismissalRequest",
+    "DismissalRequestStatusEnum",
+    "DismissalRequestTypeEnum",
     "Employee",
     "EmployeeStatusEnum",
     "JobTitle",

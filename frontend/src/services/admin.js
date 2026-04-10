@@ -223,3 +223,20 @@ export async function getAdminAdmissionRequest(token, requestId) {
 
   return parseResponse(response)
 }
+
+export async function createAdminDismissalRequest(token, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/hr/dismissal-requests`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function getAdminDismissalRequests(token) {
+  const response = await fetch(`${API_URL}/admin/hr/dismissal-requests`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}

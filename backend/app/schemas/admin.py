@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -7,6 +7,8 @@ from app.models.enums import (
     AdmissionRequestTypeEnum,
     CampaignStatusEnum,
     ContractRegimeEnum,
+    DismissalRequestStatusEnum,
+    DismissalRequestTypeEnum,
     QuestionTypeEnum,
     RecruitmentScopeEnum,
     SurveyVersionStatusEnum,
@@ -125,6 +127,39 @@ class AdmissionRequestResponse(BaseModel):
 
 class AdmissionRequestListResponse(BaseModel):
     items: list[AdmissionRequestResponse]
+
+
+class DismissalRequestCreateRequest(BaseModel):
+    employee_name: str = Field(min_length=2, max_length=150)
+    cargo: str = Field(min_length=2, max_length=150)
+    departamento: str = Field(min_length=2, max_length=150)
+    dismissal_type: DismissalRequestTypeEnum
+    has_replacement: bool = False
+    estimated_termination_date: date
+    contract_regime: ContractRegimeEnum
+
+
+class DismissalRequestResponse(BaseModel):
+    id: int
+    status: DismissalRequestStatusEnum
+    employee_name: str
+    cargo: str
+    departamento: str
+    dismissal_type: DismissalRequestTypeEnum
+    has_replacement: bool
+    estimated_termination_date: date
+    contract_regime: ContractRegimeEnum
+    manager_reminder: str | None
+    created_by_user_id: int
+    created_by_user_name: str
+    created_by_user_email: str
+    submitted_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DismissalRequestListResponse(BaseModel):
+    items: list[DismissalRequestResponse]
 
 
 class AdminActionResponse(BaseModel):

@@ -47,7 +47,7 @@ export function RequestsPage() {
             <span className="module-card-action">Em breve</span>
           </article>
 
-          <article className="module-card" aria-label="Solicitação de demissão">
+          <Link className="module-card" aria-label="Solicitação de demissão" to="/solicitacoes/demissao">
             <div className="module-card-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 12H4" />
@@ -63,8 +63,8 @@ export function RequestsPage() {
                 acompanhamento operacional.
               </p>
             </div>
-            <span className="module-card-action">Em breve</span>
-          </article>
+            <span className="module-card-action">Abrir formulário</span>
+          </Link>
         </section>
       </div>
     </main>

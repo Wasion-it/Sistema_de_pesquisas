@@ -578,6 +578,77 @@ p { color: var(--slate-600); line-height: 1.7; }
 }
 
 /* ============================================================
+   SOLICITAÇÕES RH
+   ============================================================ */
+
+.request-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.request-form-pane {
+  border-right: 1px solid var(--slate-200);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--slate-50);
+}
+
+.request-form-pane .survey-create-form {
+  margin-top: 0;
+}
+
+.request-summary-pane {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--blue-50) 100%);
+}
+
+.request-summary-pane h2 {
+  font-size: 1.35rem;
+  margin: 4px 0 6px;
+}
+
+.request-summary-pane p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--slate-500);
+}
+
+.request-summary-list {
+  display: grid;
+  gap: 10px;
+}
+
+.request-summary-item {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: rgba(255,255,255,.9);
+  border: 1px solid var(--slate-200);
+}
+
+.request-summary-item strong {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--slate-400);
+}
+
+.request-summary-item span {
+  font-size: 14px;
+  color: var(--slate-700);
+  font-weight: 500;
+}
+
+/* ============================================================
    ENTRADA DA CAMPANHA
    ============================================================ */
 

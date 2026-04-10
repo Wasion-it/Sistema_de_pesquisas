@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '../auth/AuthProvider'
+import { createAdminAdmissionRequest } from '../services/admin'
+
 const INITIAL_FORM = {
   tipo: '',
   nomeSubstituido: '',
@@ -28,9 +31,32 @@ const REGIME_OPTIONS = [
   'PJ',
 ]
 
+const REQUEST_TYPE_MAP = {
+  'Aumento de quadro': 'GROWTH',
+  'Substituição': 'REPLACEMENT',
+}
+
+const RECRUITMENT_SCOPE_MAP = {
+  Interno: 'INTERNAL',
+  Externo: 'EXTERNAL',
+  Misto: 'MIXED',
+}
+
+const CONTRACT_REGIME_MAP = {
+  Temporário: 'TEMPORARY',
+  Efetivo: 'EFFECTIVE',
+  Estagiário: 'INTERN',
+  Aprendiz: 'APPRENTICE',
+  CLT: 'CLT',
+  PJ: 'PJ',
+}
+
 export function AdmissaoFormPage() {
+  const { isAuthenticated, isLoading, token } = useAuth()
   const [formValues, setFormValues] = useState(INITIAL_FORM)
   const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isSubstituicao = formValues.tipo === 'Substituição'
   const isAumentoQuado = formValues.tipo === 'Aumento de quadro'
@@ -68,6 +94,9 @@ export function AdmissaoFormPage() {
     if (successMessage) {
       setSuccessMessage('')
     }
+    if (errorMessage) {
+      setErrorMessage('')
+    }
   }
 
   function handleTipoChange(event) {
@@ -81,11 +110,46 @@ export function AdmissaoFormPage() {
     if (successMessage) {
       setSuccessMessage('')
     }
+    if (errorMessage) {
+      setErrorMessage('')
+    }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    setSuccessMessage('Solicitação de admissão preparada localmente. Integração com backend será o próximo passo.')
+    if (!token || !isAuthenticated) {
+      setErrorMessage('Você precisa estar autenticado no portal administrativo para salvar esta solicitação.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setErrorMessage('')
+
+    try {
+      const payload = {
+        request_type: REQUEST_TYPE_MAP[formValues.tipo],
+        cargo: formValues.cargo.trim(),
+        setor: formValues.setor.trim(),
+        recruitment_scope: RECRUITMENT_SCOPE_MAP[formValues.recrutamento],
+        quantity_people: Number(formValues.quantidadePessoas),
+        turno: formValues.turno.trim(),
+        contract_regime: CONTRACT_REGIME_MAP[formValues.regimeContratacao],
+        substituted_employee_name: formValues.nomeSubstituido.trim() || null,
+        justification: formValues.justificativa.trim() || null,
+        manager_reminder:
+          formValues.tipo === 'Substituição'
+            ? 'Caso seja substituição de funcionário, informe ao gestor que ele deve solicitar a demissão do substituído.'
+            : null,
+      }
+
+      await createAdminAdmissionRequest(token, payload)
+      setSuccessMessage('Solicitação de admissão salva com sucesso.')
+      setFormValues(INITIAL_FORM)
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   function handleReset() {
@@ -118,6 +182,14 @@ export function AdmissaoFormPage() {
           </p>
         </section>
 
+        {isLoading ? <div className="collab-loading"><span>Carregando acesso administrativo...</span></div> : null}
+        {!isLoading && !isAuthenticated ? (
+          <div className="form-error">
+            Acesso administrativo necessário. Faça login no portal RH para salvar esta solicitação.
+          </div>
+        ) : null}
+
+        {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
         {successMessage ? <div className="form-success">{successMessage}</div> : null}
 
         <section className="request-editor-layout admin-panel-card">
@@ -244,8 +316,8 @@ export function AdmissaoFormPage() {
               </div>
 
               <div className="form-actions-row">
-                <button className="primary-button" disabled={isSubmitDisabled} type="submit">
-                  Salvar solicitação
+                <button className="primary-button" disabled={isSubmitDisabled || isSubmitting || !isAuthenticated} type="submit">
+                  {isSubmitting ? 'Salvando...' : 'Salvar solicitação'}
                 </button>
                 <button className="secondary-button" type="button" onClick={handleReset}>
                   Limpar campos

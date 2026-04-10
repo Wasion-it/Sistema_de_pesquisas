@@ -198,3 +198,20 @@ export async function getAdminCampaignResponses(token, campaignId) {
 
   return parseResponse(response)
 }
+
+export async function createAdminAdmissionRequest(token, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/hr/admission-requests`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function getAdminAdmissionRequests(token) {
+  const response = await fetch(`${API_URL}/admin/hr/admission-requests`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}

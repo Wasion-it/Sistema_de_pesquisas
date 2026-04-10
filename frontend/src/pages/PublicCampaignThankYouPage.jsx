@@ -31,7 +31,7 @@ export function PublicCampaignThankYouPage() {
     <main className="collab-shell">
       <header className="collab-header">
         <div className="collab-header-inner">
-          <Link className="text-muted-link" to="/">← Todas as pesquisas</Link>
+          <Link className="text-muted-link" to="/pesquisas">← Todas as pesquisas</Link>
         </div>
       </header>
 
@@ -43,8 +43,8 @@ export function PublicCampaignThankYouPage() {
             Sua resposta foi registrada com sucesso e de forma anonima.
             {campaign ? ` A pesquisa "${campaign.survey_name}" agradece a sua contribuicao.` : ''}
           </p>
-          <Link className="collab-start-button" to="/">
-            Voltar para o inicio
+          <Link className="collab-start-button" to="/pesquisas">
+            Voltar para pesquisas
           </Link>
         </div>
       </div>

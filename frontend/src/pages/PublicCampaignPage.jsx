@@ -222,7 +222,7 @@ export function PublicCampaignPage() {
       <main className="collab-shell">
         <header className="collab-header">
           <div className="collab-header-inner">
-            <Link className="text-muted-link" to="/">← Voltar</Link>
+            <Link className="text-muted-link" to="/pesquisas">← Voltar</Link>
           </div>
         </header>
         <div className="collab-loading"><span>Carregando pesquisa...</span></div>
@@ -235,7 +235,7 @@ export function PublicCampaignPage() {
       <main className="collab-shell">
         <header className="collab-header">
           <div className="collab-header-inner">
-            <Link className="text-muted-link" to="/">← Voltar</Link>
+            <Link className="text-muted-link" to="/pesquisas">← Voltar</Link>
           </div>
         </header>
         <div className="collab-content">
@@ -249,7 +249,7 @@ export function PublicCampaignPage() {
     <main className="collab-shell">
       <header className="collab-header">
         <div className="collab-header-inner">
-          <Link className="text-muted-link" to="/">
+          <Link className="text-muted-link" to="/pesquisas">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
             </svg>

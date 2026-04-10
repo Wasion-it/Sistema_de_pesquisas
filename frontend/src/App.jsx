@@ -11,6 +11,7 @@ import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
 import { HomePage } from './pages/HomePage'
+import { AdmissaoFormPage } from './pages/AdmissaoFormPage'
 import { RequestsPage } from './pages/RequestsPage'
 import { DemissaoFormPage } from './pages/DemissaoFormPage'
 import { SurveysPage } from './pages/SurveysPage'
@@ -24,6 +25,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/solicitacoes" element={<RequestsPage />} />
+          <Route path="/solicitacoes/admissao" element={<AdmissaoFormPage />} />
           <Route path="/solicitacoes/demissao" element={<DemissaoFormPage />} />
           <Route path="/pesquisas" element={<SurveysPage />} />
           <Route path="/campaigns/:campaignId" element={<PublicCampaignPage />} />

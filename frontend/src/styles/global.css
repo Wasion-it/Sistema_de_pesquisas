@@ -648,6 +648,29 @@ p { color: var(--slate-600); line-height: 1.7; }
   font-weight: 500;
 }
 
+.request-note-box {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--amber-200);
+  background: linear-gradient(180deg, var(--amber-50) 0%, #fffdf6 100%);
+}
+
+.request-note-box strong {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--amber-700);
+}
+
+.request-note-box p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--slate-600);
+}
+
 /* ============================================================
    ENTRADA DA CAMPANHA
    ============================================================ */

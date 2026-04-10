@@ -27,7 +27,7 @@ export function RequestsPage() {
         </section>
 
         <section className="module-cards-grid" aria-label="Tipos de solicitação">
-          <article className="module-card" aria-label="Solicitação de admissão">
+          <Link className="module-card" aria-label="Solicitação de admissão" to="/solicitacoes/admissao">
             <div className="module-card-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -44,8 +44,8 @@ export function RequestsPage() {
                 do fluxo de entrada.
               </p>
             </div>
-            <span className="module-card-action">Em breve</span>
-          </article>
+            <span className="module-card-action">Abrir formulário</span>
+          </Link>
 
           <Link className="module-card" aria-label="Solicitação de demissão" to="/solicitacoes/demissao">
             <div className="module-card-icon" aria-hidden="true">

@@ -12,9 +12,12 @@ from sqlalchemy.orm import Session, selectinload
 from app.api.deps import get_current_admin_user
 from app.db.session import get_db
 from app.models import (
+    AdmissionRequestApproval,
     AdmissionRequest,
     AdmissionRequestStatusEnum,
     AdmissionRequestTypeEnum,
+    ApprovalStepStatusEnum,
+    ApprovalWorkflowTemplate,
     AuditActionEnum,
     AuditLog,
     Campaign,
@@ -25,6 +28,7 @@ from app.models import (
     EmployeeStatusEnum,
     DismissalRequest,
     DismissalRequestStatusEnum,
+    DismissalRequestApproval,
     QuestionOption,
     QuestionTypeEnum,
     Response,
@@ -166,6 +170,7 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         created_by_user_id=item.created_by_user_id,
         created_by_user_name=item.created_by_user.full_name,
         created_by_user_email=item.created_by_user.email,
+        approval_workflow_template_id=item.approval_workflow_template_id,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -187,10 +192,50 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
         created_by_user_id=item.created_by_user_id,
         created_by_user_name=item.created_by_user.full_name,
         created_by_user_email=item.created_by_user.email,
+        approval_workflow_template_id=item.approval_workflow_template_id,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
+
+
+def _get_standard_approval_workflow(db: Session) -> ApprovalWorkflowTemplate:
+    workflow = db.scalar(
+        select(ApprovalWorkflowTemplate)
+        .options(selectinload(ApprovalWorkflowTemplate.steps))
+        .where(ApprovalWorkflowTemplate.code == "HR_STANDARD_APPROVAL")
+        .where(ApprovalWorkflowTemplate.is_active.is_(True))
+    )
+    if workflow is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Approval workflow template not found")
+
+    return workflow
+
+
+def _seed_admission_approval_steps(db: Session, admission_request: AdmissionRequest, workflow: ApprovalWorkflowTemplate) -> None:
+    for step in workflow.steps:
+        db.add(
+            AdmissionRequestApproval(
+                admission_request_id=admission_request.id,
+                workflow_step_id=step.id,
+                step_order=step.step_order,
+                approver_role=step.approver_role,
+                status=ApprovalStepStatusEnum.PENDING,
+            )
+        )
+
+
+def _seed_dismissal_approval_steps(db: Session, dismissal_request: DismissalRequest, workflow: ApprovalWorkflowTemplate) -> None:
+    for step in workflow.steps:
+        db.add(
+            DismissalRequestApproval(
+                dismissal_request_id=dismissal_request.id,
+                workflow_step_id=step.id,
+                step_order=step.step_order,
+                approver_role=step.approver_role,
+                status=ApprovalStepStatusEnum.PENDING,
+            )
+        )
 
 
 def _build_department_progress(
@@ -557,6 +602,7 @@ def create_admin_admission_request(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
+    workflow = _get_standard_approval_workflow(db)
     cargo = payload.cargo.strip()
     setor = payload.setor.strip()
     turno = payload.turno.strip()
@@ -584,10 +630,12 @@ def create_admin_admission_request(
         manager_reminder=manager_reminder,
         submitted_at=datetime.now(UTC),
         created_by_user_id=user.id,
+        approval_workflow_template_id=workflow.id,
     )
 
     db.add(admission_request)
     db.flush()
+    _seed_admission_approval_steps(db, admission_request, workflow)
     db.add(
         AuditLog(
             actor_user_id=user.id,
@@ -640,6 +688,7 @@ def create_admin_dismissal_request(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> DismissalRequestResponse:
+    workflow = _get_standard_approval_workflow(db)
     employee_name = payload.employee_name.strip()
     cargo = payload.cargo.strip()
     departamento = payload.departamento.strip()
@@ -662,10 +711,12 @@ def create_admin_dismissal_request(
         manager_reminder=reminder,
         created_by_user_id=user.id,
         submitted_at=datetime.now(UTC),
+        approval_workflow_template_id=workflow.id,
     )
 
     db.add(dismissal_request)
     db.flush()
+    _seed_dismissal_approval_steps(db, dismissal_request, workflow)
     db.add(
         AuditLog(
             actor_user_id=user.id,

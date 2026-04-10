@@ -120,6 +120,7 @@ class AdmissionRequestResponse(BaseModel):
     created_by_user_id: int
     created_by_user_name: str
     created_by_user_email: str
+    approval_workflow_template_id: int | None
     submitted_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -153,6 +154,7 @@ class DismissalRequestResponse(BaseModel):
     created_by_user_id: int
     created_by_user_name: str
     created_by_user_email: str
+    approval_workflow_template_id: int | None
     submitted_at: datetime | None
     created_at: datetime
     updated_at: datetime

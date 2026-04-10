@@ -102,3 +102,28 @@ class DismissalRequestTypeEnum(str, Enum):
     WITHOUT_JUST_CAUSE = "WITHOUT_JUST_CAUSE"
     TERM_CONTRACT = "TERM_CONTRACT"
     CONSENSUAL = "CONSENSUAL"
+
+
+class ApprovalRequestKindEnum(str, Enum):
+    ANY = "ANY"
+    ADMISSION = "ADMISSION"
+    DISMISSAL = "DISMISSAL"
+
+
+class ApprovalOriginGroupEnum(str, Enum):
+    COORDINATOR_SUPERVISOR = "COORDINATOR_SUPERVISOR"
+    MANAGER = "MANAGER"
+    ANY = "ANY"
+
+
+class ApprovalRoleEnum(str, Enum):
+    MANAGER = "MANAGER"
+    DIRECTOR_RAVI = "DIRECTOR_RAVI"
+    RH_MANAGER = "RH_MANAGER"
+
+
+class ApprovalStepStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    SKIPPED = "SKIPPED"

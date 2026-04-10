@@ -9,6 +9,11 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.db.session import SessionLocal, create_tables
 from app.models import (
+    ApprovalOriginGroupEnum,
+    ApprovalRequestKindEnum,
+    ApprovalRoleEnum,
+    ApprovalWorkflowStep,
+    ApprovalWorkflowTemplate,
     AuditActionEnum,
     AuditLog,
     Campaign,
@@ -415,6 +420,51 @@ def seed_survey(session: Session, created_by: User) -> tuple[Survey, SurveyVersi
     return survey, version, dimensions, questions
 
 
+def seed_approval_workflows(session: Session) -> dict[str, ApprovalWorkflowTemplate]:
+    workflow, _ = get_or_create(
+        session,
+        ApprovalWorkflowTemplate,
+        defaults={
+            "name": "Fluxo padrão de aprovação RH",
+            "description": "Fluxo compartilhado para admissão e demissão.",
+            "request_kind": ApprovalRequestKindEnum.ANY,
+            "origin_group": ApprovalOriginGroupEnum.ANY,
+            "is_active": True,
+        },
+        code="HR_STANDARD_APPROVAL",
+    )
+    workflow.name = "Fluxo padrão de aprovação RH"
+    workflow.description = "Fluxo compartilhado para admissão e demissão."
+    workflow.request_kind = ApprovalRequestKindEnum.ANY
+    workflow.origin_group = ApprovalOriginGroupEnum.ANY
+    workflow.is_active = True
+    session.flush()
+
+    workflow_steps = [
+        (1, ApprovalRoleEnum.MANAGER, "Gerente"),
+        (2, ApprovalRoleEnum.DIRECTOR_RAVI, "Diretor Ravi"),
+        (3, ApprovalRoleEnum.RH_MANAGER, "Gerente de RH"),
+    ]
+
+    for step_order, approver_role, approver_label in workflow_steps:
+        step, _ = get_or_create(
+            session,
+            ApprovalWorkflowStep,
+            defaults={
+                "approver_role": approver_role,
+                "approver_label": approver_label,
+                "is_required": True,
+            },
+            workflow_template_id=workflow.id,
+            step_order=step_order,
+        )
+        step.approver_role = approver_role
+        step.approver_label = approver_label
+        step.is_required = True
+
+    return {workflow.code: workflow}
+
+
 def seed_campaign(
     session: Session,
     users: dict[str, User],
@@ -547,6 +597,7 @@ def run_seed() -> None:
         departments = seed_departments(session)
         job_titles = seed_job_titles(session)
         users, employees = seed_users_and_employees(session, departments, job_titles)
+        seed_approval_workflows(session)
         _, version, _, questions = seed_survey(session, users["rh_admin"])
         seed_campaign(session, users, employees, version, questions)
         session.commit()

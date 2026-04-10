@@ -15,6 +15,8 @@ from app.models.enums import (
 )
 
 if TYPE_CHECKING:
+    from app.models.approval_workflow_template import ApprovalWorkflowTemplate
+    from app.models.admission_request_approval import AdmissionRequestApproval
     from app.models.user import User
 
 
@@ -53,5 +55,16 @@ class AdmissionRequest(BaseModel):
     manager_reminder: Mapped[str | None] = mapped_column(Text, nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    approval_workflow_template_id: Mapped[int | None] = mapped_column(
+        ForeignKey("approval_workflow_templates.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     created_by_user = relationship("User", back_populates="admission_requests")
+    approval_workflow_template = relationship("ApprovalWorkflowTemplate", back_populates="admission_requests")
+    approval_steps = relationship(
+        "AdmissionRequestApproval",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        order_by="AdmissionRequestApproval.step_order",
+    )

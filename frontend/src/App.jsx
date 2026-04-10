@@ -8,6 +8,7 @@ import { AdminCampaignResponsesPage } from './pages/AdminCampaignResponsesPage'
 import { AdminDepartmentsPage } from './pages/AdminDepartmentsPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
+import { AdminAdmissionRequestsPage } from './pages/AdminAdmissionRequestsPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
 import { AdminHomePage } from './pages/AdminHomePage'
@@ -43,6 +44,7 @@ export default function App() {
             <Route index element={<AdminHomePage />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />
+            <Route path="admission-requests" element={<AdminAdmissionRequestsPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />
             <Route path="campaigns/:campaignId/kpis" element={<AdminCampaignKpisPage />} />
             <Route path="campaigns/:campaignId/responses" element={<AdminCampaignResponsesPage />} />

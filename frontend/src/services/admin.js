@@ -215,3 +215,11 @@ export async function getAdminAdmissionRequests(token) {
 
   return parseResponse(response)
 }
+
+export async function getAdminAdmissionRequest(token, requestId) {
+  const response = await fetch(`${API_URL}/admin/hr/admission-requests/${requestId}`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}

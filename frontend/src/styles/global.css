@@ -1863,6 +1863,57 @@ body:has(.admin-shell) { background: var(--slate-100); }
 .survey-table span { font-size: 12px; color: var(--slate-400); }
 .survey-table-head { padding-top: 0; border-top: none; font-size: 11px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: .06em; }
 
+/* Admission requests table */
+.requests-table-wrap {
+  overflow-x: auto;
+}
+
+.requests-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1080px;
+}
+
+.requests-table th,
+.requests-table td {
+  padding: 14px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.requests-table th {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--slate-400);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+.requests-table td {
+  font-size: 13px;
+  color: var(--slate-600);
+}
+
+.requests-table td strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--slate-800);
+  font-weight: 600;
+}
+
+.requests-table td span {
+  display: block;
+  font-size: 12px;
+  color: var(--slate-400);
+  line-height: 1.45;
+}
+
+.requests-table tbody tr:hover {
+  background: var(--slate-50);
+}
+
 /* Stack items */
 .stack-list { margin-top: 16px; display: grid; gap: 10px; }
 .compact-list .stack-item-card { padding: 14px 16px; }

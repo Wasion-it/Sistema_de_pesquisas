@@ -45,6 +45,26 @@ export function HomePage() {
             </div>
             <span className="module-card-action">Acessar</span>
           </Link>
+
+          <Link className="module-card" to="/solicitacoes">
+            <div className="module-card-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6H4" />
+                <path d="M20 12H4" />
+                <path d="M20 18H4" />
+                <path d="M8 6v12" />
+              </svg>
+            </div>
+            <div className="module-card-body">
+              <span className="module-card-kicker">Módulo</span>
+              <h2>Solicitação de admissão ou demissão</h2>
+              <p>
+                Registre e acompanhe solicitações de entrada ou saída de colaboradores
+                com o fluxo padronizado do RH.
+              </p>
+            </div>
+            <span className="module-card-action">Acessar</span>
+          </Link>
         </section>
       </div>
     </main>

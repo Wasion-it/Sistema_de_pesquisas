@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { ApprovalStatusModal } from './ApprovalStatusModal'
 import { getAdminAdmissionRequests, getAdminDismissalRequests } from '../services/admin'
 
 const STATUS_META = {
@@ -75,11 +76,12 @@ const REQUEST_TABS = {
           <th>Qtd.</th>
           <th>Regime</th>
           <th>Status</th>
+          <th>Aprovação</th>
           <th>Criado em</th>
         </tr>
       )
     },
-    renderRow(item) {
+    renderRow(item, onViewApprovalStatus) {
       const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
 
       return (
@@ -101,6 +103,11 @@ const REQUEST_TABS = {
           <td>{CONTRACT_REGIME_LABELS[item.contract_regime] ?? item.contract_regime}</td>
           <td>
             <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
+          </td>
+          <td>
+            <button className="secondary-button" type="button" onClick={onViewApprovalStatus}>
+              Status de aprovação
+            </button>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
         </tr>
@@ -136,11 +143,12 @@ const REQUEST_TABS = {
           <th>Departamento</th>
           <th>Substituição</th>
           <th>Status</th>
+          <th>Aprovação</th>
           <th>Criado em</th>
         </tr>
       )
     },
-    renderRow(item) {
+    renderRow(item, onViewApprovalStatus) {
       const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
 
       return (
@@ -159,6 +167,11 @@ const REQUEST_TABS = {
           <td>{item.has_replacement ? 'Sim' : 'Não'}</td>
           <td>
             <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
+          </td>
+          <td>
+            <button className="secondary-button" type="button" onClick={onViewApprovalStatus}>
+              Status de aprovação
+            </button>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
         </tr>
@@ -203,6 +216,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     admission: '',
     dismissal: '',
   })
+  const [selectedApprovalRequest, setSelectedApprovalRequest] = useState(null)
 
   useEffect(() => {
     let isMounted = true
@@ -269,7 +283,16 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
   function handleTabChange(tabKey) {
     setQuery('')
+    setSelectedApprovalRequest(null)
     navigate(REQUEST_TAB_PATHS[tabKey])
+  }
+
+  function openApprovalStatus(item) {
+    setSelectedApprovalRequest({
+      ...item,
+      request_id: item.id,
+      request_kind: activeTab.toUpperCase(),
+    })
   }
 
   return (
@@ -350,11 +373,17 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
           <div className="requests-table-wrap">
             <table className="admin-table requests-table">
               <thead>{activeConfig.renderHeaders()}</thead>
-              <tbody>{filteredRequests.map((item) => activeConfig.renderRow(item))}</tbody>
+              <tbody>{filteredRequests.map((item) => activeConfig.renderRow(item, () => openApprovalStatus(item)))}</tbody>
             </table>
           </div>
         )}
       </section>
+
+      <ApprovalStatusModal
+        request={selectedApprovalRequest}
+        token={token}
+        onClose={() => setSelectedApprovalRequest(null)}
+      />
     </div>
   )
 }

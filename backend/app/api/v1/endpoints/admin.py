@@ -1050,6 +1050,28 @@ def create_admin_admission_request(
     return _serialize_admission_request(loaded_item)
 
 
+@router.get("/hr/admission-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)
+def read_admin_admission_request_approval_status(
+    request_id: int,
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueItemResponse:
+    item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.approval_workflow_template),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    return _serialize_admission_approval_queue_item(item)
+
+
 @router.get("/hr/dismissal-requests", response_model=DismissalRequestListResponse)
 def read_admin_dismissal_requests(
     _: Annotated[User, Depends(get_current_admin_user)],
@@ -1078,6 +1100,28 @@ def read_admin_dismissal_request_detail(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
     return _serialize_dismissal_request(item)
+
+
+@router.get("/hr/dismissal-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)
+def read_admin_dismissal_request_approval_status(
+    request_id: int,
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueItemResponse:
+    item = db.scalar(
+        select(DismissalRequest)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.approval_workflow_template),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
+        )
+        .where(DismissalRequest.id == request_id)
+    )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    return _serialize_dismissal_approval_queue_item(item)
 
 
 @router.post("/hr/dismissal-requests", response_model=DismissalRequestResponse, status_code=status.HTTP_201_CREATED)

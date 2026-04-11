@@ -224,8 +224,24 @@ export async function getAdminAdmissionRequest(token, requestId) {
   return parseResponse(response)
 }
 
+export async function getAdminAdmissionApprovalStatus(token, requestId) {
+  const response = await fetch(`${API_URL}/admin/hr/admission-requests/${requestId}/approval-status`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
 export async function getAdminDismissalRequest(token, requestId) {
   const response = await fetch(`${API_URL}/admin/hr/dismissal-requests/${requestId}`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function getAdminDismissalApprovalStatus(token, requestId) {
+  const response = await fetch(`${API_URL}/admin/hr/dismissal-requests/${requestId}/approval-status`, {
     headers: buildHeaders(token),
   })
 

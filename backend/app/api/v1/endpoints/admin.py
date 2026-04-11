@@ -1063,6 +1063,23 @@ def read_admin_dismissal_requests(
     return DismissalRequestListResponse(items=[_serialize_dismissal_request(item) for item in items])
 
 
+@router.get("/hr/dismissal-requests/{request_id}", response_model=DismissalRequestResponse)
+def read_admin_dismissal_request_detail(
+    request_id: int,
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalRequestResponse:
+    item = db.scalar(
+        select(DismissalRequest)
+        .options(selectinload(DismissalRequest.created_by_user))
+        .where(DismissalRequest.id == request_id)
+    )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    return _serialize_dismissal_request(item)
+
+
 @router.post("/hr/dismissal-requests", response_model=DismissalRequestResponse, status_code=status.HTTP_201_CREATED)
 def create_admin_dismissal_request(
     payload: DismissalRequestCreateRequest,

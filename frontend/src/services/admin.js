@@ -224,6 +224,14 @@ export async function getAdminAdmissionRequest(token, requestId) {
   return parseResponse(response)
 }
 
+export async function getAdminDismissalRequest(token, requestId) {
+  const response = await fetch(`${API_URL}/admin/hr/dismissal-requests/${requestId}`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
 export async function createAdminDismissalRequest(token, payload) {
   const response = await fetch(
     `${API_URL}/admin/hr/dismissal-requests`,

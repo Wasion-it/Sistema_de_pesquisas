@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { RequestDetailsModal } from '../components/RequestDetailsModal'
 import { getMyRequests } from '../services/admin'
 
 const REQUEST_KIND_TABS = {
@@ -80,6 +81,7 @@ export function MyRequestsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [selectedRequest, setSelectedRequest] = useState(null)
 
   async function loadRequests() {
     setIsLoading(true)
@@ -268,12 +270,24 @@ export function MyRequestsPage() {
                       </div>
                     ))}
                   </div>
+
+                  <div className="approval-request-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => setSelectedRequest(item)}
+                    >
+                      Detalhes
+                    </button>
+                  </div>
                 </article>
               )
             })}
           </div>
         )}
       </section>
+
+      <RequestDetailsModal request={selectedRequest} token={token} onClose={() => setSelectedRequest(null)} />
     </div>
   )
 }

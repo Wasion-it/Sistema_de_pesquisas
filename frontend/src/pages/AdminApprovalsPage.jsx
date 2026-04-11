@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { RequestDetailsModal } from '../components/RequestDetailsModal'
 import { approveAdminApprovalRequest, getAdminApprovalQueue, rejectAdminApprovalRequest } from '../services/admin'
 
 const REQUEST_KIND_TABS = {
@@ -63,6 +64,7 @@ export function AdminApprovalsPage() {
   const [errorMessages, setErrorMessages] = useState({ admission: '', dismissal: '' })
   const [actionState, setActionState] = useState({ kind: '', requestId: null, action: '' })
   const [approvalComments, setApprovalComments] = useState({ admission: {}, dismissal: {} })
+  const [selectedRequest, setSelectedRequest] = useState(null)
 
   async function loadQueues() {
     setIsLoading(true)
@@ -280,6 +282,13 @@ export function AdminApprovalsPage() {
                       Apenas {APPROVAL_ROLE_LABELS[item.current_step_role] ?? item.current_step_role ?? 'o próximo aprovador'} pode executar esta etapa.
                     </div>
                   ) : null}
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => setSelectedRequest(item)}
+                  >
+                    Detalhes
+                  </button>
                   {canActOnItem(item) ? (
                     <div className="field-group">
                       <label htmlFor={`approval-comments-${item.request_kind}-${item.request_id}`}>
@@ -323,6 +332,8 @@ export function AdminApprovalsPage() {
           </div>
         )}
       </section>
+
+      <RequestDetailsModal request={selectedRequest} token={token} onClose={() => setSelectedRequest(null)} />
     </div>
   )
 }

@@ -27,6 +27,27 @@ export function RequestsPage() {
         </section>
 
         <section className="module-cards-grid" aria-label="Tipos de solicitação">
+          <Link className="module-card" aria-label="Minhas solicitações" to="/admin/my-requests">
+            <div className="module-card-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 6h13" />
+                <path d="M8 12h13" />
+                <path d="M8 18h13" />
+                <path d="M3 6h.01" />
+                <path d="M3 12h.01" />
+                <path d="M3 18h.01" />
+              </svg>
+            </div>
+            <div className="module-card-body">
+              <span className="module-card-kicker">Acompanhamento</span>
+              <h2>Minhas solicitações</h2>
+              <p>
+                Veja o status e o histórico das solicitações que você já enviou.
+              </p>
+            </div>
+            <span className="module-card-action">Abrir painel</span>
+          </Link>
+
           <Link className="module-card" aria-label="Solicitação de admissão" to="/solicitacoes/admissao">
             <div className="module-card-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

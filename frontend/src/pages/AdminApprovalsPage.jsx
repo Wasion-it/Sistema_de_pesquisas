@@ -51,6 +51,10 @@ function formatDateTime(value) {
   }).format(new Date(value))
 }
 
+function normalizeRequestKind(kind) {
+  return String(kind ?? '').toLowerCase()
+}
+
 export function AdminApprovalsPage() {
   const { token, user } = useAuth()
   const [activeTab, setActiveTab] = useState('admission')
@@ -58,6 +62,7 @@ export function AdminApprovalsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessages, setErrorMessages] = useState({ admission: '', dismissal: '' })
   const [actionState, setActionState] = useState({ kind: '', requestId: null, action: '' })
+  const [approvalComments, setApprovalComments] = useState({ admission: {}, dismissal: {} })
 
   async function loadQueues() {
     setIsLoading(true)
@@ -110,14 +115,33 @@ export function AdminApprovalsPage() {
     return Boolean(item.current_step_role && currentApprovalRole === item.current_step_role)
   }
 
+  function updateApprovalComment(kind, requestId, value) {
+    setApprovalComments((current) => ({
+      ...current,
+      [kind]: {
+        ...current[kind],
+        [requestId]: value,
+      },
+    }))
+  }
+
   async function handleAction(kind, requestId, action) {
-    setActionState({ kind, requestId, action })
+    const normalizedKind = normalizeRequestKind(kind)
+    const comments = approvalComments[normalizedKind]?.[requestId]?.trim() || ''
+    setActionState({ kind: normalizedKind, requestId, action })
     try {
       if (action === 'approve') {
-        await approveAdminApprovalRequest(token, kind, requestId, {})
+        await approveAdminApprovalRequest(token, normalizedKind, requestId, { comments })
       } else {
-        await rejectAdminApprovalRequest(token, kind, requestId, {})
+        await rejectAdminApprovalRequest(token, normalizedKind, requestId, { comments })
       }
+      setApprovalComments((current) => ({
+        ...current,
+        [normalizedKind]: {
+          ...current[normalizedKind],
+          [requestId]: '',
+        },
+      }))
       await loadQueues()
     } catch (error) {
       setErrorMessages((current) => ({
@@ -196,9 +220,13 @@ export function AdminApprovalsPage() {
           <div className="approval-queue-grid">
             {activeQueue.map((item) => (
               <article className="approval-request-card" key={`${item.request_kind}-${item.request_id}`}>
+                {(() => {
+                  const requestKind = normalizeRequestKind(item.request_kind)
+                  return (
+                    <>
                 <div className="approval-request-top">
                   <div>
-                    <span className="approval-kind">{REQUEST_KIND_TABS[item.request_kind.toLowerCase()]?.label ?? item.request_kind}</span>
+                    <span className="approval-kind">{REQUEST_KIND_TABS[requestKind]?.label ?? item.request_kind}</span>
                     <h3>{item.request_title}</h3>
                     <p>{item.request_subtitle}</p>
                   </div>
@@ -234,6 +262,13 @@ export function AdminApprovalsPage() {
                       <div>
                         <strong>{step.step_order}. {step.approver_label}</strong>
                         <small>{APPROVAL_ROLE_LABELS[step.approver_role] ?? step.approver_role}</small>
+                        {step.decided_by_user_name || step.decided_at || step.comments ? (
+                          <small>
+                            {step.decided_by_user_name ? `Decidido por ${step.decided_by_user_name}` : 'Decisão registrada'}
+                            {step.decided_at ? ` em ${formatDateTime(step.decided_at)}` : ''}
+                            {step.comments ? ` • ${step.comments}` : ''}
+                          </small>
+                        ) : null}
                       </div>
                     </div>
                   ))}
@@ -245,27 +280,44 @@ export function AdminApprovalsPage() {
                       Apenas {APPROVAL_ROLE_LABELS[item.current_step_role] ?? item.current_step_role ?? 'o próximo aprovador'} pode executar esta etapa.
                     </div>
                   ) : null}
+                  {canActOnItem(item) ? (
+                    <div className="field-group">
+                      <label htmlFor={`approval-comments-${item.request_kind}-${item.request_id}`}>
+                        Comentário da aprovação
+                      </label>
+                      <textarea
+                        id={`approval-comments-${item.request_kind}-${item.request_id}`}
+                        maxLength={2000}
+                        placeholder="Descreva observações, justificativa ou orientações para a próxima etapa."
+                        value={approvalComments[requestKind]?.[item.request_id] ?? ''}
+                        onChange={(event) => updateApprovalComment(requestKind, item.request_id, event.target.value)}
+                      />
+                    </div>
+                  ) : null}
                   <button
                     className="primary-button"
-                    disabled={actionState.kind === item.request_kind && actionState.requestId === item.request_id || !canActOnItem(item)}
+                    disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
                     type="button"
-                    onClick={() => handleAction(item.request_kind, item.request_id, 'approve')}
+                    onClick={() => handleAction(requestKind, item.request_id, 'approve')}
                   >
-                    {actionState.kind === item.request_kind && actionState.requestId === item.request_id && actionState.action === 'approve'
+                    {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'approve'
                       ? 'Aprovando...'
                       : 'Aprovar etapa'}
                   </button>
                   <button
                     className="secondary-button"
-                    disabled={actionState.kind === item.request_kind && actionState.requestId === item.request_id || !canActOnItem(item)}
+                    disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
                     type="button"
-                    onClick={() => handleAction(item.request_kind, item.request_id, 'reject')}
+                    onClick={() => handleAction(requestKind, item.request_id, 'reject')}
                   >
-                    {actionState.kind === item.request_kind && actionState.requestId === item.request_id && actionState.action === 'reject'
+                    {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'reject'
                       ? 'Rejeitando...'
                       : 'Rejeitar solicitação'}
                   </button>
                 </div>
+                    </>
+                  )
+                })()}
               </article>
             ))}
           </div>

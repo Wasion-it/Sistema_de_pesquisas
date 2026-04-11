@@ -42,6 +42,7 @@ DEV_PASSWORDS = {
     "rh_admin": "AdminRH123!",
     "rh_analyst": "AnalistaRH123!",
     "manager": "Gestor123!",
+    "director_ravi": "Ravi123!",
     "employee": "Colaborador123!",
     "it_support": "SuporteTI123!",
 }
@@ -104,6 +105,7 @@ def seed_job_titles(session: Session) -> dict[str, JobTitle]:
         {"code": "HR_ADMIN", "name": "HR Administrator"},
         {"code": "HR_ANALYST", "name": "HR Analyst"},
         {"code": "ENG_MANAGER", "name": "Engineering Manager"},
+        {"code": "DIRECTOR", "name": "Director"},
         {"code": "SOFTWARE_ENG", "name": "Software Engineer"},
         {"code": "IT_SUPPORT", "name": "IT Support Analyst"},
     ]
@@ -166,6 +168,17 @@ def seed_users_and_employees(
             "department": departments["TECH"],
             "job_title": job_titles["ENG_MANAGER"],
             "work_email": "carla.souza@example.com",
+        },
+        {
+            "key": "director_ravi",
+            "email": "ravi.director@example.com",
+            "full_name": "Ravi Almeida",
+            "password_hash": hash_password(DEV_PASSWORDS["director_ravi"]),
+            "role": RoleEnum.DIRETOR_RAVI,
+            "employee_code": "EMP-2003",
+            "department": departments["TECH"],
+            "job_title": job_titles["DIRECTOR"],
+            "work_email": "ravi.almeida@example.com",
         },
         {
             "key": "employee",

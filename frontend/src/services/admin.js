@@ -240,3 +240,29 @@ export async function getAdminDismissalRequests(token) {
 
   return parseResponse(response)
 }
+
+export async function getAdminApprovalQueue(token, kind) {
+  const response = await fetch(`${API_URL}/admin/hr/approvals/${kind}`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function approveAdminApprovalRequest(token, kind, requestId, payload = {}) {
+  const response = await fetch(
+    `${API_URL}/admin/hr/approvals/${kind}/${requestId}/approve`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function rejectAdminApprovalRequest(token, kind, requestId, payload = {}) {
+  const response = await fetch(
+    `${API_URL}/admin/hr/approvals/${kind}/${requestId}/reject`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}

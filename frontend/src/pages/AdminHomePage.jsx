@@ -41,6 +41,17 @@ const ADMIN_MODULES = [
     ),
   },
   {
+    title: 'Aprovações',
+    description: 'Acompanhe e avance a fila de admissão e demissão.',
+    to: '/admin/approvals',
+    accent: 'green',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12l4 4L19 6" />
+      </svg>
+    ),
+  },
+  {
     title: 'Admissão',
     description: 'Acesse a fila de solicitações de admissão.',
     to: '/admin/admission-requests',

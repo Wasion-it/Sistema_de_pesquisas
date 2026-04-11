@@ -17,6 +17,8 @@ from app.models import (
     AdmissionRequestStatusEnum,
     AdmissionRequestTypeEnum,
     ApprovalStepStatusEnum,
+    ApprovalRequestKindEnum,
+    ApprovalRoleEnum,
     ApprovalWorkflowTemplate,
     AuditActionEnum,
     AuditLog,
@@ -39,10 +41,15 @@ from app.models import (
     SurveyQuestion,
     SurveyVersion,
     SurveyVersionStatusEnum,
+    RoleEnum,
     User,
 )
 from app.schemas.admin import (
     AdminActionResponse,
+    ApprovalActionRequest,
+    ApprovalQueueItemResponse,
+    ApprovalQueueListResponse,
+    ApprovalStepResponse,
     AdmissionRequestCreateRequest,
     AdmissionRequestListResponse,
     AdmissionRequestResponse,
@@ -199,6 +206,315 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
     )
 
 
+def _serialize_approval_step(step) -> ApprovalStepResponse:
+    return ApprovalStepResponse(
+        id=step.id,
+        step_order=step.step_order,
+        approver_role=step.approver_role,
+        approver_label=step.workflow_step.approver_label if step.workflow_step else step.approver_role.value,
+        status=step.status,
+        decided_by_user_name=step.decided_by_user.full_name if step.decided_by_user else None,
+        decided_at=step.decided_at,
+        comments=step.comments,
+    )
+
+
+def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> ApprovalQueueItemResponse:
+    ordered_steps = sorted(item.approval_steps, key=lambda approval_step: approval_step.step_order)
+    current_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    return ApprovalQueueItemResponse(
+        request_kind=ApprovalRequestKindEnum.ADMISSION,
+        request_id=item.id,
+        request_title=item.cargo,
+        request_subtitle=f"{item.setor} • {item.turno}",
+        request_status=item.status.value,
+        requester_name=item.created_by_user.full_name,
+        requester_email=item.created_by_user.email,
+        workflow_name=item.approval_workflow_template.name if item.approval_workflow_template else "Fluxo padrão",
+        current_step_order=current_step.step_order if current_step else None,
+        current_step_label=current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None),
+        current_step_role=current_step.approver_role if current_step else None,
+        submitted_at=item.submitted_at,
+        created_at=item.created_at,
+        steps=[_serialize_approval_step(approval_step) for approval_step in ordered_steps],
+    )
+
+
+def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> ApprovalQueueItemResponse:
+    ordered_steps = sorted(item.approval_steps, key=lambda approval_step: approval_step.step_order)
+    current_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    return ApprovalQueueItemResponse(
+        request_kind=ApprovalRequestKindEnum.DISMISSAL,
+        request_id=item.id,
+        request_title=item.employee_name,
+        request_subtitle=f"{item.cargo} • {item.departamento}",
+        request_status=item.status.value,
+        requester_name=item.created_by_user.full_name,
+        requester_email=item.created_by_user.email,
+        workflow_name=item.approval_workflow_template.name if item.approval_workflow_template else "Fluxo padrão",
+        current_step_order=current_step.step_order if current_step else None,
+        current_step_label=current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None),
+        current_step_role=current_step.approver_role if current_step else None,
+        submitted_at=item.submitted_at,
+        created_at=item.created_at,
+        steps=[_serialize_approval_step(approval_step) for approval_step in ordered_steps],
+    )
+
+
+def _mark_request_approval_progress(
+    db: Session,
+    request_item,
+    approval_steps,
+    *,
+    approve: bool,
+    user: User,
+    comments: str | None,
+    pending_status,
+    approved_status,
+    rejected_status,
+) -> None:
+    ordered_steps = sorted(approval_steps, key=lambda approval_step: approval_step.step_order)
+    current_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    if current_step is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
+
+    now = datetime.now(UTC)
+
+    if approve:
+        current_step.status = ApprovalStepStatusEnum.APPROVED
+        current_step.decided_by_user_id = user.id
+        current_step.decided_at = now
+        current_step.comments = comments
+
+        remaining_pending = [approval_step for approval_step in ordered_steps if approval_step.step_order > current_step.step_order and approval_step.status == ApprovalStepStatusEnum.PENDING]
+        if remaining_pending:
+            request_item.status = pending_status
+        else:
+            request_item.status = approved_status
+            request_item.submitted_at = request_item.submitted_at or now
+        return
+
+    current_step.status = ApprovalStepStatusEnum.REJECTED
+    current_step.decided_by_user_id = user.id
+    current_step.decided_at = now
+    current_step.comments = comments
+
+    for approval_step in ordered_steps:
+        if approval_step.step_order > current_step.step_order and approval_step.status == ApprovalStepStatusEnum.PENDING:
+            approval_step.status = ApprovalStepStatusEnum.SKIPPED
+            approval_step.decided_by_user_id = user.id
+            approval_step.decided_at = now
+            approval_step.comments = comments
+
+    request_item.status = rejected_status
+
+
+@router.get("/hr/approvals/admission", response_model=ApprovalQueueListResponse)
+def read_admin_admission_approval_queue(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueListResponse:
+    items = db.scalars(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.approval_workflow_template),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
+        )
+        .where(AdmissionRequest.status.in_([AdmissionRequestStatusEnum.PENDING, AdmissionRequestStatusEnum.UNDER_REVIEW]))
+        .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
+    ).all()
+    return ApprovalQueueListResponse(items=[_serialize_admission_approval_queue_item(item) for item in items])
+
+
+@router.get("/hr/approvals/dismissal", response_model=ApprovalQueueListResponse)
+def read_admin_dismissal_approval_queue(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueListResponse:
+    items = db.scalars(
+        select(DismissalRequest)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.approval_workflow_template),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
+        )
+        .where(DismissalRequest.status.in_([DismissalRequestStatusEnum.PENDING, DismissalRequestStatusEnum.UNDER_REVIEW]))
+        .order_by(DismissalRequest.submitted_at.desc().nullslast(), DismissalRequest.created_at.desc())
+    ).all()
+    return ApprovalQueueListResponse(items=[_serialize_dismissal_approval_queue_item(item) for item in items])
+
+
+@router.post("/hr/approvals/admission/{request_id}/approve", response_model=ApprovalQueueItemResponse)
+def approve_admin_admission_request(
+    request_id: int,
+    payload: ApprovalActionRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueItemResponse:
+    request_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.approval_workflow_template),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    current_step = _get_current_pending_step(request_item.approval_steps)
+    if current_step is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
+
+    _assert_user_can_act_on_step(user, current_step)
+
+    _mark_request_approval_progress(
+        db,
+        request_item,
+        request_item.approval_steps,
+        approve=True,
+        user=user,
+        comments=payload.comments,
+        pending_status=AdmissionRequestStatusEnum.UNDER_REVIEW,
+        approved_status=AdmissionRequestStatusEnum.APPROVED,
+        rejected_status=AdmissionRequestStatusEnum.REJECTED,
+    )
+    db.commit()
+    db.refresh(request_item)
+    return _serialize_admission_approval_queue_item(request_item)
+
+
+@router.post("/hr/approvals/admission/{request_id}/reject", response_model=ApprovalQueueItemResponse)
+def reject_admin_admission_request(
+    request_id: int,
+    payload: ApprovalActionRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueItemResponse:
+    request_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.approval_workflow_template),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    current_step = _get_current_pending_step(request_item.approval_steps)
+    if current_step is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
+
+    _assert_user_can_act_on_step(user, current_step)
+
+    _mark_request_approval_progress(
+        db,
+        request_item,
+        request_item.approval_steps,
+        approve=False,
+        user=user,
+        comments=payload.comments,
+        pending_status=AdmissionRequestStatusEnum.UNDER_REVIEW,
+        approved_status=AdmissionRequestStatusEnum.APPROVED,
+        rejected_status=AdmissionRequestStatusEnum.REJECTED,
+    )
+    db.commit()
+    db.refresh(request_item)
+    return _serialize_admission_approval_queue_item(request_item)
+
+
+@router.post("/hr/approvals/dismissal/{request_id}/approve", response_model=ApprovalQueueItemResponse)
+def approve_admin_dismissal_request(
+    request_id: int,
+    payload: ApprovalActionRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueItemResponse:
+    request_item = db.scalar(
+        select(DismissalRequest)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.approval_workflow_template),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
+        )
+        .where(DismissalRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    current_step = _get_current_pending_step(request_item.approval_steps)
+    if current_step is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
+
+    _assert_user_can_act_on_step(user, current_step)
+
+    _mark_request_approval_progress(
+        db,
+        request_item,
+        request_item.approval_steps,
+        approve=True,
+        user=user,
+        comments=payload.comments,
+        pending_status=DismissalRequestStatusEnum.UNDER_REVIEW,
+        approved_status=DismissalRequestStatusEnum.APPROVED,
+        rejected_status=DismissalRequestStatusEnum.REJECTED,
+    )
+    db.commit()
+    db.refresh(request_item)
+    return _serialize_dismissal_approval_queue_item(request_item)
+
+
+@router.post("/hr/approvals/dismissal/{request_id}/reject", response_model=ApprovalQueueItemResponse)
+def reject_admin_dismissal_request(
+    request_id: int,
+    payload: ApprovalActionRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueItemResponse:
+    request_item = db.scalar(
+        select(DismissalRequest)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.approval_workflow_template),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
+        )
+        .where(DismissalRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    current_step = _get_current_pending_step(request_item.approval_steps)
+    if current_step is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
+
+    _assert_user_can_act_on_step(user, current_step)
+
+    _mark_request_approval_progress(
+        db,
+        request_item,
+        request_item.approval_steps,
+        approve=False,
+        user=user,
+        comments=payload.comments,
+        pending_status=DismissalRequestStatusEnum.UNDER_REVIEW,
+        approved_status=DismissalRequestStatusEnum.APPROVED,
+        rejected_status=DismissalRequestStatusEnum.REJECTED,
+    )
+    db.commit()
+    db.refresh(request_item)
+    return _serialize_dismissal_approval_queue_item(request_item)
+
+
 def _get_standard_approval_workflow(db: Session) -> ApprovalWorkflowTemplate:
     workflow = db.scalar(
         select(ApprovalWorkflowTemplate)
@@ -210,6 +526,29 @@ def _get_standard_approval_workflow(db: Session) -> ApprovalWorkflowTemplate:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Approval workflow template not found")
 
     return workflow
+
+
+def _get_current_pending_step(approval_steps):
+    ordered_steps = sorted(approval_steps, key=lambda approval_step: approval_step.step_order)
+    return next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+
+
+def _get_allowed_roles_for_step(approver_role: ApprovalRoleEnum) -> set[RoleEnum]:
+    mapping = {
+        ApprovalRoleEnum.MANAGER: {RoleEnum.GESTOR},
+        ApprovalRoleEnum.DIRECTOR_RAVI: {RoleEnum.DIRETOR_RAVI},
+        ApprovalRoleEnum.RH_MANAGER: {RoleEnum.RH_ADMIN},
+    }
+    return mapping.get(approver_role, set())
+
+
+def _assert_user_can_act_on_step(user: User, step) -> None:
+    allowed_roles = _get_allowed_roles_for_step(step.approver_role)
+    if user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"User role {user.role.value} cannot approve step {step.approver_role.value}",
+        )
 
 
 def _seed_admission_approval_steps(db: Session, admission_request: AdmissionRequest, workflow: ApprovalWorkflowTemplate) -> None:

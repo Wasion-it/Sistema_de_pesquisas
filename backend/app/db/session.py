@@ -73,11 +73,69 @@ def _ensure_department_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_approval_workflow_columns() -> None:
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    statements: list[str] = []
+
+    if "approval_workflow_templates" not in existing_tables:
+        statements.append(
+            "CREATE TABLE IF NOT EXISTS approval_workflow_templates ("
+            "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+            "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "code VARCHAR(80) NOT NULL UNIQUE, "
+            "name VARCHAR(180) NOT NULL, "
+            "description TEXT, "
+            "request_kind VARCHAR(20) NOT NULL, "
+            "origin_group VARCHAR(30) NOT NULL, "
+            "is_active BOOLEAN NOT NULL DEFAULT 1"
+            ")"
+        )
+
+    if "approval_workflow_steps" not in existing_tables:
+        statements.append(
+            "CREATE TABLE IF NOT EXISTS approval_workflow_steps ("
+            "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+            "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "workflow_template_id INTEGER NOT NULL, "
+            "step_order INTEGER NOT NULL, "
+            "approver_role VARCHAR(30) NOT NULL, "
+            "approver_label VARCHAR(150) NOT NULL, "
+            "is_required BOOLEAN NOT NULL DEFAULT 1, "
+            "FOREIGN KEY(workflow_template_id) REFERENCES approval_workflow_templates(id) ON DELETE CASCADE"
+            ")"
+        )
+
+    if "admission_requests" in existing_tables:
+        existing_columns = {column["name"] for column in inspector.get_columns("admission_requests")}
+        if "approval_workflow_template_id" not in existing_columns:
+            statements.append(
+                "ALTER TABLE admission_requests ADD COLUMN approval_workflow_template_id INTEGER REFERENCES approval_workflow_templates(id)"
+            )
+
+    if "dismissal_requests" in existing_tables:
+        existing_columns = {column["name"] for column in inspector.get_columns("dismissal_requests")}
+        if "approval_workflow_template_id" not in existing_columns:
+            statements.append(
+                "ALTER TABLE dismissal_requests ADD COLUMN approval_workflow_template_id INTEGER REFERENCES approval_workflow_templates(id)"
+            )
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
 def create_tables() -> None:
     import_all_models()
     Base.metadata.create_all(bind=engine)
     _ensure_survey_question_columns()
     _ensure_department_columns()
+    _ensure_approval_workflow_columns()
 
 
 def get_db() -> Generator[Session, None, None]:

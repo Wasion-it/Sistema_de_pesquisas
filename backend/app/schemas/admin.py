@@ -3,6 +3,9 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field
 
 from app.models.enums import (
+    ApprovalRequestKindEnum,
+    ApprovalRoleEnum,
+    ApprovalStepStatusEnum,
     AdmissionRequestStatusEnum,
     AdmissionRequestTypeEnum,
     CampaignStatusEnum,
@@ -162,6 +165,42 @@ class DismissalRequestResponse(BaseModel):
 
 class DismissalRequestListResponse(BaseModel):
     items: list[DismissalRequestResponse]
+
+
+class ApprovalStepResponse(BaseModel):
+    id: int | None
+    step_order: int
+    approver_role: ApprovalRoleEnum
+    approver_label: str
+    status: ApprovalStepStatusEnum
+    decided_by_user_name: str | None
+    decided_at: datetime | None
+    comments: str | None
+
+
+class ApprovalQueueItemResponse(BaseModel):
+    request_kind: ApprovalRequestKindEnum
+    request_id: int
+    request_title: str
+    request_subtitle: str
+    request_status: str
+    requester_name: str
+    requester_email: str
+    workflow_name: str
+    current_step_order: int | None
+    current_step_label: str | None
+    current_step_role: ApprovalRoleEnum | None
+    submitted_at: datetime | None
+    created_at: datetime
+    steps: list[ApprovalStepResponse]
+
+
+class ApprovalQueueListResponse(BaseModel):
+    items: list[ApprovalQueueItemResponse]
+
+
+class ApprovalActionRequest(BaseModel):
+    comments: str | None = Field(default=None, max_length=2000)
 
 
 class AdminActionResponse(BaseModel):

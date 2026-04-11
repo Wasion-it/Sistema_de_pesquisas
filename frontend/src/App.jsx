@@ -13,6 +13,7 @@ import { AdminDismissalRequestsPage } from './pages/AdminDismissalRequestsPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
 import { AdminHomePage } from './pages/AdminHomePage'
+import { AdminApprovalsPage } from './pages/AdminApprovalsPage'
 import { HomePage } from './pages/HomePage'
 import { AdmissaoFormPage } from './pages/AdmissaoFormPage'
 import { RequestsPage } from './pages/RequestsPage'
@@ -44,6 +45,7 @@ export default function App() {
           >
             <Route index element={<AdminHomePage />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />
             <Route path="admission-requests" element={<AdminAdmissionRequestsPage />} />
             <Route path="dismissal-requests" element={<AdminDismissalRequestsPage />} />

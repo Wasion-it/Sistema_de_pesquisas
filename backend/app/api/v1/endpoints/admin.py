@@ -236,6 +236,7 @@ def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> Approval
         current_step_role=current_step.approver_role if current_step else None,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
+        updated_at=item.updated_at,
         steps=[_serialize_approval_step(approval_step) for approval_step in ordered_steps],
     )
 
@@ -257,6 +258,7 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         current_step_role=current_step.approver_role if current_step else None,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
+        updated_at=item.updated_at,
         steps=[_serialize_approval_step(approval_step) for approval_step in ordered_steps],
     )
 
@@ -345,6 +347,46 @@ def read_admin_dismissal_approval_queue(
         .order_by(DismissalRequest.submitted_at.desc().nullslast(), DismissalRequest.created_at.desc())
     ).all()
     return ApprovalQueueListResponse(items=[_serialize_dismissal_approval_queue_item(item) for item in items])
+
+
+@router.get("/hr/my-requests", response_model=ApprovalQueueListResponse)
+def read_my_requests(
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueListResponse:
+    admission_items = db.scalars(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.approval_workflow_template),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
+        )
+        .where(AdmissionRequest.created_by_user_id == user.id)
+        .order_by(AdmissionRequest.created_at.desc())
+    ).all()
+
+    dismissal_items = db.scalars(
+        select(DismissalRequest)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.approval_workflow_template),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
+        )
+        .where(DismissalRequest.created_by_user_id == user.id)
+        .order_by(DismissalRequest.created_at.desc())
+    ).all()
+
+    items = [
+        _serialize_admission_approval_queue_item(item)
+        for item in admission_items
+    ] + [
+        _serialize_dismissal_approval_queue_item(item)
+        for item in dismissal_items
+    ]
+    items = sorted(items, key=lambda item: item.created_at, reverse=True)
+    return ApprovalQueueListResponse(items=items)
 
 
 @router.post("/hr/approvals/admission/{request_id}/approve", response_model=ApprovalQueueItemResponse)

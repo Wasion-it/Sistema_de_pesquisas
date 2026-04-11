@@ -249,6 +249,14 @@ export async function getAdminApprovalQueue(token, kind) {
   return parseResponse(response)
 }
 
+export async function getMyRequests(token) {
+  const response = await fetch(`${API_URL}/admin/hr/my-requests`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
 export async function approveAdminApprovalRequest(token, kind, requestId, payload = {}) {
   const response = await fetch(
     `${API_URL}/admin/hr/approvals/${kind}/${requestId}/approve`,

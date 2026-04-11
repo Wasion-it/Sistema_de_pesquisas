@@ -192,6 +192,7 @@ class ApprovalQueueItemResponse(BaseModel):
     current_step_role: ApprovalRoleEnum | None
     submitted_at: datetime | None
     created_at: datetime
+    updated_at: datetime
     steps: list[ApprovalStepResponse]
 
 

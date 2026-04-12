@@ -15,10 +15,12 @@ from app.models import (
     AdmissionRequestApproval,
     AdmissionRequest,
     AdmissionRequestStatusEnum,
+    ApprovalOriginGroupEnum,
     AdmissionRequestTypeEnum,
     ApprovalStepStatusEnum,
     ApprovalRequestKindEnum,
     ApprovalRoleEnum,
+    ApprovalWorkflowStep,
     ApprovalWorkflowTemplate,
     AuditActionEnum,
     AuditLog,
@@ -562,8 +564,64 @@ def _get_standard_approval_workflow(db: Session) -> ApprovalWorkflowTemplate:
         select(ApprovalWorkflowTemplate)
         .options(selectinload(ApprovalWorkflowTemplate.steps))
         .where(ApprovalWorkflowTemplate.code == "HR_STANDARD_APPROVAL")
-        .where(ApprovalWorkflowTemplate.is_active.is_(True))
     )
+
+    has_changes = False
+
+    if workflow is None:
+        workflow = ApprovalWorkflowTemplate(
+            code="HR_STANDARD_APPROVAL",
+            name="Fluxo padrão de aprovação RH",
+            description="Fluxo compartilhado para admissão e demissão.",
+            request_kind=ApprovalRequestKindEnum.ANY,
+            origin_group=ApprovalOriginGroupEnum.ANY,
+            is_active=True,
+        )
+        db.add(workflow)
+        db.flush()
+        has_changes = True
+    else:
+        workflow.name = "Fluxo padrão de aprovação RH"
+        workflow.description = "Fluxo compartilhado para admissão e demissão."
+        workflow.request_kind = ApprovalRequestKindEnum.ANY
+        workflow.origin_group = ApprovalOriginGroupEnum.ANY
+        workflow.is_active = True
+
+    expected_steps = [
+        (1, ApprovalRoleEnum.MANAGER, "Gerente"),
+        (2, ApprovalRoleEnum.DIRECTOR_RAVI, "Diretor Ravi"),
+        (3, ApprovalRoleEnum.RH_MANAGER, "Gerente de RH"),
+    ]
+    existing_steps = {step.step_order: step for step in workflow.steps}
+
+    for step_order, approver_role, approver_label in expected_steps:
+        step = existing_steps.get(step_order)
+        if step is None:
+            db.add(
+                ApprovalWorkflowStep(
+                    workflow_template_id=workflow.id,
+                    step_order=step_order,
+                    approver_role=approver_role,
+                    approver_label=approver_label,
+                    is_required=True,
+                )
+            )
+            has_changes = True
+            continue
+
+        step.approver_role = approver_role
+        step.approver_label = approver_label
+        step.is_required = True
+
+    if has_changes:
+        db.flush()
+        workflow = db.scalar(
+            select(ApprovalWorkflowTemplate)
+            .options(selectinload(ApprovalWorkflowTemplate.steps))
+            .where(ApprovalWorkflowTemplate.code == "HR_STANDARD_APPROVAL")
+            .where(ApprovalWorkflowTemplate.is_active.is_(True))
+        )
+
     if workflow is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Approval workflow template not found")
 

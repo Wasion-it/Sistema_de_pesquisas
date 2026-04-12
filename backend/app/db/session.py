@@ -1,8 +1,8 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from app.core.config import settings
 from app.db.base import Base, import_all_models
@@ -130,12 +130,156 @@ def _ensure_approval_workflow_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_default_approval_workflow() -> None:
+    from app.models import (
+        ApprovalOriginGroupEnum,
+        ApprovalRequestKindEnum,
+        ApprovalRoleEnum,
+        ApprovalWorkflowStep,
+        ApprovalWorkflowTemplate,
+    )
+
+    with SessionLocal() as session:
+        workflow = session.scalar(
+            select(ApprovalWorkflowTemplate)
+            .options(selectinload(ApprovalWorkflowTemplate.steps))
+            .where(ApprovalWorkflowTemplate.code == "HR_STANDARD_APPROVAL")
+        )
+
+        has_changes = False
+
+        if workflow is None:
+            workflow = ApprovalWorkflowTemplate(
+                code="HR_STANDARD_APPROVAL",
+                name="Fluxo padrão de aprovação RH",
+                description="Fluxo compartilhado para admissão e demissão.",
+                request_kind=ApprovalRequestKindEnum.ANY,
+                origin_group=ApprovalOriginGroupEnum.ANY,
+                is_active=True,
+            )
+            session.add(workflow)
+            session.flush()
+            has_changes = True
+        else:
+            workflow.name = "Fluxo padrão de aprovação RH"
+            workflow.description = "Fluxo compartilhado para admissão e demissão."
+            workflow.request_kind = ApprovalRequestKindEnum.ANY
+            workflow.origin_group = ApprovalOriginGroupEnum.ANY
+            workflow.is_active = True
+
+        expected_steps = [
+            (1, ApprovalRoleEnum.MANAGER, "Gerente"),
+            (2, ApprovalRoleEnum.DIRECTOR_RAVI, "Diretor Ravi"),
+            (3, ApprovalRoleEnum.RH_MANAGER, "Gerente de RH"),
+        ]
+        existing_steps = {step.step_order: step for step in workflow.steps}
+
+        for step_order, approver_role, approver_label in expected_steps:
+            step = existing_steps.get(step_order)
+            if step is None:
+                session.add(
+                    ApprovalWorkflowStep(
+                        workflow_template_id=workflow.id,
+                        step_order=step_order,
+                        approver_role=approver_role,
+                        approver_label=approver_label,
+                        is_required=True,
+                    )
+                )
+                has_changes = True
+                continue
+
+            step.approver_role = approver_role
+            step.approver_label = approver_label
+            step.is_required = True
+
+        if has_changes:
+            session.commit()
+
+
+def _backfill_request_approval_steps() -> None:
+    from app.models import (
+        AdmissionRequest,
+        AdmissionRequestApproval,
+        AdmissionRequestStatusEnum,
+        ApprovalStepStatusEnum,
+        ApprovalWorkflowTemplate,
+        DismissalRequest,
+        DismissalRequestApproval,
+        DismissalRequestStatusEnum,
+    )
+
+    with SessionLocal() as session:
+        workflow = session.scalar(
+            select(ApprovalWorkflowTemplate)
+            .options(selectinload(ApprovalWorkflowTemplate.steps))
+            .where(ApprovalWorkflowTemplate.code == "HR_STANDARD_APPROVAL")
+            .where(ApprovalWorkflowTemplate.is_active.is_(True))
+        )
+
+        if workflow is None or not workflow.steps:
+            return
+
+        has_changes = False
+
+        admission_requests = session.scalars(
+            select(AdmissionRequest)
+            .options(selectinload(AdmissionRequest.approval_steps))
+            .where(AdmissionRequest.status.in_([AdmissionRequestStatusEnum.PENDING, AdmissionRequestStatusEnum.UNDER_REVIEW]))
+        ).all()
+
+        for request_item in admission_requests:
+            if request_item.approval_steps:
+                continue
+
+            request_item.approval_workflow_template_id = workflow.id
+            for step in workflow.steps:
+                session.add(
+                    AdmissionRequestApproval(
+                        admission_request_id=request_item.id,
+                        workflow_step_id=step.id,
+                        step_order=step.step_order,
+                        approver_role=step.approver_role,
+                        status=ApprovalStepStatusEnum.PENDING,
+                    )
+                )
+            has_changes = True
+
+        dismissal_requests = session.scalars(
+            select(DismissalRequest)
+            .options(selectinload(DismissalRequest.approval_steps))
+            .where(DismissalRequest.status.in_([DismissalRequestStatusEnum.PENDING, DismissalRequestStatusEnum.UNDER_REVIEW]))
+        ).all()
+
+        for request_item in dismissal_requests:
+            if request_item.approval_steps:
+                continue
+
+            request_item.approval_workflow_template_id = workflow.id
+            for step in workflow.steps:
+                session.add(
+                    DismissalRequestApproval(
+                        dismissal_request_id=request_item.id,
+                        workflow_step_id=step.id,
+                        step_order=step.step_order,
+                        approver_role=step.approver_role,
+                        status=ApprovalStepStatusEnum.PENDING,
+                    )
+                )
+            has_changes = True
+
+        if has_changes:
+            session.commit()
+
+
 def create_tables() -> None:
     import_all_models()
     Base.metadata.create_all(bind=engine)
     _ensure_survey_question_columns()
     _ensure_department_columns()
     _ensure_approval_workflow_columns()
+    _ensure_default_approval_workflow()
+    _backfill_request_approval_steps()
 
 
 def get_db() -> Generator[Session, None, None]:

@@ -125,21 +125,6 @@ function getStepDecisionSummary(step) {
   return `Em ${formatDateTime(step.decided_at)}`
 }
 
-function getActionableStep(steps, userRole) {
-  const allowedApprovalRoles = ROLE_TO_APPROVAL_ROLES[userRole] ?? new Set()
-  const orderedPendingSteps = steps.filter((step) => step.status === 'PENDING')
-
-  if (allowedApprovalRoles.size === 0 || orderedPendingSteps.length === 0) {
-    return null
-  }
-
-  if (userRole === 'RH_ADMIN') {
-    return orderedPendingSteps.find((step) => step.approver_role === 'RH_MANAGER') ?? null
-  }
-
-  return orderedPendingSteps.find((step) => allowedApprovalRoles.has(step.approver_role)) ?? null
-}
-
 function ApprovalStepTracker({ steps }) {
   const { total, approved, rejected, currentStep, progress } = getApprovalProgress(steps)
   const currentStepOrder = currentStep?.step_order ?? null
@@ -246,12 +231,6 @@ export function ApprovalStatusModal({ request, token, onClose }) {
   const statusLabel = STATUS_LABELS[status] ?? status
   const bannerMeta = getBannerMeta(status)
   const requestKindLabel = REQUEST_KIND_LABELS[fullRequest.request_kind] ?? fullRequest.request_kind
-  const actionableStep = getActionableStep(fullRequest.steps ?? [], user?.role)
-  const actionableStepLabel = actionableStep?.approver_label ?? fullRequest.current_step_label ?? 'Concluída'
-  const actionableStepNote = actionableStep && user?.role === 'RH_ADMIN'
-    ? 'Você pode aprovar essa solicitação diretamente na etapa final do RH.'
-    : null
-
   return (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
       <div className="request-modal" role="dialog" aria-modal="true" aria-labelledby="approval-status-title" onClick={(event) => event.stopPropagation()}>
@@ -282,16 +261,6 @@ export function ApprovalStatusModal({ request, token, onClose }) {
             </div>
 
             <ApprovalStepTracker steps={fullRequest.steps ?? []} />
-
-            {actionableStep ? (
-              <div className="request-note-box">
-                <strong>Etapa acionável</strong>
-                <p>
-                  {actionableStepLabel}
-                  {actionableStepNote ? ` · ${actionableStepNote}` : ''}
-                </p>
-              </div>
-            ) : null}
 
             <div className="request-modal-meta">
               <DetailField label="Tipo" value={requestKindLabel} />

@@ -1479,6 +1479,29 @@ body:has(.admin-shell) { background: var(--slate-100); }
   line-height: 1.35;
 }
 
+.admin-home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 8px 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+  color: var(--slate-200);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--dur) var(--ease);
+}
+.admin-home-button:hover {
+  background: rgba(59,130,246,.14);
+  color: #fff;
+  border-color: rgba(96,165,250,.22);
+}
+.admin-home-button .nav-icon { opacity: .75; }
+.admin-home-button:hover .nav-icon { opacity: 1; }
+
 .admin-nav {
   display: flex; flex-direction: column; gap: 2px;
   flex: 1;
@@ -2653,6 +2676,7 @@ body:has(.admin-shell) { background: var(--slate-100); }
     gap: 12px; padding: 14px 20px;
   }
   .admin-brand-block { padding-bottom: 0; margin-bottom: 0; border-bottom: none; flex: 1; }
+  .admin-home-button { margin: 0; }
   .admin-nav { flex-direction: row; flex: none; }
   .admin-user-card { margin-top: 0; margin-left: auto; }
   .admin-content { padding-top: 8px; }

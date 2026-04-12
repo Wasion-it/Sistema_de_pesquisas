@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 
@@ -28,6 +28,15 @@ export function AdminLayout() {
           <div className="admin-brand-logo">RH</div>
           <span className="admin-brand-name">Sistema de Pesquisas</span>
         </div>
+
+        <Link className="admin-home-button" to="/admin">
+          <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M3 12l9-8 9 8" />
+            <path d="M5 10v10h14V10" />
+            <path d="M10 20v-6h4v6" />
+          </svg>
+          Voltar para a home
+        </Link>
 
         <nav className="admin-nav">
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} end to="/admin">

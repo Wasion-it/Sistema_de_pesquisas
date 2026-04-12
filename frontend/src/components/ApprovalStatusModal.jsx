@@ -18,20 +18,6 @@ const STATUS_LABELS = {
   CANCELED: 'Cancelada',
 }
 
-const STEP_STATUS_LABELS = {
-  PENDING: 'Pendente',
-  APPROVED: 'Aprovado',
-  REJECTED: 'Rejeitado',
-  SKIPPED: 'Ignorado',
-}
-
-const STEP_STATUS_CLASS = {
-  PENDING: 'inactive',
-  APPROVED: 'active',
-  REJECTED: 'inactive',
-  SKIPPED: 'inactive',
-}
-
 const REQUEST_KIND_LABELS = {
   ADMISSION: 'Admissão',
   DISMISSAL: 'Demissão',
@@ -116,6 +102,22 @@ function getApprovalProgress(steps = []) {
   }
 }
 
+function getStepDecisionSummary(step) {
+  if (!step.decided_by_user_name && !step.decided_at) {
+    return null
+  }
+
+  if (step.decided_by_user_name && step.decided_at) {
+    return `Por ${step.decided_by_user_name} em ${formatDateTime(step.decided_at)}`
+  }
+
+  if (step.decided_by_user_name) {
+    return `Por ${step.decided_by_user_name}`
+  }
+
+  return `Em ${formatDateTime(step.decided_at)}`
+}
+
 function ApprovalStepTracker({ steps }) {
   const { total, approved, rejected, currentStep, progress } = getApprovalProgress(steps)
   const currentStepOrder = currentStep?.step_order ?? null
@@ -139,6 +141,7 @@ function ApprovalStepTracker({ steps }) {
         {steps.map((step) => {
           const trackerMeta = STEP_TRACKER_META[step.status] ?? STEP_TRACKER_META.PENDING
           const isCurrent = step.status === 'PENDING' && step.step_order === currentStepOrder
+          const decisionSummary = getStepDecisionSummary(step)
 
           return (
             <div className={`approval-step-node ${trackerMeta.className} ${isCurrent ? 'is-current' : ''}`} key={step.step_order}>
@@ -146,6 +149,7 @@ function ApprovalStepTracker({ steps }) {
               <div className="approval-step-node-content">
                 <strong>{step.approver_label}</strong>
                 <small>{trackerMeta.title}</small>
+                {decisionSummary ? <small className="approval-step-node-detail">{decisionSummary}</small> : null}
               </div>
             </div>
           )
@@ -261,28 +265,6 @@ export function ApprovalStatusModal({ request, token, onClose }) {
                 <span>Atualização</span>
                 <strong>{formatDateTime(fullRequest.updated_at)}</strong>
                 <small>Criado em {formatDateTime(fullRequest.created_at)}</small>
-              </div>
-            </div>
-
-            <div className="request-modal-section">
-              <div className="request-modal-section-header">
-                <h4>Etapas de aprovação</h4>
-                <span>{fullRequest.steps?.length ?? 0} etapa(s)</span>
-              </div>
-              <div className="request-modal-steps">
-                {(fullRequest.steps ?? []).map((step) => (
-                  <div className="request-modal-step" key={`${fullRequest.request_id}-${step.step_order}`}>
-                    <span className={`status-pill ${STEP_STATUS_CLASS[step.status] ?? 'inactive'}`}>
-                      {STEP_STATUS_LABELS[step.status] ?? step.status}
-                    </span>
-                    <div>
-                      <strong>{step.step_order}. {step.approver_label}</strong>
-                      <small>{step.decided_by_user_name ? `Decidido por ${step.decided_by_user_name}` : 'Aguardando decisão'}</small>
-                      <small>{step.decided_at ? formatDateTime(step.decided_at) : 'Sem data de decisão'}</small>
-                      {step.comments ? <small>{step.comments}</small> : null}
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </>

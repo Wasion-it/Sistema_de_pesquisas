@@ -1862,16 +1862,9 @@ body:has(.admin-shell) { background: var(--slate-100); }
   letter-spacing: .06em;
 }
 
-.approval-request-meta strong,
-.approval-step-item strong {
+.approval-request-meta strong {
   display: block;
   color: var(--slate-800);
-}
-
-.approval-step-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 16px;
 }
 
 .approval-step-tracker {
@@ -1984,6 +1977,11 @@ body:has(.admin-shell) { background: var(--slate-100); }
   font-size: 12px;
 }
 
+.approval-step-node-detail {
+  line-height: 1.45;
+  color: var(--slate-600);
+}
+
 .approval-step-node.completed {
   border-color: rgba(34, 197, 94, .22);
   background: linear-gradient(180deg, rgba(240, 253, 244, .92) 0%, rgba(255, 255, 255, .96) 100%);
@@ -2020,12 +2018,6 @@ body:has(.admin-shell) { background: var(--slate-100); }
 
 .approval-step-node.skipped {
   opacity: .72;
-}
-
-.approval-step-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .approval-request-actions {
@@ -2092,16 +2084,14 @@ body:has(.admin-shell) { background: var(--slate-100); }
   gap: 12px;
 }
 
-.request-modal-meta > div,
-.request-modal-step {
+.request-modal-meta > div {
   padding: 14px;
   border-radius: var(--r-lg);
   background: var(--slate-50);
   border: 1px solid var(--slate-100);
 }
 
-.request-modal-meta span,
-.request-modal-step small {
+.request-modal-meta span {
   display: block;
   margin-bottom: 4px;
   font-size: 11px;
@@ -2111,8 +2101,7 @@ body:has(.admin-shell) { background: var(--slate-100); }
   letter-spacing: .06em;
 }
 
-.request-modal-meta strong,
-.request-modal-step strong {
+.request-modal-meta strong {
   display: block;
   color: var(--slate-800);
 }
@@ -2187,21 +2176,6 @@ body:has(.admin-shell) { background: var(--slate-100); }
   font-size: 13px;
 }
 
-.request-modal-steps {
-  display: grid;
-  gap: 10px;
-}
-
-.request-modal-step {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.request-modal-step small {
-  margin-bottom: 0;
-}
-
 @media (max-width: 900px) {
   .approval-request-meta,
   .request-modal-meta {
@@ -2221,9 +2195,7 @@ body:has(.admin-shell) { background: var(--slate-100); }
   }
 
   .approval-request-top,
-  .approval-step-tracker-header,
-  .approval-step-item,
-  .request-modal-step {
+  .approval-step-tracker-header {
     flex-direction: column;
     align-items: flex-start;
   }

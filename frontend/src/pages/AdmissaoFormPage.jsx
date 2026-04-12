@@ -101,6 +101,22 @@ export function AdmissaoFormPage() {
     }
   }, [isAuthenticated, token])
 
+  const activeJobTitles = useMemo(() => jobTitles.filter((jobTitle) => jobTitle.is_active), [jobTitles])
+
+  useEffect(() => {
+    if (!formValues.cargo) {
+      return
+    }
+
+    const cargoStillAvailable = activeJobTitles.some((jobTitle) => jobTitle.name === formValues.cargo)
+    if (!cargoStillAvailable) {
+      setFormValues((current) => ({
+        ...current,
+        cargo: '',
+      }))
+    }
+  }, [activeJobTitles, formValues.cargo])
+
   const isSubmitDisabled = useMemo(() => {
     if (!formValues.tipo || !formValues.cargo || !formValues.setor || !formValues.recrutamento) {
       return true
@@ -264,11 +280,10 @@ export function AdmissaoFormPage() {
                     <option value="">
                       {isLoadingJobTitles ? 'Carregando cargos...' : 'Selecione um cargo'}
                     </option>
-                    {jobTitles.map((jobTitle) => (
+                    {activeJobTitles.map((jobTitle) => (
                       <option key={jobTitle.id} value={jobTitle.name}>
                         {jobTitle.name}
                         {jobTitle.description ? ` - ${jobTitle.description}` : ''}
-                        {jobTitle.is_active ? '' : ' (inativo)'}
                       </option>
                     ))}
                   </select>
@@ -366,14 +381,14 @@ export function AdmissaoFormPage() {
                 </p>
               </div>
 
-              {!isLoadingJobTitles && jobTitles.length === 0 ? (
+              {!isLoadingJobTitles && activeJobTitles.length === 0 ? (
                 <div className="form-error">
-                  Nenhum cargo foi cadastrado pelo RH. Cadastre um cargo antes de enviar a solicitação.
+                  Nenhum cargo ativo foi cadastrado pelo RH. Ative um cargo antes de enviar a solicitação.
                 </div>
               ) : null}
 
               <div className="form-actions-row">
-                <button className="primary-button" disabled={isSubmitDisabled || isSubmitting || !isAuthenticated || jobTitles.length === 0} type="submit">
+                <button className="primary-button" disabled={isSubmitDisabled || isSubmitting || !isAuthenticated || activeJobTitles.length === 0} type="submit">
                   {isSubmitting ? 'Salvando...' : 'Salvar solicitação'}
                 </button>
                 <button className="secondary-button" type="button" onClick={handleReset}>

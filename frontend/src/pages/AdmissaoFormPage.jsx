@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { createAdminAdmissionRequest } from '../services/admin'
+import { createAdminAdmissionRequest, getAdminJobTitles } from '../services/admin'
 
 const INITIAL_FORM = {
   tipo: '',
@@ -54,12 +54,52 @@ const CONTRACT_REGIME_MAP = {
 export function AdmissaoFormPage() {
   const { isAuthenticated, isLoading, token } = useAuth()
   const [formValues, setFormValues] = useState(INITIAL_FORM)
+  const [jobTitles, setJobTitles] = useState([])
+  const [isLoadingJobTitles, setIsLoadingJobTitles] = useState(true)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isSubstituicao = formValues.tipo === 'Substituição'
   const isAumentoQuado = formValues.tipo === 'Aumento de quadro'
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (!token || !isAuthenticated) {
+      if (isMounted) {
+        setJobTitles([])
+        setIsLoadingJobTitles(false)
+      }
+      return () => {
+        isMounted = false
+      }
+    }
+
+    setIsLoadingJobTitles(true)
+    getAdminJobTitles(token)
+      .then((data) => {
+        if (!isMounted) {
+          return
+        }
+
+        setJobTitles(data.items ?? [])
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setErrorMessage(error.message)
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingJobTitles(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated, token])
 
   const isSubmitDisabled = useMemo(() => {
     if (!formValues.tipo || !formValues.cargo || !formValues.setor || !formValues.recrutamento) {
@@ -215,12 +255,23 @@ export function AdmissaoFormPage() {
 
                 <label className="field-group">
                   <span>Cargo</span>
-                  <input
+                  <select
                     name="cargo"
-                    placeholder="Cargo da vaga"
                     value={formValues.cargo}
                     onChange={handleFieldChange}
-                  />
+                    disabled={isLoadingJobTitles}
+                  >
+                    <option value="">
+                      {isLoadingJobTitles ? 'Carregando cargos...' : 'Selecione um cargo'}
+                    </option>
+                    {jobTitles.map((jobTitle) => (
+                      <option key={jobTitle.id} value={jobTitle.name}>
+                        {jobTitle.name}
+                        {jobTitle.description ? ` - ${jobTitle.description}` : ''}
+                        {jobTitle.is_active ? '' : ' (inativo)'}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="field-group">
@@ -315,8 +366,14 @@ export function AdmissaoFormPage() {
                 </p>
               </div>
 
+              {!isLoadingJobTitles && jobTitles.length === 0 ? (
+                <div className="form-error">
+                  Nenhum cargo foi cadastrado pelo RH. Cadastre um cargo antes de enviar a solicitação.
+                </div>
+              ) : null}
+
               <div className="form-actions-row">
-                <button className="primary-button" disabled={isSubmitDisabled || isSubmitting || !isAuthenticated} type="submit">
+                <button className="primary-button" disabled={isSubmitDisabled || isSubmitting || !isAuthenticated || jobTitles.length === 0} type="submit">
                   {isSubmitting ? 'Salvando...' : 'Salvar solicitação'}
                 </button>
                 <button className="secondary-button" type="button" onClick={handleReset}>

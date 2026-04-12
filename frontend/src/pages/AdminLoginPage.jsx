@@ -1,17 +1,19 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 
 export function AdminLoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, isLoading, signIn } = useAuth()
   const [login, setLogin] = useState('rh.admin')
   const [password, setPassword] = useState('AdminRH123!')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const returnTo = location.state?.returnTo ?? '/solicitacoes'
 
-  if (isAuthenticated) return <Navigate replace to="/admin" />
+  if (isAuthenticated) return <Navigate replace to={returnTo} />
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -19,7 +21,7 @@ export function AdminLoginPage() {
     setIsSubmitting(true)
     try {
       await signIn({ login, password })
-      navigate('/admin')
+      navigate(returnTo)
     } catch (error) {
       setErrorMessage(error.message)
     } finally {

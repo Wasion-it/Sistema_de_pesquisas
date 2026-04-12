@@ -6,12 +6,12 @@ export function HomePage() {
       <header className="collab-header">
         <div className="collab-header-inner">
           <span className="collab-brand">Pesquisas RH</span>
-          <a className="text-muted-link" href="/admin">
+          <Link className="text-muted-link" to="/admin/login" state={{ returnTo: '/admin' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
             Acesso RH
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -46,27 +46,6 @@ export function HomePage() {
             <span className="module-card-action">Acessar</span>
           </Link>
 
-          <Link className="module-card" to="/admin/my-requests">
-            <div className="module-card-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 6h13" />
-                <path d="M8 12h13" />
-                <path d="M8 18h13" />
-                <path d="M3 6h.01" />
-                <path d="M3 12h.01" />
-                <path d="M3 18h.01" />
-              </svg>
-            </div>
-            <div className="module-card-body">
-              <span className="module-card-kicker">Acompanhamento</span>
-              <h2>Minhas solicitações</h2>
-              <p>
-                Consulte o status, a etapa atual e o histórico das solicitações que você já enviou.
-              </p>
-            </div>
-            <span className="module-card-action">Acessar</span>
-          </Link>
-
           <Link className="module-card" to="/solicitacoes">
             <div className="module-card-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -78,10 +57,10 @@ export function HomePage() {
             </div>
             <div className="module-card-body">
               <span className="module-card-kicker">Módulo</span>
-              <h2>Solicitação de admissão ou demissão</h2>
+              <h2>Solicitações</h2>
               <p>
-                Registre e acompanhe solicitações de entrada ou saída de colaboradores
-                com o fluxo padronizado do RH.
+                Acesse admissão, demissão e minhas solicitações em um único hub com o
+                fluxo padronizado do RH.
               </p>
             </div>
             <span className="module-card-action">Acessar</span>

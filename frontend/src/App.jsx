@@ -30,9 +30,30 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/solicitacoes" element={<RequestsPage />} />
-          <Route path="/solicitacoes/admissao" element={<AdmissaoFormPage />} />
-          <Route path="/solicitacoes/demissao" element={<DemissaoFormPage />} />
+          <Route
+            path="/solicitacoes"
+            element={
+              <ProtectedRoute>
+                <RequestsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/solicitacoes/admissao"
+            element={
+              <ProtectedRoute>
+                <AdmissaoFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/solicitacoes/demissao"
+            element={
+              <ProtectedRoute>
+                <DemissaoFormPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/pesquisas" element={<SurveysPage />} />
           <Route path="/campaigns/:campaignId" element={<PublicCampaignPage />} />
           <Route path="/campaigns/:campaignId/thank-you" element={<PublicCampaignThankYouPage />} />

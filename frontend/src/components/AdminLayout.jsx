@@ -17,8 +17,7 @@ export function AdminLayout() {
   const { signOut, user } = useAuth()
 
   function handleSignOut() {
-    signOut()
-    navigate('/admin/login')
+    signOut('/')
   }
 
   return (

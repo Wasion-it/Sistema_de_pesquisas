@@ -52,10 +52,14 @@ export function AuthProvider({ children }) {
     return data.user
   }
 
-  function signOut() {
+  function signOut(redirectTo = null) {
     window.localStorage.removeItem(TOKEN_STORAGE_KEY)
     setToken(null)
     setUser(null)
+
+    if (redirectTo) {
+      window.location.replace(redirectTo)
+    }
   }
 
   return (

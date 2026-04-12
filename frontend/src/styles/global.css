@@ -2361,6 +2361,174 @@ body:has(.admin-shell) { background: var(--slate-100); }
 .empty-state strong { font-size: 15px; color: var(--slate-600); font-weight: 600; }
 .empty-state span { font-size: 13px; max-width: 300px; line-height: 1.65; }
 
+/* ============================================================
+   SURVEYS PAGE — Admin
+   ============================================================ */
+
+/* Form card accent */
+.surveys-form-card { border-top: 3px solid var(--blue-600); }
+
+/* Form section header */
+.surveys-form-section-header { margin-bottom: 4px; }
+.surveys-form-section-header h3 {
+  margin-bottom: 4px;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--slate-900);
+}
+.surveys-form-section-header p { font-size: 13px; color: var(--slate-500); }
+
+/* Code input monospace */
+.surveys-code-input { font-family: 'Courier New', monospace; font-weight: 600; }
+
+/* Active checkbox alignment */
+.surveys-active-check { align-self: end; margin-bottom: 2px; }
+
+/* Wizard steps */
+.surveys-wizard-steps {
+  display: flex;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.surveys-wizard-step-group {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+.surveys-wizard-step-group:last-child { flex: none; }
+
+.surveys-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity var(--dur) var(--ease);
+}
+.surveys-wizard-step:disabled { cursor: default; opacity: .6; }
+
+.surveys-wizard-step-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--slate-200);
+  color: var(--slate-500);
+  font-size: 12px; font-weight: 700;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.surveys-wizard-step.is-active .surveys-wizard-step-dot,
+.surveys-wizard-step.is-done .surveys-wizard-step-dot {
+  background: var(--blue-600);
+  color: #fff;
+}
+
+.surveys-wizard-step-label {
+  font-size: 13px; font-weight: 600;
+  color: var(--slate-400);
+  transition: color var(--dur) var(--ease);
+}
+.surveys-wizard-step.is-active .surveys-wizard-step-label,
+.surveys-wizard-step.is-done .surveys-wizard-step-label { color: var(--slate-800); }
+
+.surveys-wizard-connector {
+  flex: 1;
+  height: 2px;
+  margin: 0 12px;
+  background: var(--slate-200);
+  transition: background var(--dur) var(--ease);
+}
+.surveys-wizard-connector.is-done { background: var(--blue-600); }
+
+/* Dimension preview */
+.surveys-dimension-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+}
+.surveys-dimension-tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--blue-100);
+  color: var(--blue-800);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Search bar */
+.surveys-search-label { margin: 0; }
+.surveys-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.surveys-search-icon {
+  position: absolute;
+  left: 12px;
+  pointer-events: none;
+  color: var(--slate-400);
+}
+.surveys-search-input { padding-left: 38px; padding-right: 36px; }
+.surveys-search-clear {
+  position: absolute;
+  right: 10px;
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--slate-200);
+  color: var(--slate-500);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.surveys-search-clear:hover { background: var(--slate-300); color: var(--slate-800); }
+
+/* Spinner */
+.surveys-spinner {
+  width: 24px; height: 24px;
+  border: 2.5px solid var(--blue-100);
+  border-top-color: var(--blue-600);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin-bottom: 4px;
+}
+
+/* Campaign name truncation */
+.surveys-campaign-name {
+  display: block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Campaign links */
+.surveys-campaign-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.surveys-campaign-links .inline-link { font-size: 12px; }
+
+/* Row action buttons */
+.surveys-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.surveys-action-btn { padding: 8px 12px; font-size: 12px; }
+
 /* Survey table */
 .survey-table {
   display: grid;

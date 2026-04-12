@@ -15,10 +15,49 @@ const INITIAL_FORM = {
   isActive: true,
 }
 
-const STATUS_LABELS = {
+const VERSION_STATUS_LABELS = {
   DRAFT: { label: 'Rascunho', variant: 'inactive' },
   PUBLISHED: { label: 'Publicada', variant: 'active' },
   ARCHIVED: { label: 'Arquivada', variant: 'inactive' },
+}
+
+const WIZARD_STEPS = [
+  { n: 1, label: 'Identificação' },
+  { n: 2, label: 'Estrutura' },
+]
+
+function WizardStepIndicator({ currentStep, step1Valid, onGoTo }) {
+  return (
+    <div className="surveys-wizard-steps">
+      {WIZARD_STEPS.map((step, idx) => {
+        const isCompleted = currentStep > step.n
+        const isActive = currentStep === step.n
+        const canClick = step.n < currentStep || (step.n === 2 && step1Valid)
+        return (
+          <div className="surveys-wizard-step-group" key={step.n}>
+            <button
+              className={`surveys-wizard-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-done' : ''}`}
+              disabled={!canClick}
+              type="button"
+              onClick={() => canClick && onGoTo(step.n)}
+            >
+              <span className="surveys-wizard-step-dot">
+                {isCompleted ? (
+                  <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24" width="12">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : step.n}
+              </span>
+              <span className="surveys-wizard-step-label">{step.label}</span>
+            </button>
+            {idx < WIZARD_STEPS.length - 1 && (
+              <div className={`surveys-wizard-connector ${isCompleted ? 'is-done' : ''}`} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 export function AdminSurveysPage() {
@@ -32,7 +71,7 @@ export function AdminSurveysPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [deletingSurveyId, setDeletingSurveyId] = useState(null)
   const [formValues, setFormValues] = useState(INITIAL_FORM)
-  const [formStep, setFormStep] = useState(1) // wizard steps: 1, 2
+  const [formStep, setFormStep] = useState(1)
 
   useEffect(() => {
     let isMounted = true
@@ -50,6 +89,13 @@ export function AdminSurveysPage() {
       [s.name, s.code, s.category].filter(Boolean).some((v) => v.toLowerCase().includes(q))
     )
   }, [query, surveys])
+
+  const stats = useMemo(() => ({
+    total: surveys.length,
+    active: surveys.filter((s) => s.is_active).length,
+    withCampaign: surveys.filter((s) => s.active_campaigns > 0).length,
+    totalQuestions: surveys.reduce((sum, s) => sum + (s.total_questions ?? 0), 0),
+  }), [surveys])
 
   function handleFieldChange(e) {
     const { name, type, checked, value } = e.target
@@ -90,10 +136,8 @@ export function AdminSurveysPage() {
   }
 
   async function handleDeleteSurvey(survey) {
-    const confirmed = window.confirm(`Excluir a pesquisa "${survey.name}"? Esta acao remove versoes, perguntas, campanhas e respostas vinculadas.`)
-    if (!confirmed) {
-      return
-    }
+    const confirmed = window.confirm(`Excluir a pesquisa "${survey.name}"?\n\nEsta ação remove versões, perguntas, campanhas e respostas vinculadas e não pode ser desfeita.`)
+    if (!confirmed) return
 
     setErrorMessage('')
     setSuccessMessage('')
@@ -115,108 +159,103 @@ export function AdminSurveysPage() {
     && formValues.name.trim().length >= 3
     && formValues.versionTitle.trim().length >= 3
 
+  const dimensionTags = formValues.dimensions.split('\n').filter((s) => s.trim())
+
   return (
     <div className="admin-view">
-      {/* Header */}
+
+      {/* ── Cabeçalho ── */}
       <div className="admin-view-header">
         <div>
           <span className="eyebrow">Gestão de Pesquisas</span>
           <h2>Pesquisas cadastradas</h2>
-          <p>Crie, configure e publique pesquisas para os colaboradores.</p>
+          <p>Crie, configure e publique pesquisas para os colaboradores do RH.</p>
         </div>
-        <button
-          className="primary-button"
-          onClick={() => setIsFormOpen((cur) => !cur)}
-          type="button"
-        >
-          {isFormOpen ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-              Fechar
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              Nova pesquisa
-            </>
-          )}
-        </button>
+        <div className="admin-header-actions">
+          <button
+            className={isFormOpen ? 'secondary-button' : 'primary-button'}
+            type="button"
+            onClick={() => { if (isFormOpen) { handleCloseForm() } else { setIsFormOpen(true) } }}
+          >
+            {isFormOpen ? (
+              <>
+                <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
+                  <line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" />
+                </svg>
+                Cancelar
+              </>
+            ) : (
+              <>
+                <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
+                  <line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" />
+                </svg>
+                Nova pesquisa
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Create form — wizard */}
+      {/* ── Stat cards ── */}
+      {!isLoading && (
+        <div className="dashboard-stats-grid">
+          <article className="stat-card">
+            <span>Total de pesquisas</span>
+            <strong>{stats.total}</strong>
+          </article>
+          <article className="stat-card">
+            <span>Pesquisas ativas</span>
+            <strong>{stats.active}</strong>
+          </article>
+          <article className="stat-card">
+            <span>Com campanha aberta</span>
+            <strong>{stats.withCampaign}</strong>
+          </article>
+          <article className="stat-card">
+            <span>Total de perguntas</span>
+            <strong>{stats.totalQuestions}</strong>
+          </article>
+        </div>
+      )}
+
+      {/* ── Alertas globais ── */}
+      {successMessage && <div className="form-success">{successMessage}</div>}
+      {errorMessage && !isFormOpen && <div className="form-error">{errorMessage}</div>}
+
+      {/* ── Formulário wizard ── */}
       {isFormOpen && (
-        <section className="admin-panel-card" style={{ borderTop: '3px solid var(--blue-600)' }}>
-          {/* Steps indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 28 }}>
-            {[
-              { n: 1, label: 'Identificação' },
-              { n: 2, label: 'Estrutura' },
-            ].map((step, idx, arr) => (
-              <div key={step.n} style={{ display: 'flex', alignItems: 'center', flex: idx < arr.length - 1 ? 1 : 'none' }}>
-                <div
-                  onClick={() => step.n < formStep || (step.n === 2 && step1Valid) ? setFormStep(step.n) : null}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    cursor: step.n <= formStep || step1Valid ? 'pointer' : 'default',
-                  }}
-                >
-                  <div style={{
-                    width: 28, height: 28, borderRadius: '50%',
-                    background: formStep >= step.n ? 'var(--blue-600)' : 'var(--slate-200)',
-                    color: formStep >= step.n ? '#fff' : 'var(--slate-500)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 700, flexShrink: 0,
-                    transition: 'all var(--dur) var(--ease)',
-                  }}>
-                    {formStep > step.n ? (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    ) : step.n}
-                  </div>
-                  <span style={{
-                    fontSize: 13, fontWeight: 600,
-                    color: formStep >= step.n ? 'var(--slate-800)' : 'var(--slate-400)',
-                  }}>{step.label}</span>
-                </div>
-                {idx < arr.length - 1 && (
-                  <div style={{
-                    flex: 1, height: 2, margin: '0 12px',
-                    background: formStep > step.n ? 'var(--blue-600)' : 'var(--slate-200)',
-                    transition: 'background var(--dur) var(--ease)',
-                  }} />
-                )}
-              </div>
-            ))}
-          </div>
+        <section className="admin-panel-card surveys-form-card">
+          <WizardStepIndicator
+            currentStep={formStep}
+            step1Valid={step1Valid}
+            onGoTo={setFormStep}
+          />
 
           <form onSubmit={formStep === 2 ? handleCreateSurvey : (e) => { e.preventDefault(); setFormStep(2) }}>
+
+            {/* ── Passo 1: Identificação ── */}
             {formStep === 1 && (
               <div className="survey-create-form">
-                <div style={{ marginBottom: 4 }}>
-                  <h3 style={{ marginBottom: 4, fontSize: '1rem', fontFamily: 'var(--font-body)' }}>Identifique a pesquisa</h3>
-                  <p style={{ fontSize: 13, color: 'var(--slate-500)' }}>Defina o nome, código único e a primeira versão.</p>
+                <div className="surveys-form-section-header">
+                  <h3>Identifique a pesquisa</h3>
+                  <p>Defina o nome, código único e a primeira versão.</p>
                 </div>
 
                 <div className="form-grid two-columns">
                   <label className="field-group" htmlFor="survey-code">
                     <span>
                       Código único
-                      <span className="field-optional">· ex: GPTW-2026-Q1</span>
+                      <span className="field-optional"> · ex: CLIMA-2026-Q1</span>
                     </span>
                     <input
+                      className="surveys-code-input"
                       id="survey-code"
+                      minLength={3}
                       name="code"
                       placeholder="CLIMA-2026-Q1"
                       required
-                      minLength={3}
                       value={formValues.code}
                       onChange={handleFieldChange}
-                      style={{ fontFamily: "'Courier New', monospace", fontWeight: 600 }}
                     />
                   </label>
 
@@ -224,10 +263,10 @@ export function AdminSurveysPage() {
                     <span>Tipo de pesquisa</span>
                     <input
                       id="survey-category"
-                      name="category"
-                      placeholder="Ex: Great Place to Work, Clima, Onboarding"
-                      required
                       minLength={2}
+                      name="category"
+                      placeholder="Great Place to Work, Clima, Onboarding…"
+                      required
                       value={formValues.category}
                       onChange={handleFieldChange}
                     />
@@ -238,10 +277,10 @@ export function AdminSurveysPage() {
                   <span>Nome da pesquisa</span>
                   <input
                     id="survey-name"
+                    minLength={3}
                     name="name"
                     placeholder="Ex: Pesquisa de Clima Organizacional 2026"
                     required
-                    minLength={3}
                     value={formValues.name}
                     onChange={handleFieldChange}
                   />
@@ -270,7 +309,7 @@ export function AdminSurveysPage() {
                       onChange={handleFieldChange}
                     />
                   </label>
-                  <label className="checkbox-field" htmlFor="survey-active" style={{ alignSelf: 'end' }}>
+                  <label className="checkbox-field surveys-active-check" htmlFor="survey-active">
                     <input
                       checked={formValues.isActive}
                       id="survey-active"
@@ -278,15 +317,15 @@ export function AdminSurveysPage() {
                       type="checkbox"
                       onChange={handleFieldChange}
                     />
-                    <span>Pesquisa ativa</span>
+                    <span>Pesquisa ativa ao criar</span>
                   </label>
                 </div>
 
                 <div className="form-actions-row">
-                  <button className="primary-button" type="submit" disabled={!step1Valid}>
+                  <button className="primary-button" disabled={!step1Valid} type="submit">
                     Continuar
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
+                    <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
+                      <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
                     </svg>
                   </button>
                   <button className="secondary-button" type="button" onClick={handleCloseForm}>
@@ -296,13 +335,12 @@ export function AdminSurveysPage() {
               </div>
             )}
 
+            {/* ── Passo 2: Estrutura ── */}
             {formStep === 2 && (
               <div className="survey-create-form">
-                <div style={{ marginBottom: 4 }}>
-                  <h3 style={{ marginBottom: 4, fontSize: '1rem', fontFamily: 'var(--font-body)' }}>Estrutura da pesquisa</h3>
-                  <p style={{ fontSize: 13, color: 'var(--slate-500)' }}>
-                    Adicione dimensões temáticas opcionais para organizar as perguntas depois.
-                  </p>
+                <div className="surveys-form-section-header">
+                  <h3>Estrutura da pesquisa</h3>
+                  <p>Adicione dimensões temáticas para organizar as perguntas depois.</p>
                 </div>
 
                 <label className="field-group" htmlFor="survey-version-description">
@@ -335,21 +373,10 @@ export function AdminSurveysPage() {
                   </span>
                 </label>
 
-                {/* Preview of entered dimensions */}
-                {formValues.dimensions.trim() && (
-                  <div style={{
-                    display: 'flex', flexWrap: 'wrap', gap: 6,
-                    padding: '12px 14px', borderRadius: 'var(--r-md)',
-                    background: 'var(--slate-50)', border: '1px solid var(--slate-200)',
-                  }}>
-                    {formValues.dimensions.split('\n').filter((s) => s.trim()).map((d, i) => (
-                      <span key={i} style={{
-                        padding: '4px 10px', borderRadius: 999,
-                        background: 'var(--blue-100)', color: 'var(--blue-800)',
-                        fontSize: 12, fontWeight: 600,
-                      }}>
-                        {d.trim()}
-                      </span>
+                {dimensionTags.length > 0 && (
+                  <div className="surveys-dimension-preview">
+                    {dimensionTags.map((d, i) => (
+                      <span className="surveys-dimension-tag" key={i}>{d.trim()}</span>
                     ))}
                   </div>
                 )}
@@ -358,7 +385,14 @@ export function AdminSurveysPage() {
 
                 <div className="form-actions-row">
                   <button className="primary-button" disabled={isSubmitting} type="submit">
-                    {isSubmitting ? 'Criando pesquisa...' : 'Criar pesquisa'}
+                    {isSubmitting ? (
+                      <>
+                        <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" style={{ animation: 'spin .7s linear infinite' }} viewBox="0 0 24 24" width="14">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                        </svg>
+                        Criando pesquisa...
+                      </>
+                    ) : 'Criar pesquisa'}
                   </button>
                   <button className="secondary-button" type="button" onClick={() => setFormStep(1)}>
                     ← Voltar
@@ -373,43 +407,43 @@ export function AdminSurveysPage() {
         </section>
       )}
 
-      {/* Search */}
+      {/* ── Busca ── */}
       <section className="admin-toolbar-card">
-        <label className="field-group" htmlFor="survey-search">
-          <div style={{ position: 'relative' }}>
-            <svg
-              width="15" height="15"
-              viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
-            >
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <label className="field-group surveys-search-label" htmlFor="survey-search">
+          <span>Buscar pesquisa</span>
+          <div className="surveys-search-wrap">
+            <svg className="surveys-search-icon" fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="15">
+              <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
             </svg>
             <input
+              className="surveys-search-input"
               id="survey-search"
+              placeholder="Nome, código ou categoria…"
               type="text"
-              placeholder="Buscar por nome, código ou categoria..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              style={{ paddingLeft: 38 }}
             />
+            {query && (
+              <button className="surveys-search-clear" type="button" aria-label="Limpar busca" onClick={() => setQuery('')}>
+                <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" width="14">
+                  <line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
         </label>
       </section>
 
-      {successMessage && <div className="form-success">{successMessage}</div>}
-      {errorMessage && !isFormOpen && <div className="form-error">{errorMessage}</div>}
-
+      {/* ── Tabela de pesquisas ── */}
       {isLoading ? (
         <section className="admin-panel-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--slate-400)', fontSize: 14 }}>
-            <div style={{ width: 16, height: 16, border: '2px solid var(--slate-200)', borderTopColor: 'var(--blue-500)', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
-            Carregando pesquisas...
+          <div className="empty-state">
+            <div className="surveys-spinner" />
+            <strong>Carregando pesquisas…</strong>
           </div>
         </section>
       ) : (
         <section className="admin-table-card">
-          {/* Table head */}
           <div className="survey-table survey-table-head">
             <span>Pesquisa</span>
             <span>Versão atual</span>
@@ -421,72 +455,92 @@ export function AdminSurveysPage() {
 
           {filteredSurveys.length === 0 ? (
             <div className="empty-state">
+              <svg fill="none" height="32" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="32">
+                <path d="M4 4h16v16H4z" /><path d="M8 8h8" /><path d="M8 12h8" /><path d="M8 16h5" />
+              </svg>
               <strong>{query ? 'Nenhuma pesquisa encontrada' : 'Nenhuma pesquisa cadastrada'}</strong>
-              <span>{query ? 'Tente ajustar o termo de busca.' : 'Crie a primeira pesquisa para começar.'}</span>
+              <span>
+                {query
+                  ? `Nenhum resultado para "${query}". Tente outro termo.`
+                  : 'Clique em "Nova pesquisa" acima para criar a primeira.'}
+              </span>
+              {query && (
+                <button className="secondary-button" type="button" onClick={() => setQuery('')}>
+                  Limpar busca
+                </button>
+              )}
             </div>
-          ) : (
-            filteredSurveys.map((survey) => {
-              const versionStatus = STATUS_LABELS[survey.current_version_status] || STATUS_LABELS.DRAFT
-              return (
-                <article className="survey-table" key={survey.id}>
-                  <div>
-                    <strong>{survey.name}</strong>
-                    <span>{survey.code} · {survey.category}</span>
-                  </div>
-                  <div>
-                    <strong style={{ fontSize: 13 }}>{survey.current_version ?? '—'}</strong>
-                    <span className={`status-pill ${versionStatus.variant}`} style={{ marginTop: 4, fontSize: 11 }}>
-                      {versionStatus.label}
-                    </span>
-                  </div>
-                  <div>
-                    <strong>{survey.total_questions}</strong>
-                  </div>
-                  <div>
-                    <strong>{survey.active_campaigns} ativa{survey.active_campaigns !== 1 ? 's' : ''}</strong>
-                    <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                      {survey.latest_campaign_name ?? 'Sem campanha'}
-                    </span>
-                    {survey.latest_campaign_id && (
-                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 3 }}>
-                        <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/responses`} style={{ display: 'inline-block', fontSize: 12 }}>
-                          Ver respostas →
-                        </Link>
-                        <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/kpis`} style={{ display: 'inline-block', fontSize: 12 }}>
-                          KPIs →
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <span className={`status-pill ${survey.is_active ? 'active' : 'inactive'}`}>
-                      {survey.is_active ? 'Ativa' : 'Inativa'}
-                    </span>
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      <Link
-                        className="secondary-link-button"
-                        to={`/admin/surveys/${survey.id}`}
-                        style={{ padding: '8px 12px', fontSize: 12 }}
-                      >
-                        Gerenciar campanha
+          ) : filteredSurveys.map((survey) => {
+            const versionStatus = VERSION_STATUS_LABELS[survey.current_version_status] ?? VERSION_STATUS_LABELS.DRAFT
+            return (
+              <article className="survey-table" key={survey.id}>
+                {/* Pesquisa */}
+                <div>
+                  <strong>{survey.name}</strong>
+                  <span>{survey.code} · {survey.category}</span>
+                </div>
+
+                {/* Versão */}
+                <div>
+                  <strong>{survey.current_version ?? '—'}</strong>
+                  <span className={`status-pill ${versionStatus.variant}`}>
+                    {versionStatus.label}
+                  </span>
+                </div>
+
+                {/* Perguntas */}
+                <div>
+                  <strong>{survey.total_questions}</strong>
+                  <span>questões</span>
+                </div>
+
+                {/* Campanhas */}
+                <div>
+                  <strong>{survey.active_campaigns} ativa{survey.active_campaigns !== 1 ? 's' : ''}</strong>
+                  <span className="surveys-campaign-name">
+                    {survey.latest_campaign_name ?? 'Sem campanha'}
+                  </span>
+                  {survey.latest_campaign_id && (
+                    <div className="surveys-campaign-links">
+                      <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/responses`}>
+                        Respostas →
                       </Link>
-                      <button
-                        className="danger-button"
-                        type="button"
-                        onClick={() => handleDeleteSurvey(survey)}
-                        disabled={deletingSurveyId === survey.id}
-                        style={{ padding: '8px 12px', fontSize: 12 }}
-                      >
-                        {deletingSurveyId === survey.id ? 'Excluindo...' : 'Excluir'}
-                      </button>
+                      <Link className="inline-link" to={`/admin/campaigns/${survey.latest_campaign_id}/kpis`}>
+                        KPIs →
+                      </Link>
                     </div>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div>
+                  <span className={`status-pill ${survey.is_active ? 'active' : 'inactive'}`}>
+                    {survey.is_active ? 'Ativa' : 'Inativa'}
+                  </span>
+                </div>
+
+                {/* Ações */}
+                <div>
+                  <div className="surveys-row-actions">
+                    <Link
+                      className="secondary-link-button surveys-action-btn"
+                      to={`/admin/surveys/${survey.id}`}
+                    >
+                      Gerenciar
+                    </Link>
+                    <button
+                      className="danger-button surveys-action-btn"
+                      disabled={deletingSurveyId === survey.id}
+                      type="button"
+                      onClick={() => handleDeleteSurvey(survey)}
+                    >
+                      {deletingSurveyId === survey.id ? 'Excluindo…' : 'Excluir'}
+                    </button>
                   </div>
-                </article>
-              )
-            })
-          )}
+                </div>
+              </article>
+            )
+          })}
         </section>
       )}
     </div>

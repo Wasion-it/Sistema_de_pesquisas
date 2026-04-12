@@ -41,6 +41,19 @@ const ADMIN_MODULES = [
     ),
   },
   {
+    title: 'Cargos',
+    description: 'Cadastre os cargos com descrição para apoiar admissões e aprovações.',
+    to: '/admin/job-titles',
+    accent: 'amber',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 7h16" />
+        <path d="M4 12h16" />
+        <path d="M4 17h10" />
+      </svg>
+    ),
+  },
+  {
     title: 'Aprovações',
     description: 'Acompanhe e avance a fila de admissão e demissão.',
     to: '/admin/approvals',

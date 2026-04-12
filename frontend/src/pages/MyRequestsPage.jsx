@@ -31,23 +31,28 @@ const STATUS_META = {
   CANCELED: { label: 'Cancelada', className: 'inactive' },
 }
 
-const STEP_STATUS_LABELS = {
-  PENDING: 'Pendente',
-  APPROVED: 'Aprovado',
-  REJECTED: 'Rejeitado',
-  SKIPPED: 'Ignorado',
-}
-
-const STEP_STATUS_CLASS = {
-  PENDING: 'inactive',
-  APPROVED: 'active',
-  REJECTED: 'inactive',
-  SKIPPED: 'inactive',
-}
-
 const REQUEST_KIND_LABELS = {
   ADMISSION: 'Admissão',
   DISMISSAL: 'Demissão',
+}
+
+const STEP_TRACKER_META = {
+  APPROVED: {
+    className: 'completed',
+    title: 'Concluída',
+  },
+  PENDING: {
+    className: 'current',
+    title: 'Etapa atual',
+  },
+  REJECTED: {
+    className: 'rejected',
+    title: 'Rejeitada',
+  },
+  SKIPPED: {
+    className: 'skipped',
+    title: 'Ignorada',
+  },
 }
 
 function formatDateTime(value) {
@@ -60,6 +65,79 @@ function formatDateTime(value) {
 
 function normalizeRequestKind(kind) {
   return String(kind ?? '').toLowerCase()
+}
+
+function getApprovalProgress(steps = []) {
+  const total = steps.length
+  const approved = steps.filter((step) => step.status === 'APPROVED').length
+  const rejected = steps.some((step) => step.status === 'REJECTED')
+  const currentStep = steps.find((step) => step.status === 'PENDING') ?? null
+  const progress = total === 0 ? 0 : Math.round((approved / total) * 100)
+
+  return {
+    total,
+    approved,
+    rejected,
+    currentStep,
+    progress,
+  }
+}
+
+function getStepDecisionSummary(step) {
+  if (!step.decided_by_user_name && !step.decided_at) {
+    return null
+  }
+
+  if (step.decided_by_user_name && step.decided_at) {
+    return `Por ${step.decided_by_user_name} em ${formatDateTime(step.decided_at)}`
+  }
+
+  if (step.decided_by_user_name) {
+    return `Por ${step.decided_by_user_name}`
+  }
+
+  return `Em ${formatDateTime(step.decided_at)}`
+}
+
+function ApprovalStepTracker({ steps }) {
+  const { total, approved, rejected, currentStep, progress } = getApprovalProgress(steps)
+  const currentStepOrder = currentStep?.step_order ?? null
+  const progressLabel = rejected ? 'Fluxo interrompido' : currentStep ? `Etapa ${currentStep.step_order} de ${total}` : 'Fluxo concluído'
+
+  return (
+    <div className="approval-step-tracker">
+      <div className="approval-step-tracker-header">
+        <div>
+          <span className="approval-step-tracker-label">Andamento do fluxo</span>
+          <strong>{progressLabel}</strong>
+        </div>
+        <span className="approval-step-tracker-count">{approved}/{total} concluídas</span>
+      </div>
+
+      <div className="approval-step-tracker-bar" aria-hidden="true">
+        <div className="approval-step-tracker-fill" style={{ width: `${progress}%` }} />
+      </div>
+
+      <div className="approval-step-tracker-list">
+        {steps.map((step) => {
+          const trackerMeta = STEP_TRACKER_META[step.status] ?? STEP_TRACKER_META.PENDING
+          const isCurrent = step.status === 'PENDING' && step.step_order === currentStepOrder
+          const decisionSummary = getStepDecisionSummary(step)
+
+          return (
+            <div className={`approval-step-node ${trackerMeta.className} ${isCurrent ? 'is-current' : ''}`} key={step.step_order}>
+              <span className="approval-step-node-index">{step.step_order}</span>
+              <div className="approval-step-node-content">
+                <strong>{step.approver_label}</strong>
+                <small>{trackerMeta.title}</small>
+                {decisionSummary ? <small className="approval-step-node-detail">{decisionSummary}</small> : null}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function getCurrentStepLabel(item) {
@@ -202,7 +280,7 @@ export function MyRequestsPage() {
         <label className="field-group">
           <span>Buscar solicitação</span>
           <input
-            placeholder="Filtrar por título, status, fluxo ou comentário"
+            placeholder="Filtrar por título, status, fluxo ou etapa"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -255,21 +333,7 @@ export function MyRequestsPage() {
                     </div>
                   </div>
 
-                  <div className="approval-step-list">
-                    {item.steps.map((step) => (
-                      <div className="approval-step-item" key={`${item.request_id}-${step.step_order}`}>
-                        <span className={`status-pill ${STEP_STATUS_CLASS[step.status] ?? 'inactive'}`}>
-                          {STEP_STATUS_LABELS[step.status] ?? step.status}
-                        </span>
-                        <div>
-                          <strong>{step.step_order}. {step.approver_label}</strong>
-                          <small>{step.decided_by_user_name ? `Decidido por ${step.decided_by_user_name}` : 'Aguardando decisão'}</small>
-                          <small>{step.decided_at ? formatDateTime(step.decided_at) : 'Sem data de decisão'}</small>
-                          {step.comments ? <small>{step.comments}</small> : null}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <ApprovalStepTracker steps={item.steps ?? []} />
 
                   <div className="approval-request-actions">
                     <button

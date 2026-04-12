@@ -73,6 +73,25 @@ def _ensure_department_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_job_title_columns() -> None:
+    inspector = inspect(engine)
+    if "job_titles" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("job_titles")}
+    statements: list[str] = []
+
+    if "description" not in existing_columns:
+        statements.append("ALTER TABLE job_titles ADD COLUMN description TEXT")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
 def _ensure_approval_workflow_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -277,6 +296,7 @@ def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_survey_question_columns()
     _ensure_department_columns()
+    _ensure_job_title_columns()
     _ensure_approval_workflow_columns()
     _ensure_default_approval_workflow()
     _backfill_request_approval_steps()

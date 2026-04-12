@@ -88,6 +88,29 @@ export async function updateAdminDepartment(token, departmentId, payload) {
   return parseResponse(response)
 }
 
+export async function getAdminJobTitles(token) {
+  const response = await fetch(`${API_URL}/admin/job-titles`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function createAdminJobTitle(token, payload) {
+  const response = await fetch(`${API_URL}/admin/job-titles`, buildJsonOptions(token, 'POST', payload))
+
+  return parseResponse(response)
+}
+
+export async function updateAdminJobTitle(token, jobTitleId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/job-titles/${jobTitleId}`,
+    buildJsonOptions(token, 'PATCH', payload),
+  )
+
+  return parseResponse(response)
+}
+
 export async function getAdminSurveys(token) {
   const response = await fetch(`${API_URL}/admin/surveys`, {
     headers: buildHeaders(token),

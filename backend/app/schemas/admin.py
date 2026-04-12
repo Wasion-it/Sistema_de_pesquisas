@@ -94,6 +94,33 @@ class DepartmentUpdateRequest(BaseModel):
     is_active: bool = True
 
 
+class JobTitleManagementItemResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str | None
+    is_active: bool
+    updated_at: datetime
+
+
+class JobTitleManagementListResponse(BaseModel):
+    items: list[JobTitleManagementItemResponse]
+
+
+class JobTitleCreateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=50)
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool = True
+
+
+class JobTitleUpdateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=50)
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool = True
+
+
 class AdmissionRequestCreateRequest(BaseModel):
     request_type: AdmissionRequestTypeEnum
     cargo: str = Field(min_length=2, max_length=150)

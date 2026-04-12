@@ -141,7 +141,6 @@ export function AdminApprovalsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessages, setErrorMessages] = useState({ admission: '', dismissal: '' })
   const [actionState, setActionState] = useState({ kind: '', requestId: null, action: '' })
-  const [approvalComments, setApprovalComments] = useState({ admission: {}, dismissal: {} })
   const [selectedRequest, setSelectedRequest] = useState(null)
 
   async function loadQueues() {
@@ -195,33 +194,15 @@ export function AdminApprovalsPage() {
     return Boolean(item.current_step_role && currentApprovalRole === item.current_step_role)
   }
 
-  function updateApprovalComment(kind, requestId, value) {
-    setApprovalComments((current) => ({
-      ...current,
-      [kind]: {
-        ...current[kind],
-        [requestId]: value,
-      },
-    }))
-  }
-
   async function handleAction(kind, requestId, action) {
     const normalizedKind = normalizeRequestKind(kind)
-    const comments = approvalComments[normalizedKind]?.[requestId]?.trim() || ''
     setActionState({ kind: normalizedKind, requestId, action })
     try {
       if (action === 'approve') {
-        await approveAdminApprovalRequest(token, normalizedKind, requestId, { comments })
+        await approveAdminApprovalRequest(token, normalizedKind, requestId, {})
       } else {
-        await rejectAdminApprovalRequest(token, normalizedKind, requestId, { comments })
+        await rejectAdminApprovalRequest(token, normalizedKind, requestId, {})
       }
-      setApprovalComments((current) => ({
-        ...current,
-        [normalizedKind]: {
-          ...current[normalizedKind],
-          [requestId]: '',
-        },
-      }))
       await loadQueues()
     } catch (error) {
       setErrorMessages((current) => ({
@@ -348,20 +329,6 @@ export function AdminApprovalsPage() {
                   >
                     Detalhes
                   </button>
-                  {canActOnItem(item) ? (
-                    <div className="field-group">
-                      <label htmlFor={`approval-comments-${item.request_kind}-${item.request_id}`}>
-                        Comentário da aprovação
-                      </label>
-                      <textarea
-                        id={`approval-comments-${item.request_kind}-${item.request_id}`}
-                        maxLength={2000}
-                        placeholder="Descreva observações, justificativa ou orientações para a próxima etapa."
-                        value={approvalComments[requestKind]?.[item.request_id] ?? ''}
-                        onChange={(event) => updateApprovalComment(requestKind, item.request_id, event.target.value)}
-                      />
-                    </div>
-                  ) : null}
                   <button
                     className="primary-button"
                     disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}

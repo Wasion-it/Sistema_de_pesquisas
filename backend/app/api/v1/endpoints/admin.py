@@ -33,6 +33,7 @@ from app.models import (
     DismissalRequest,
     DismissalRequestStatusEnum,
     DismissalRequestApproval,
+    JobTitle,
     QuestionOption,
     QuestionTypeEnum,
     Response,
@@ -71,6 +72,10 @@ from app.schemas.admin import (
     DismissalRequestCreateRequest,
     DismissalRequestListResponse,
     DismissalRequestResponse,
+    JobTitleCreateRequest,
+    JobTitleManagementItemResponse,
+    JobTitleManagementListResponse,
+    JobTitleUpdateRequest,
     PublishSurveyRequest,
     QuestionOptionResponse,
     SurveyCreateRequest,
@@ -159,6 +164,17 @@ def _serialize_department(department: Department) -> DepartmentManagementItemRes
         total_people=department.total_people,
         is_active=department.is_active,
         updated_at=department.updated_at,
+    )
+
+
+def _serialize_job_title(job_title: JobTitle) -> JobTitleManagementItemResponse:
+    return JobTitleManagementItemResponse(
+        id=job_title.id,
+        code=job_title.code,
+        name=job_title.name,
+        description=job_title.description,
+        is_active=job_title.is_active,
+        updated_at=job_title.updated_at,
     )
 
 
@@ -963,6 +979,15 @@ def read_admin_departments(
     return DepartmentManagementListResponse(items=[_serialize_department(item) for item in departments])
 
 
+@router.get("/job-titles", response_model=JobTitleManagementListResponse)
+def read_admin_job_titles(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> JobTitleManagementListResponse:
+    job_titles = db.scalars(select(JobTitle).order_by(JobTitle.name.asc(), JobTitle.id.asc())).all()
+    return JobTitleManagementListResponse(items=[_serialize_job_title(item) for item in job_titles])
+
+
 @router.post("/departments", response_model=DepartmentManagementItemResponse, status_code=status.HTTP_201_CREATED)
 def create_admin_department(
     payload: DepartmentCreateRequest,
@@ -1003,6 +1028,47 @@ def create_admin_department(
     db.commit()
     db.refresh(department)
     return _serialize_department(department)
+
+
+@router.post("/job-titles", response_model=JobTitleManagementItemResponse, status_code=status.HTTP_201_CREATED)
+def create_admin_job_title(
+    payload: JobTitleCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> JobTitleManagementItemResponse:
+    normalized_code = payload.code.strip().upper()
+    normalized_name = payload.name.strip()
+
+    duplicate = db.scalar(
+        select(JobTitle)
+        .where((func.lower(JobTitle.name) == normalized_name.lower()) | (JobTitle.code == normalized_code))
+    )
+    if duplicate is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Job title code or name already exists")
+
+    job_title = JobTitle(
+        code=normalized_code,
+        name=normalized_name,
+        description=payload.description.strip() if payload.description else None,
+        is_active=payload.is_active,
+    )
+    db.add(job_title)
+    db.flush()
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="job_title",
+            entity_id=str(job_title.id),
+            description="Job title created from administrative portal.",
+            details_json=json.dumps({"job_title_id": job_title.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(job_title)
+    return _serialize_job_title(job_title)
 
 
 @router.get("/hr/admission-requests", response_model=AdmissionRequestListResponse)
@@ -1291,6 +1357,48 @@ def update_admin_department(
     db.commit()
     db.refresh(department)
     return _serialize_department(department)
+
+
+@router.patch("/job-titles/{job_title_id}", response_model=JobTitleManagementItemResponse)
+def update_admin_job_title(
+    job_title_id: int,
+    payload: JobTitleUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> JobTitleManagementItemResponse:
+    job_title = db.scalar(select(JobTitle).where(JobTitle.id == job_title_id))
+    if job_title is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job title not found")
+
+    normalized_code = payload.code.strip().upper()
+    normalized_name = payload.name.strip()
+    duplicate = db.scalar(
+        select(JobTitle)
+        .where(JobTitle.id != job_title_id)
+        .where((func.lower(JobTitle.name) == normalized_name.lower()) | (JobTitle.code == normalized_code))
+    )
+    if duplicate is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Job title code or name already exists")
+
+    job_title.code = normalized_code
+    job_title.name = normalized_name
+    job_title.description = payload.description.strip() if payload.description else None
+    job_title.is_active = payload.is_active
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="job_title",
+            entity_id=str(job_title.id),
+            description="Job title updated from administrative portal.",
+            details_json=json.dumps({"job_title_id": job_title.id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(job_title)
+    return _serialize_job_title(job_title)
 
 
 @router.get("/surveys/{survey_id}", response_model=SurveyDetailResponse)

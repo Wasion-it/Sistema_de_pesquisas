@@ -8,6 +8,7 @@ import { AdminCampaignResponsesPage } from './pages/AdminCampaignResponsesPage'
 import { AdminDepartmentsPage } from './pages/AdminDepartmentsPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
+import { AdminJobTitlesPage } from './pages/AdminJobTitlesPage'
 import { AdminAdmissionRequestsPage } from './pages/AdminAdmissionRequestsPage'
 import { AdminDismissalRequestsPage } from './pages/AdminDismissalRequestsPage'
 import { MyRequestsPage } from './pages/MyRequestsPage'
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="my-requests" element={<MyRequestsPage />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />
+            <Route path="job-titles" element={<AdminJobTitlesPage />} />
             <Route path="admission-requests" element={<AdminAdmissionRequestsPage />} />
             <Route path="dismissal-requests" element={<AdminDismissalRequestsPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />

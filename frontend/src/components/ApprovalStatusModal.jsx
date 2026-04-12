@@ -42,6 +42,25 @@ const REQUEST_KIND_TO_FETCHER = {
   dismissal: getAdminDismissalApprovalStatus,
 }
 
+const STEP_TRACKER_META = {
+  APPROVED: {
+    className: 'completed',
+    title: 'Concluída',
+  },
+  PENDING: {
+    className: 'current',
+    title: 'Etapa atual',
+  },
+  REJECTED: {
+    className: 'rejected',
+    title: 'Rejeitada',
+  },
+  SKIPPED: {
+    className: 'skipped',
+    title: 'Ignorada',
+  },
+}
+
 function normalizeRequestKind(kind) {
   return String(kind ?? '').toLowerCase()
 }
@@ -79,6 +98,61 @@ function getBannerMeta(status) {
         description: 'Status de aprovação não identificado.',
       }
   }
+}
+
+function getApprovalProgress(steps = []) {
+  const total = steps.length
+  const approved = steps.filter((step) => step.status === 'APPROVED').length
+  const rejected = steps.some((step) => step.status === 'REJECTED')
+  const currentStep = steps.find((step) => step.status === 'PENDING') ?? null
+  const progress = total === 0 ? 0 : Math.round((approved / total) * 100)
+
+  return {
+    total,
+    approved,
+    rejected,
+    currentStep,
+    progress,
+  }
+}
+
+function ApprovalStepTracker({ steps }) {
+  const { total, approved, rejected, currentStep, progress } = getApprovalProgress(steps)
+  const currentStepOrder = currentStep?.step_order ?? null
+  const progressLabel = rejected ? 'Fluxo interrompido' : currentStep ? `Etapa ${currentStep.step_order} de ${total}` : 'Fluxo concluído'
+
+  return (
+    <div className="approval-step-tracker approval-step-tracker-modal">
+      <div className="approval-step-tracker-header">
+        <div>
+          <span className="approval-step-tracker-label">Visão do fluxo</span>
+          <strong>{progressLabel}</strong>
+        </div>
+        <span className="approval-step-tracker-count">{approved}/{total} concluídas</span>
+      </div>
+
+      <div className="approval-step-tracker-bar" aria-hidden="true">
+        <div className="approval-step-tracker-fill" style={{ width: `${progress}%` }} />
+      </div>
+
+      <div className="approval-step-tracker-list">
+        {steps.map((step) => {
+          const trackerMeta = STEP_TRACKER_META[step.status] ?? STEP_TRACKER_META.PENDING
+          const isCurrent = step.status === 'PENDING' && step.step_order === currentStepOrder
+
+          return (
+            <div className={`approval-step-node ${trackerMeta.className} ${isCurrent ? 'is-current' : ''}`} key={step.step_order}>
+              <span className="approval-step-node-index">{step.step_order}</span>
+              <div className="approval-step-node-content">
+                <strong>{step.approver_label}</strong>
+                <small>{trackerMeta.title}</small>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function DetailField({ label, value }) {
@@ -174,6 +248,8 @@ export function ApprovalStatusModal({ request, token, onClose }) {
               <strong>{bannerMeta.title}</strong>
               <span>{bannerMeta.description}</span>
             </div>
+
+            <ApprovalStepTracker steps={fullRequest.steps ?? []} />
 
             <div className="request-modal-meta">
               <DetailField label="Tipo" value={requestKindLabel} />

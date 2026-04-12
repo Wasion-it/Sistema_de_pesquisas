@@ -1874,6 +1874,154 @@ body:has(.admin-shell) { background: var(--slate-100); }
   margin-top: 16px;
 }
 
+.approval-step-tracker {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, .15), transparent 28%),
+    linear-gradient(180deg, rgba(239, 246, 255, .9) 0%, rgba(255, 255, 255, .98) 100%);
+  border: 1px solid rgba(191, 219, 254, .9);
+}
+
+.approval-step-tracker-modal {
+  margin-top: 16px;
+}
+
+.approval-step-tracker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.approval-step-tracker-label,
+.approval-step-tracker-count {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.approval-step-tracker-label {
+  color: var(--blue-700);
+  margin-bottom: 6px;
+}
+
+.approval-step-tracker-header strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--slate-900);
+}
+
+.approval-step-tracker-count {
+  color: var(--slate-500);
+  text-align: right;
+}
+
+.approval-step-tracker-bar {
+  position: relative;
+  height: 8px;
+  margin-top: 14px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .18);
+  overflow: hidden;
+}
+
+.approval-step-tracker-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue-500), var(--green-600));
+  transition: width .24s var(--ease);
+}
+
+.approval-step-tracker-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.approval-step-node {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, .88);
+  border: 1px solid rgba(148, 163, 184, .16);
+}
+
+.approval-step-node-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--slate-200);
+  color: var(--slate-700);
+}
+
+.approval-step-node-content {
+  min-width: 0;
+}
+
+.approval-step-node-content strong {
+  display: block;
+  color: var(--slate-900);
+  line-height: 1.35;
+}
+
+.approval-step-node-content small {
+  display: block;
+  margin-top: 4px;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+
+.approval-step-node.completed {
+  border-color: rgba(34, 197, 94, .22);
+  background: linear-gradient(180deg, rgba(240, 253, 244, .92) 0%, rgba(255, 255, 255, .96) 100%);
+}
+
+.approval-step-node.completed .approval-step-node-index {
+  background: var(--green-600);
+  color: #fff;
+}
+
+.approval-step-node.current {
+  border-color: rgba(59, 130, 246, .32);
+  background: linear-gradient(180deg, rgba(239, 246, 255, .98) 0%, rgba(255, 255, 255, .96) 100%);
+}
+
+.approval-step-node.current .approval-step-node-index {
+  background: var(--blue-600);
+  color: #fff;
+}
+
+.approval-step-node.current.is-current {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, .08);
+}
+
+.approval-step-node.rejected {
+  border-color: rgba(220, 38, 38, .22);
+  background: linear-gradient(180deg, rgba(254, 242, 242, .95) 0%, rgba(255, 255, 255, .96) 100%);
+}
+
+.approval-step-node.rejected .approval-step-node-index {
+  background: var(--red-600);
+  color: #fff;
+}
+
+.approval-step-node.skipped {
+  opacity: .72;
+}
+
 .approval-step-item {
   display: flex;
   align-items: center;
@@ -2055,6 +2203,7 @@ body:has(.admin-shell) { background: var(--slate-100); }
 }
 
 @media (max-width: 900px) {
+  .approval-request-meta,
   .request-modal-meta {
     grid-template-columns: 1fr 1fr;
   }
@@ -2071,12 +2220,29 @@ body:has(.admin-shell) { background: var(--slate-100); }
     align-items: flex-start;
   }
 
+  .approval-request-top,
+  .approval-step-tracker-header,
+  .approval-step-item,
+  .request-modal-step {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .approval-request-meta,
   .request-modal-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .approval-step-tracker-list {
     grid-template-columns: 1fr;
   }
 
   .request-modal-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .approval-step-tracker-count {
+    text-align: left;
   }
 }
 

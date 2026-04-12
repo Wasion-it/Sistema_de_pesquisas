@@ -286,6 +286,7 @@ def _mark_request_approval_progress(
     request_item,
     approval_steps,
     *,
+    target_step=None,
     approve: bool,
     user: User,
     comments: str | None,
@@ -294,17 +295,30 @@ def _mark_request_approval_progress(
     rejected_status,
 ) -> None:
     ordered_steps = sorted(approval_steps, key=lambda approval_step: approval_step.step_order)
-    current_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    current_step = target_step or next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
     if current_step is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
     now = datetime.now(UTC)
+    first_pending_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    direct_bypass = first_pending_step is not None and current_step.id != first_pending_step.id
 
     if approve:
         current_step.status = ApprovalStepStatusEnum.APPROVED
         current_step.decided_by_user_id = user.id
         current_step.decided_at = now
         current_step.comments = comments
+
+        if direct_bypass:
+            for approval_step in ordered_steps:
+                if approval_step.id != current_step.id and approval_step.status == ApprovalStepStatusEnum.PENDING:
+                    approval_step.status = ApprovalStepStatusEnum.SKIPPED
+                    approval_step.decided_by_user_id = user.id
+                    approval_step.decided_at = now
+                    approval_step.comments = comments
+            request_item.status = approved_status
+            request_item.submitted_at = request_item.submitted_at or now
+            return
 
         remaining_pending = [approval_step for approval_step in ordered_steps if approval_step.step_order > current_step.step_order and approval_step.status == ApprovalStepStatusEnum.PENDING]
         if remaining_pending:
@@ -427,7 +441,7 @@ def approve_admin_admission_request(
     if request_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
-    current_step = _get_current_pending_step(request_item.approval_steps)
+    current_step = _get_approval_step_for_user(user, request_item.approval_steps)
     if current_step is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
@@ -437,6 +451,7 @@ def approve_admin_admission_request(
         db,
         request_item,
         request_item.approval_steps,
+        target_step=current_step,
         approve=True,
         user=user,
         comments=payload.comments,
@@ -469,7 +484,7 @@ def reject_admin_admission_request(
     if request_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
-    current_step = _get_current_pending_step(request_item.approval_steps)
+    current_step = _get_approval_step_for_user(user, request_item.approval_steps)
     if current_step is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
@@ -479,6 +494,7 @@ def reject_admin_admission_request(
         db,
         request_item,
         request_item.approval_steps,
+        target_step=current_step,
         approve=False,
         user=user,
         comments=payload.comments,
@@ -511,7 +527,7 @@ def approve_admin_dismissal_request(
     if request_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
-    current_step = _get_current_pending_step(request_item.approval_steps)
+    current_step = _get_approval_step_for_user(user, request_item.approval_steps)
     if current_step is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
@@ -521,6 +537,7 @@ def approve_admin_dismissal_request(
         db,
         request_item,
         request_item.approval_steps,
+        target_step=current_step,
         approve=True,
         user=user,
         comments=payload.comments,
@@ -553,7 +570,7 @@ def reject_admin_dismissal_request(
     if request_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
-    current_step = _get_current_pending_step(request_item.approval_steps)
+    current_step = _get_approval_step_for_user(user, request_item.approval_steps)
     if current_step is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
@@ -563,6 +580,7 @@ def reject_admin_dismissal_request(
         db,
         request_item,
         request_item.approval_steps,
+        target_step=current_step,
         approve=False,
         user=user,
         comments=payload.comments,
@@ -651,8 +669,8 @@ def _get_current_pending_step(approval_steps):
 
 def _get_allowed_roles_for_step(approver_role: ApprovalRoleEnum) -> set[RoleEnum]:
     mapping = {
-        ApprovalRoleEnum.MANAGER: {RoleEnum.GESTOR},
-        ApprovalRoleEnum.DIRECTOR_RAVI: {RoleEnum.DIRETOR_RAVI},
+        ApprovalRoleEnum.MANAGER: {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI},
+        ApprovalRoleEnum.DIRECTOR_RAVI: {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI},
         ApprovalRoleEnum.RH_MANAGER: {RoleEnum.RH_ADMIN},
     }
     return mapping.get(approver_role, set())
@@ -665,6 +683,25 @@ def _assert_user_can_act_on_step(user: User, step) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"User role {user.role.value} cannot approve step {step.approver_role.value}",
         )
+
+
+def _get_approval_step_for_user(user: User, approval_steps):
+    ordered_steps = sorted(approval_steps, key=lambda approval_step: approval_step.step_order)
+    current_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    if current_step is not None and user.role in _get_allowed_roles_for_step(current_step.approver_role):
+        return current_step
+
+    if user.role == RoleEnum.RH_ADMIN:
+        return next(
+            (
+                approval_step
+                for approval_step in reversed(ordered_steps)
+                if approval_step.status == ApprovalStepStatusEnum.PENDING and approval_step.approver_role == ApprovalRoleEnum.RH_MANAGER
+            ),
+            None,
+        )
+
+    return current_step
 
 
 def _seed_admission_approval_steps(db: Session, admission_request: AdmissionRequest, workflow: ApprovalWorkflowTemplate) -> None:

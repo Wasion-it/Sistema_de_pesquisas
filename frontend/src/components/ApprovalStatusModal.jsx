@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { useAuth } from '../auth/AuthProvider'
 import { getAdminAdmissionApprovalStatus, getAdminDismissalApprovalStatus } from '../services/admin'
 
 function formatDateTime(value) {
@@ -26,6 +27,12 @@ const REQUEST_KIND_LABELS = {
 const REQUEST_KIND_TO_FETCHER = {
   admission: getAdminAdmissionApprovalStatus,
   dismissal: getAdminDismissalApprovalStatus,
+}
+
+const ROLE_TO_APPROVAL_ROLES = {
+  GESTOR: new Set(['MANAGER', 'DIRECTOR_RAVI']),
+  DIRETOR_RAVI: new Set(['MANAGER', 'DIRECTOR_RAVI']),
+  RH_ADMIN: new Set(['RH_MANAGER']),
 }
 
 const STEP_TRACKER_META = {
@@ -118,6 +125,21 @@ function getStepDecisionSummary(step) {
   return `Em ${formatDateTime(step.decided_at)}`
 }
 
+function getActionableStep(steps, userRole) {
+  const allowedApprovalRoles = ROLE_TO_APPROVAL_ROLES[userRole] ?? new Set()
+  const orderedPendingSteps = steps.filter((step) => step.status === 'PENDING')
+
+  if (allowedApprovalRoles.size === 0 || orderedPendingSteps.length === 0) {
+    return null
+  }
+
+  if (userRole === 'RH_ADMIN') {
+    return orderedPendingSteps.find((step) => step.approver_role === 'RH_MANAGER') ?? null
+  }
+
+  return orderedPendingSteps.find((step) => allowedApprovalRoles.has(step.approver_role)) ?? null
+}
+
 function ApprovalStepTracker({ steps }) {
   const { total, approved, rejected, currentStep, progress } = getApprovalProgress(steps)
   const currentStepOrder = currentStep?.step_order ?? null
@@ -173,6 +195,7 @@ function DetailField({ label, value }) {
 }
 
 export function ApprovalStatusModal({ request, token, onClose }) {
+  const { user } = useAuth()
   const [detail, setDetail] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -223,6 +246,11 @@ export function ApprovalStatusModal({ request, token, onClose }) {
   const statusLabel = STATUS_LABELS[status] ?? status
   const bannerMeta = getBannerMeta(status)
   const requestKindLabel = REQUEST_KIND_LABELS[fullRequest.request_kind] ?? fullRequest.request_kind
+  const actionableStep = getActionableStep(fullRequest.steps ?? [], user?.role)
+  const actionableStepLabel = actionableStep?.approver_label ?? fullRequest.current_step_label ?? 'Concluída'
+  const actionableStepNote = actionableStep && user?.role === 'RH_ADMIN'
+    ? 'Você pode aprovar essa solicitação diretamente na etapa final do RH.'
+    : null
 
   return (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
@@ -254,6 +282,16 @@ export function ApprovalStatusModal({ request, token, onClose }) {
             </div>
 
             <ApprovalStepTracker steps={fullRequest.steps ?? []} />
+
+            {actionableStep ? (
+              <div className="request-note-box">
+                <strong>Etapa acionável</strong>
+                <p>
+                  {actionableStepLabel}
+                  {actionableStepNote ? ` · ${actionableStepNote}` : ''}
+                </p>
+              </div>
+            ) : null}
 
             <div className="request-modal-meta">
               <DetailField label="Tipo" value={requestKindLabel} />

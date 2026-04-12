@@ -43,10 +43,10 @@ const STEP_TRACKER_META = {
   },
 }
 
-const ROLE_TO_APPROVAL_ROLE = {
-  GESTOR: 'MANAGER',
-  DIRETOR_RAVI: 'DIRECTOR_RAVI',
-  RH_ADMIN: 'RH_MANAGER',
+const ROLE_TO_APPROVAL_ROLES = {
+  GESTOR: new Set(['MANAGER', 'DIRECTOR_RAVI']),
+  DIRETOR_RAVI: new Set(['MANAGER', 'DIRECTOR_RAVI']),
+  RH_ADMIN: new Set(['RH_MANAGER']),
 }
 
 function formatDateTime(value) {
@@ -188,10 +188,19 @@ export function AdminApprovalsPage() {
     }
   }, [activeQueue])
 
-  const currentApprovalRole = ROLE_TO_APPROVAL_ROLE[user?.role] ?? null
+  const allowedApprovalRoles = ROLE_TO_APPROVAL_ROLES[user?.role] ?? new Set()
 
   function canActOnItem(item) {
-    return Boolean(item.current_step_role && currentApprovalRole === item.current_step_role)
+    return Boolean(item.steps?.some((step) => step.status === 'PENDING' && allowedApprovalRoles.has(step.approver_role)))
+  }
+
+  function getActionableStepLabel(item) {
+    const actionableStep = item.steps?.find((step) => step.status === 'PENDING' && allowedApprovalRoles.has(step.approver_role))
+    if (actionableStep) {
+      return APPROVAL_ROLE_LABELS[actionableStep.approver_role] ?? actionableStep.approver_role
+    }
+
+    return APPROVAL_ROLE_LABELS[item.current_step_role] ?? item.current_step_role ?? 'o próximo aprovador'
   }
 
   async function handleAction(kind, requestId, action) {
@@ -319,7 +328,7 @@ export function AdminApprovalsPage() {
                 <div className="approval-request-actions">
                   {!canActOnItem(item) ? (
                     <div className="approval-locked-note">
-                      Apenas {APPROVAL_ROLE_LABELS[item.current_step_role] ?? item.current_step_role ?? 'o próximo aprovador'} pode executar esta etapa.
+                      Apenas {getActionableStepLabel(item)} pode executar esta etapa.
                     </div>
                   ) : null}
                   <button

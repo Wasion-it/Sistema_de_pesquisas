@@ -107,10 +107,12 @@ function normalizeRequestKind(kind) {
 function getApprovalProgress(steps = []) {
   const total = steps.length
   const approved = steps.filter((s) => s.status === 'APPROVED').length
+  const skipped = steps.filter((s) => s.status === 'SKIPPED').length
   const rejected = steps.some((s) => s.status === 'REJECTED')
   const currentStep = steps.find((s) => s.status === 'PENDING') ?? null
-  const progress = total === 0 ? 0 : Math.round((approved / total) * 100)
-  return { total, approved, rejected, currentStep, progress }
+  const completed = approved + skipped
+  const progress = total === 0 ? 0 : Math.round((completed / total) * 100)
+  return { total, approved, skipped, completed, rejected, currentStep, progress }
 }
 
 function getCurrentStepLabel(item) {

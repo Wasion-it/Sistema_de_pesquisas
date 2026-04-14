@@ -51,6 +51,15 @@ function DetailField({ label, value }) {
   )
 }
 
+function AdmissionPositionField({ value }) {
+  return (
+    <div>
+      <span>Posição da vaga</span>
+      <strong>{ADMISSION_POSITION_LABELS[value] ?? value ?? 'Não informada'}</strong>
+    </div>
+  )
+}
+
 function mergeDetailAndQueue(request, detail) {
   if (!request || !detail) {
     return request
@@ -172,7 +181,7 @@ export function RequestDetailsModal({ request, token, onClose }) {
               {requestKind === 'admission' ? (
                 <div className="request-modal-form-grid">
                   <DetailField label="Tipo de admissão" value={fullRequest.request_type} />
-                  <DetailField label="Posição da vaga" value={ADMISSION_POSITION_LABELS[fullRequest.posicao_vaga] ?? fullRequest.posicao_vaga} />
+                  <AdmissionPositionField value={fullRequest.posicao_vaga} />
                   <DetailField label="Cargo" value={fullRequest.cargo} />
                   <DetailField label="Setor" value={fullRequest.setor} />
                   <DetailField label="Escopo" value={fullRequest.recruitment_scope} />

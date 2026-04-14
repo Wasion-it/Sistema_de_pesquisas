@@ -77,6 +77,7 @@ from app.schemas.admin import (
     JobTitleManagementItemResponse,
     JobTitleManagementListResponse,
     JobTitleUpdateRequest,
+    HiredEmployeeResponse,
     PublishSurveyRequest,
     QuestionOptionResponse,
     SurveyCreateRequest,
@@ -179,6 +180,19 @@ def _serialize_job_title(job_title: JobTitle) -> JobTitleManagementItemResponse:
     )
 
 
+def _serialize_hired_employee(employee: Employee) -> HiredEmployeeResponse:
+    return HiredEmployeeResponse(
+        id=employee.id,
+        employee_code=employee.employee_code,
+        full_name=employee.full_name,
+        work_email=employee.work_email,
+        personal_email=employee.personal_email,
+        hire_date=employee.hire_date,
+        department_name=employee.department.name,
+        job_title_name=employee.job_title.name,
+    )
+
+
 def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResponse:
     hired_employee_count = len(item.hired_employees)
     return AdmissionRequestResponse(
@@ -200,6 +214,7 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         approval_workflow_template_id=item.approval_workflow_template_id,
         hired_employee_count=hired_employee_count,
         remaining_positions=max(item.quantity_people - hired_employee_count, 0),
+        hired_employees=[_serialize_hired_employee(employee) for employee in item.hired_employees],
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -260,6 +275,7 @@ def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> Approval
         created_at=item.created_at,
         updated_at=item.updated_at,
         steps=[_serialize_approval_step(approval_step) for approval_step in ordered_steps],
+        hired_employees=[_serialize_hired_employee(employee) for employee in item.hired_employees],
     )
 
 
@@ -282,6 +298,7 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         created_at=item.created_at,
         updated_at=item.updated_at,
         steps=[_serialize_approval_step(approval_step) for approval_step in ordered_steps],
+        hired_employees=[],
     )
 
 
@@ -1121,7 +1138,8 @@ def read_admin_admission_requests(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
-            selectinload(AdmissionRequest.hired_employees),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
         .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
     ).all()
@@ -1138,7 +1156,8 @@ def read_admin_admission_request_detail(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
-            selectinload(AdmissionRequest.hired_employees),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
         .where(AdmissionRequest.id == request_id)
     )
@@ -1212,7 +1231,11 @@ def create_admin_admission_request(
 
     loaded_item = db.scalar(
         select(AdmissionRequest)
-        .options(selectinload(AdmissionRequest.created_by_user))
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
+        )
         .where(AdmissionRequest.id == admission_request.id)
     )
     if loaded_item is None:
@@ -1319,7 +1342,8 @@ def hire_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
-            selectinload(AdmissionRequest.hired_employees),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
         .where(AdmissionRequest.id == request_id)
     )
@@ -1342,6 +1366,8 @@ def read_admin_admission_request_approval_status(
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
         .where(AdmissionRequest.id == request_id)
     )

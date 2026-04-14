@@ -1235,6 +1235,38 @@ p { color: var(--slate-600); line-height: 1.7; }
   color: var(--slate-900);
 }
 
+.hired-employees-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hired-employee-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--slate-50);
+  border: 1px solid var(--slate-100);
+}
+
+.hired-employee-card strong {
+  color: var(--slate-900);
+  font-size: 14px;
+}
+
+.hired-employee-card span {
+  color: var(--slate-600);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hired-employee-card small {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+
 /* ============================================================
    BUTTONS — variantes
    ============================================================ */

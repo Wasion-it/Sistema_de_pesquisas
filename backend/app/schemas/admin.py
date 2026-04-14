@@ -134,6 +134,17 @@ class AdmissionRequestCreateRequest(BaseModel):
     manager_reminder: str | None = Field(default=None, max_length=2000)
 
 
+class HiredEmployeeResponse(BaseModel):
+    id: int
+    employee_code: str
+    full_name: str
+    work_email: str | None
+    personal_email: str | None
+    hire_date: date | None
+    department_name: str
+    job_title_name: str
+
+
 class AdmissionRequestHireRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=150)
     employee_code: str = Field(min_length=2, max_length=50)
@@ -163,6 +174,7 @@ class AdmissionRequestResponse(BaseModel):
     approval_workflow_template_id: int | None
     hired_employee_count: int
     remaining_positions: int
+    hired_employees: list[HiredEmployeeResponse]
     submitted_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -233,6 +245,7 @@ class ApprovalQueueItemResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     steps: list[ApprovalStepResponse]
+    hired_employees: list[HiredEmployeeResponse]
 
 
 class ApprovalQueueListResponse(BaseModel):

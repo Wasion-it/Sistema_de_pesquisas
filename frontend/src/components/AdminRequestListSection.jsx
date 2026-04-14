@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { AdmissionHireModal } from './AdmissionHireModal'
 import { ApprovalStatusModal } from './ApprovalStatusModal'
+import { RequestDetailsModal } from './RequestDetailsModal'
 import { getAdminAdmissionRequests, getAdminDismissalRequests } from '../services/admin'
 
 const STATUS_META = {
@@ -125,6 +126,9 @@ const REQUEST_TABS = {
               <button className="secondary-button" type="button" onClick={actions.onViewApprovalStatus}>
                 Status de aprovação
               </button>
+              <button className="secondary-button" type="button" onClick={actions.onViewDetails}>
+                Detalhes do pedido
+              </button>
               <button
                 className="primary-button"
                 type="button"
@@ -174,7 +178,7 @@ const REQUEST_TABS = {
         </tr>
       )
     },
-    renderRow(item, onViewApprovalStatus) {
+    renderRow(item, actions) {
       const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
 
       return (
@@ -195,7 +199,7 @@ const REQUEST_TABS = {
             <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
           </td>
           <td>
-            <button className="secondary-button" type="button" onClick={onViewApprovalStatus}>
+            <button className="secondary-button" type="button" onClick={actions.onViewApprovalStatus}>
               Status de aprovação
             </button>
           </td>
@@ -243,6 +247,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     dismissal: '',
   })
   const [selectedApprovalRequest, setSelectedApprovalRequest] = useState(null)
+  const [selectedDetailsRequest, setSelectedDetailsRequest] = useState(null)
   const [selectedHireRequest, setSelectedHireRequest] = useState(null)
   const [refreshCounter, setRefreshCounter] = useState(0)
 
@@ -312,6 +317,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   function handleTabChange(tabKey) {
     setQuery('')
     setSelectedApprovalRequest(null)
+    setSelectedDetailsRequest(null)
     setSelectedHireRequest(null)
     navigate(REQUEST_TAB_PATHS[tabKey])
   }
@@ -326,6 +332,10 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
   function openHireModal(item) {
     setSelectedHireRequest(item)
+  }
+
+  function openDetailsModal(item) {
+    setSelectedDetailsRequest(item)
   }
 
   function handleHireSuccess() {
@@ -415,6 +425,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                 {filteredRequests.map((item) =>
                   activeConfig.renderRow(item, {
                     onViewApprovalStatus: () => openApprovalStatus(item),
+                    onViewDetails: () => openDetailsModal(item),
                     onRegisterHire: () => openHireModal(item),
                   }),
                 )}
@@ -428,6 +439,12 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
         request={selectedApprovalRequest}
         token={token}
         onClose={() => setSelectedApprovalRequest(null)}
+      />
+
+      <RequestDetailsModal
+        request={selectedDetailsRequest}
+        token={token}
+        onClose={() => setSelectedDetailsRequest(null)}
       />
 
       <AdmissionHireModal

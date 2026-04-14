@@ -45,6 +45,43 @@ function DetailField({ label, value }) {
   )
 }
 
+function HiredEmployeesSection({ hiredEmployees = [] }) {
+  if (!hiredEmployees.length) {
+    return (
+      <div className="request-modal-section">
+        <div className="request-modal-section-header">
+          <h4>Contratados vinculados</h4>
+          <span>0 registros</span>
+        </div>
+        <div className="empty-state compact">
+          <strong>Nenhum contratado registrado ainda</strong>
+          <span>O vínculo aparece aqui depois que o RH cadastrar o funcionário contratado.</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="request-modal-section">
+      <div className="request-modal-section-header">
+        <h4>Contratados vinculados</h4>
+        <span>{hiredEmployees.length} registro(s)</span>
+      </div>
+      <div className="hired-employees-list">
+        {hiredEmployees.map((employee) => (
+          <article className="hired-employee-card" key={employee.id}>
+            <strong>{employee.full_name}</strong>
+            <span>{employee.employee_code}</span>
+            <small>{employee.department_name} • {employee.job_title_name}</small>
+            <small>{employee.work_email ?? 'Sem email corporativo'}</small>
+            {employee.hire_date ? <small>Admissão em {formatDateTime(employee.hire_date)}</small> : null}
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function mergeDetailAndQueue(request, detail) {
   if (!request || !detail) {
     return request
@@ -190,6 +227,8 @@ export function RequestDetailsModal({ request, token, onClose }) {
                   <DetailField label="Observação do gestor" value={fullRequest.manager_reminder ?? 'Não informada'} />
                 </div>
               ) : null}
+
+              <HiredEmployeesSection hiredEmployees={fullRequest.hired_employees ?? []} />
             </div>
 
           </>

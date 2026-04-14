@@ -179,6 +179,43 @@ function DetailField({ label, value }) {
   )
 }
 
+function HiredEmployeesSection({ hiredEmployees = [] }) {
+  if (!hiredEmployees.length) {
+    return (
+      <div className="request-modal-section">
+        <div className="request-modal-section-header">
+          <h4>Contratados vinculados</h4>
+          <span>0 registros</span>
+        </div>
+        <div className="empty-state compact">
+          <strong>Nenhum contratado registrado ainda</strong>
+          <span>Quando a solicitação virar cadastro de funcionário, o vínculo aparece aqui.</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="request-modal-section">
+      <div className="request-modal-section-header">
+        <h4>Contratados vinculados</h4>
+        <span>{hiredEmployees.length} registro(s)</span>
+      </div>
+      <div className="hired-employees-list">
+        {hiredEmployees.map((employee) => (
+          <article className="hired-employee-card" key={employee.id}>
+            <strong>{employee.full_name}</strong>
+            <span>{employee.employee_code}</span>
+            <small>{employee.department_name} • {employee.job_title_name}</small>
+            <small>{employee.work_email ?? 'Sem email corporativo'}</small>
+            {employee.hire_date ? <small>Admissão em {formatDateTime(employee.hire_date)}</small> : null}
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function ApprovalStatusModal({ request, token, onClose }) {
   const { user } = useAuth()
   const [detail, setDetail] = useState(null)
@@ -274,6 +311,8 @@ export function ApprovalStatusModal({ request, token, onClose }) {
                 <small>Criado em {formatDateTime(fullRequest.created_at)}</small>
               </div>
             </div>
+
+            <HiredEmployeesSection hiredEmployees={fullRequest.hired_employees ?? []} />
           </>
         ) : null}
       </div>

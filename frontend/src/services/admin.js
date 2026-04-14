@@ -231,6 +231,15 @@ export async function createAdminAdmissionRequest(token, payload) {
   return parseResponse(response)
 }
 
+export async function createAdminAdmissionHire(token, requestId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/hr/admission-requests/${requestId}/hire`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
 export async function getAdminAdmissionRequests(token) {
   const response = await fetch(`${API_URL}/admin/hr/admission-requests`, {
     headers: buildHeaders(token),

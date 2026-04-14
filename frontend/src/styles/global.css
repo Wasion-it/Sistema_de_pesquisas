@@ -1212,6 +1212,29 @@ p { color: var(--slate-600); line-height: 1.7; }
   padding-top: 4px;
 }
 
+.request-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.request-hire-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--slate-100);
+  color: var(--slate-700);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.request-hire-counter strong {
+  color: var(--slate-900);
+}
+
 /* ============================================================
    BUTTONS — variantes
    ============================================================ */

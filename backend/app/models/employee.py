@@ -8,6 +8,7 @@ from app.db.base import BaseModel
 from app.models.enums import EmployeeStatusEnum
 
 if TYPE_CHECKING:
+    from app.models.admission_request import AdmissionRequest
     from app.models.campaign_audience import CampaignAudience
     from app.models.department import Department
     from app.models.job_title import JobTitle
@@ -24,11 +25,16 @@ class Employee(BaseModel):
         Index("ix_employees_department_id", "department_id"),
         Index("ix_employees_job_title_id", "job_title_id"),
         Index("ix_employees_manager_id", "manager_id"),
+        Index("ix_employees_source_admission_request_id", "source_admission_request_id"),
         Index("ix_employees_status", "status"),
     )
 
     employee_code: Mapped[str] = mapped_column(String(50), nullable=False)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    source_admission_request_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("admission_requests.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     department_id: Mapped[int] = mapped_column(ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
     job_title_id: Mapped[int] = mapped_column(ForeignKey("job_titles.id", ondelete="RESTRICT"), nullable=False)
     manager_id: Mapped[Optional[int]] = mapped_column(ForeignKey("employees.id", ondelete="SET NULL"), nullable=True)
@@ -43,6 +49,7 @@ class Employee(BaseModel):
     )
 
     user = relationship("User", back_populates="employee")
+    source_admission_request = relationship("AdmissionRequest", back_populates="hired_employees")
     department = relationship("Department", back_populates="employees")
     job_title = relationship("JobTitle", back_populates="employees")
     manager = relationship("Employee", remote_side="Employee.id", back_populates="direct_reports")

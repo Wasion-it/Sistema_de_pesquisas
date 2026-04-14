@@ -54,6 +54,7 @@ from app.schemas.admin import (
     ApprovalQueueListResponse,
     ApprovalStepResponse,
     AdmissionRequestCreateRequest,
+    AdmissionRequestHireRequest,
     AdmissionRequestListResponse,
     AdmissionRequestResponse,
     CampaignResponseAnswerResponse,
@@ -179,6 +180,7 @@ def _serialize_job_title(job_title: JobTitle) -> JobTitleManagementItemResponse:
 
 
 def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResponse:
+    hired_employee_count = len(item.hired_employees)
     return AdmissionRequestResponse(
         id=item.id,
         status=item.status,
@@ -196,6 +198,8 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         created_by_user_name=item.created_by_user.full_name,
         created_by_user_email=item.created_by_user.email,
         approval_workflow_template_id=item.approval_workflow_template_id,
+        hired_employee_count=hired_employee_count,
+        remaining_positions=max(item.quantity_people - hired_employee_count, 0),
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -1115,7 +1119,10 @@ def read_admin_admission_requests(
 ) -> AdmissionRequestListResponse:
     items = db.scalars(
         select(AdmissionRequest)
-        .options(selectinload(AdmissionRequest.created_by_user))
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees),
+        )
         .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
     ).all()
     return AdmissionRequestListResponse(items=[_serialize_admission_request(item) for item in items])
@@ -1129,7 +1136,10 @@ def read_admin_admission_request_detail(
 ) -> AdmissionRequestResponse:
     item = db.scalar(
         select(AdmissionRequest)
-        .options(selectinload(AdmissionRequest.created_by_user))
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees),
+        )
         .where(AdmissionRequest.id == request_id)
     )
     if item is None:
@@ -1207,6 +1217,114 @@ def create_admin_admission_request(
     )
     if loaded_item is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was created but could not be loaded")
+
+    return _serialize_admission_request(loaded_item)
+
+
+@router.post("/hr/admission-requests/{request_id}/hire", response_model=AdmissionRequestResponse)
+def hire_admin_admission_request(
+    request_id: int,
+    payload: AdmissionRequestHireRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionRequestResponse:
+    request_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    if request_item.status != AdmissionRequestStatusEnum.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only approved admission requests can be used to register hired candidates",
+        )
+
+    hired_employee_count = len(request_item.hired_employees)
+    if hired_employee_count >= request_item.quantity_people:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This admission request has already reached the requested headcount",
+        )
+
+    full_name = payload.full_name.strip()
+    employee_code = payload.employee_code.strip().upper()
+    work_email = payload.work_email.strip().lower()
+    personal_email = payload.personal_email.strip().lower() if payload.personal_email else None
+
+    if db.scalar(select(Employee).where(Employee.employee_code == employee_code)) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Employee code already exists")
+
+    if db.scalar(select(Employee).where(func.lower(Employee.work_email) == work_email)) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Work email already exists")
+
+    department = db.scalar(
+        select(Department)
+        .where(Department.id == payload.department_id)
+        .where(Department.is_active.is_(True))
+    )
+    if department is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Department not found or inactive")
+
+    job_title = db.scalar(
+        select(JobTitle)
+        .where(JobTitle.id == payload.job_title_id)
+        .where(JobTitle.is_active.is_(True))
+    )
+    if job_title is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job title not found or inactive")
+
+    employee = Employee(
+        employee_code=employee_code,
+        source_admission_request_id=request_item.id,
+        department_id=department.id,
+        job_title_id=job_title.id,
+        manager_id=None,
+        full_name=full_name,
+        work_email=work_email,
+        personal_email=personal_email,
+        hire_date=payload.hire_date or datetime.now(UTC).date(),
+        status=EmployeeStatusEnum.ACTIVE,
+    )
+    db.add(employee)
+    db.flush()
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="employee",
+            entity_id=str(employee.id),
+            description="Employee registered from an approved admission request.",
+            details_json=json.dumps(
+                {
+                    "request_id": request_item.id,
+                    "employee_id": employee.id,
+                    "employee_code": employee.employee_code,
+                    "full_name": employee.full_name,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    loaded_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if loaded_item is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was updated but could not be loaded")
 
     return _serialize_admission_request(loaded_item)
 

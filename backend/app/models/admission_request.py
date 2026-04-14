@@ -17,6 +17,7 @@ from app.models.enums import (
 if TYPE_CHECKING:
     from app.models.approval_workflow_template import ApprovalWorkflowTemplate
     from app.models.admission_request_approval import AdmissionRequestApproval
+    from app.models.employee import Employee
     from app.models.user import User
 
 
@@ -62,6 +63,7 @@ class AdmissionRequest(BaseModel):
 
     created_by_user = relationship("User", back_populates="admission_requests")
     approval_workflow_template = relationship("ApprovalWorkflowTemplate", back_populates="admission_requests")
+    hired_employees = relationship("Employee", back_populates="source_admission_request")
     approval_steps = relationship(
         "AdmissionRequestApproval",
         back_populates="request",

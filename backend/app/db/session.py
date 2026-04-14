@@ -92,6 +92,32 @@ def _ensure_job_title_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_employee_columns() -> None:
+    inspector = inspect(engine)
+    if "employees" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("employees")}
+    statements: list[str] = []
+
+    if "source_admission_request_id" not in existing_columns:
+        statements.append(
+            "ALTER TABLE employees ADD COLUMN source_admission_request_id INTEGER REFERENCES admission_requests(id)"
+        )
+
+    statements.append(
+        "CREATE INDEX IF NOT EXISTS ix_employees_source_admission_request_id "
+        "ON employees(source_admission_request_id)"
+    )
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
 def _ensure_approval_workflow_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -297,6 +323,7 @@ def create_tables() -> None:
     _ensure_survey_question_columns()
     _ensure_department_columns()
     _ensure_job_title_columns()
+    _ensure_employee_columns()
     _ensure_approval_workflow_columns()
     _ensure_default_approval_workflow()
     _backfill_request_approval_steps()

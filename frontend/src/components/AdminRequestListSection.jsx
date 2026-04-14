@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { AdmissionHireModal } from './AdmissionHireModal'
 import { ApprovalStatusModal } from './ApprovalStatusModal'
 import { getAdminAdmissionRequests, getAdminDismissalRequests } from '../services/admin'
 
@@ -64,6 +65,7 @@ const REQUEST_TABS = {
         RECRUITMENT_SCOPE_LABELS[item.recruitment_scope],
         CONTRACT_REGIME_LABELS[item.contract_regime],
         item.turno,
+        `${item.hired_employee_count ?? 0}/${item.quantity_people ?? 0}`,
       ]
     },
     renderHeaders() {
@@ -74,15 +76,24 @@ const REQUEST_TABS = {
           <th>Cargo</th>
           <th>Setor</th>
           <th>Qtd.</th>
+          <th>Contratados</th>
           <th>Regime</th>
           <th>Status</th>
-          <th>Aprovação</th>
+          <th>Ações</th>
           <th>Criado em</th>
         </tr>
       )
     },
-    renderRow(item, onViewApprovalStatus) {
+    renderRow(item, actions) {
       const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
+      const hiredCount = item.hired_employee_count ?? 0
+      const remainingPositions = item.remaining_positions ?? Math.max((item.quantity_people ?? 0) - hiredCount, 0)
+      const canRegisterHire = item.status === 'APPROVED' && remainingPositions > 0
+      const hireButtonLabel = item.status !== 'APPROVED'
+        ? 'Aguardando aprovação'
+        : remainingPositions > 0
+          ? 'Cadastrar contratado'
+          : 'Vagas preenchidas'
 
       return (
         <tr key={item.id}>
@@ -100,14 +111,29 @@ const REQUEST_TABS = {
             <span>{item.turno}</span>
           </td>
           <td>{item.quantity_people}</td>
+          <td>
+            <span className="request-hire-counter">
+              <strong>{hiredCount}</strong>&nbsp;/ {item.quantity_people}
+            </span>
+          </td>
           <td>{CONTRACT_REGIME_LABELS[item.contract_regime] ?? item.contract_regime}</td>
           <td>
             <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
           </td>
           <td>
-            <button className="secondary-button" type="button" onClick={onViewApprovalStatus}>
-              Status de aprovação
-            </button>
+            <div className="request-row-actions">
+              <button className="secondary-button" type="button" onClick={actions.onViewApprovalStatus}>
+                Status de aprovação
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={actions.onRegisterHire}
+                disabled={!canRegisterHire}
+              >
+                {hireButtonLabel}
+              </button>
+            </div>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
         </tr>
@@ -217,6 +243,8 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     dismissal: '',
   })
   const [selectedApprovalRequest, setSelectedApprovalRequest] = useState(null)
+  const [selectedHireRequest, setSelectedHireRequest] = useState(null)
+  const [refreshCounter, setRefreshCounter] = useState(0)
 
   useEffect(() => {
     let isMounted = true
@@ -261,7 +289,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     return () => {
       isMounted = false
     }
-  }, [token])
+    }, [refreshCounter, token])
 
   const activeConfig = REQUEST_TABS[activeTab]
   const activeRequests = requestsByTab[activeTab]
@@ -284,6 +312,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   function handleTabChange(tabKey) {
     setQuery('')
     setSelectedApprovalRequest(null)
+    setSelectedHireRequest(null)
     navigate(REQUEST_TAB_PATHS[tabKey])
   }
 
@@ -293,6 +322,15 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
       request_id: item.id,
       request_kind: activeTab.toUpperCase(),
     })
+  }
+
+  function openHireModal(item) {
+    setSelectedHireRequest(item)
+  }
+
+  function handleHireSuccess() {
+    setSelectedHireRequest(null)
+    setRefreshCounter((currentValue) => currentValue + 1)
   }
 
   return (
@@ -373,7 +411,14 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
           <div className="requests-table-wrap">
             <table className="admin-table requests-table">
               <thead>{activeConfig.renderHeaders()}</thead>
-              <tbody>{filteredRequests.map((item) => activeConfig.renderRow(item, () => openApprovalStatus(item)))}</tbody>
+              <tbody>
+                {filteredRequests.map((item) =>
+                  activeConfig.renderRow(item, {
+                    onViewApprovalStatus: () => openApprovalStatus(item),
+                    onRegisterHire: () => openHireModal(item),
+                  }),
+                )}
+              </tbody>
             </table>
           </div>
         )}
@@ -383,6 +428,13 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
         request={selectedApprovalRequest}
         token={token}
         onClose={() => setSelectedApprovalRequest(null)}
+      />
+
+      <AdmissionHireModal
+        request={selectedHireRequest}
+        token={token}
+        onClose={() => setSelectedHireRequest(null)}
+        onSubmitted={handleHireSuccess}
       />
     </div>
   )

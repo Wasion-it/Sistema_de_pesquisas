@@ -134,6 +134,16 @@ class AdmissionRequestCreateRequest(BaseModel):
     manager_reminder: str | None = Field(default=None, max_length=2000)
 
 
+class AdmissionRequestHireRequest(BaseModel):
+    full_name: str = Field(min_length=2, max_length=150)
+    employee_code: str = Field(min_length=2, max_length=50)
+    work_email: str = Field(min_length=3, max_length=255)
+    personal_email: str | None = Field(default=None, max_length=255)
+    department_id: int
+    job_title_id: int
+    hire_date: date | None = None
+
+
 class AdmissionRequestResponse(BaseModel):
     id: int
     status: AdmissionRequestStatusEnum
@@ -151,6 +161,8 @@ class AdmissionRequestResponse(BaseModel):
     created_by_user_name: str
     created_by_user_email: str
     approval_workflow_template_id: int | None
+    hired_employee_count: int
+    remaining_positions: int
     submitted_at: datetime | None
     created_at: datetime
     updated_at: datetime

@@ -335,7 +335,11 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   }
 
   function openDetailsModal(item) {
-    setSelectedDetailsRequest(item)
+    setSelectedDetailsRequest({
+      ...item,
+      request_id: item.id,
+      request_kind: activeTab.toUpperCase(),
+    })
   }
 
   function handleHireSuccess() {

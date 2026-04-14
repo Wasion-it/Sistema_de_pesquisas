@@ -28,6 +28,12 @@ const REQUEST_KIND_TO_FETCHER = {
   dismissal: getAdminDismissalRequest,
 }
 
+const ADMISSION_POSITION_LABELS = {
+  PUBLIC_ADMINISTRATIVE: 'Administrativo',
+  PUBLIC_OPERATIONAL: 'Operacional',
+  PUBLIC_LEADERSHIP: 'Liderança',
+}
+
 function normalizeRequestKind(kind) {
   return String(kind ?? '').toLowerCase()
 }
@@ -41,43 +47,6 @@ function DetailField({ label, value }) {
     <div>
       <span>{label}</span>
       <strong>{value}</strong>
-    </div>
-  )
-}
-
-function HiredEmployeesSection({ hiredEmployees = [] }) {
-  if (!hiredEmployees.length) {
-    return (
-      <div className="request-modal-section">
-        <div className="request-modal-section-header">
-          <h4>Contratados vinculados</h4>
-          <span>0 registros</span>
-        </div>
-        <div className="empty-state compact">
-          <strong>Nenhum contratado registrado ainda</strong>
-          <span>O vínculo aparece aqui depois que o RH cadastrar o funcionário contratado.</span>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="request-modal-section">
-      <div className="request-modal-section-header">
-        <h4>Contratados vinculados</h4>
-        <span>{hiredEmployees.length} registro(s)</span>
-      </div>
-      <div className="hired-employees-list">
-        {hiredEmployees.map((employee) => (
-          <article className="hired-employee-card" key={employee.id}>
-            <strong>{employee.full_name}</strong>
-            <span>{employee.employee_code}</span>
-            <small>{employee.department_name} • {employee.job_title_name}</small>
-            <small>{employee.work_email ?? 'Sem email corporativo'}</small>
-            {employee.hire_date ? <small>Admissão em {formatDateTime(employee.hire_date)}</small> : null}
-          </article>
-        ))}
-      </div>
     </div>
   )
 }
@@ -203,6 +172,7 @@ export function RequestDetailsModal({ request, token, onClose }) {
               {requestKind === 'admission' ? (
                 <div className="request-modal-form-grid">
                   <DetailField label="Tipo de admissão" value={fullRequest.request_type} />
+                  <DetailField label="Posição da vaga" value={ADMISSION_POSITION_LABELS[fullRequest.posicao_vaga] ?? fullRequest.posicao_vaga} />
                   <DetailField label="Cargo" value={fullRequest.cargo} />
                   <DetailField label="Setor" value={fullRequest.setor} />
                   <DetailField label="Escopo" value={fullRequest.recruitment_scope} />
@@ -227,8 +197,6 @@ export function RequestDetailsModal({ request, token, onClose }) {
                   <DetailField label="Observação do gestor" value={fullRequest.manager_reminder ?? 'Não informada'} />
                 </div>
               ) : null}
-
-              <HiredEmployeesSection hiredEmployees={fullRequest.hired_employees ?? []} />
             </div>
 
           </>

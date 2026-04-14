@@ -89,6 +89,12 @@ class ContractRegimeEnum(str, Enum):
     PJ = "PJ"
 
 
+class AdmissionPositionEnum(str, Enum):
+    PUBLIC_ADMINISTRATIVE = "PUBLIC_ADMINISTRATIVE"
+    PUBLIC_OPERATIONAL = "PUBLIC_OPERATIONAL"
+    PUBLIC_LEADERSHIP = "PUBLIC_LEADERSHIP"
+
+
 class DismissalRequestStatusEnum(str, Enum):
     PENDING = "PENDING"
     UNDER_REVIEW = "UNDER_REVIEW"

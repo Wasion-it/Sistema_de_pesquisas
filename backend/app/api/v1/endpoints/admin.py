@@ -53,6 +53,7 @@ from app.schemas.admin import (
     ApprovalQueueItemResponse,
     ApprovalQueueListResponse,
     ApprovalStepResponse,
+    AdmissionPositionEnum,
     AdmissionRequestCreateRequest,
     AdmissionRequestHireRequest,
     AdmissionRequestListResponse,
@@ -199,6 +200,7 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         id=item.id,
         status=item.status,
         request_type=item.request_type,
+        posicao_vaga=item.posicao_vaga,
         cargo=item.cargo,
         setor=item.setor,
         recruitment_scope=item.recruitment_scope,
@@ -1190,6 +1192,7 @@ def create_admin_admission_request(
     admission_request = AdmissionRequest(
         status=AdmissionRequestStatusEnum.PENDING,
         request_type=payload.request_type,
+        posicao_vaga=payload.posicao_vaga,
         cargo=cargo,
         setor=setor,
         recruitment_scope=payload.recruitment_scope,

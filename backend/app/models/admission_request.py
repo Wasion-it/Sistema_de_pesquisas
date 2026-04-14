@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import BaseModel
 from app.models.enums import (
+    AdmissionPositionEnum,
     AdmissionRequestStatusEnum,
     AdmissionRequestTypeEnum,
     ContractRegimeEnum,
@@ -37,6 +38,10 @@ class AdmissionRequest(BaseModel):
     )
     request_type: Mapped[AdmissionRequestTypeEnum] = mapped_column(
         Enum(AdmissionRequestTypeEnum, native_enum=False, length=20),
+        nullable=False,
+    )
+    posicao_vaga: Mapped[AdmissionPositionEnum] = mapped_column(
+        Enum(AdmissionPositionEnum, native_enum=False, length=30),
         nullable=False,
     )
     cargo: Mapped[str] = mapped_column(String(150), nullable=False)

@@ -8,6 +8,7 @@ const INITIAL_FORM = {
   tipo: '',
   nomeSubstituido: '',
   justificativa: '',
+  posicaoVaga: '',
   cargo: '',
   setor: '',
   recrutamento: '',
@@ -19,6 +20,12 @@ const INITIAL_FORM = {
 const TIPO_OPTIONS = ['Aumento de quadro', 'Substituição']
 
 const RECRUTAMENTO_OPTIONS = ['Interno', 'Externo', 'Misto']
+
+const POSITION_OPTIONS = [
+  { label: 'Administrativo', value: 'PUBLIC_ADMINISTRATIVE' },
+  { label: 'Operacional', value: 'PUBLIC_OPERATIONAL' },
+  { label: 'Liderança', value: 'PUBLIC_LEADERSHIP' },
+]
 
 const TURNO_OPTIONS = ['Integral', 'Manhã', 'Tarde', 'Noite', 'Misto']
 
@@ -122,6 +129,10 @@ export function AdmissaoFormPage() {
       return true
     }
 
+    if (!formValues.posicaoVaga) {
+      return true
+    }
+
     if (!formValues.quantidadePessoas || Number(formValues.quantidadePessoas) < 1) {
       return true
     }
@@ -184,6 +195,7 @@ export function AdmissaoFormPage() {
     try {
       const payload = {
         request_type: REQUEST_TYPE_MAP[formValues.tipo],
+        posicao_vaga: formValues.posicaoVaga,
         cargo: formValues.cargo.trim(),
         setor: formValues.setor.trim(),
         recruitment_scope: RECRUITMENT_SCOPE_MAP[formValues.recrutamento],
@@ -264,6 +276,18 @@ export function AdmissaoFormPage() {
                     {TIPO_OPTIONS.map((option) => (
                       <option key={option} value={option}>
                         {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field-group">
+                  <span>Posição da vaga</span>
+                  <select name="posicaoVaga" value={formValues.posicaoVaga} onChange={handleFieldChange}>
+                    <option value="">Selecione</option>
+                    {POSITION_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
                       </option>
                     ))}
                   </select>
@@ -412,6 +436,10 @@ export function AdmissaoFormPage() {
               <div className="request-summary-item">
                 <strong>Tipo</strong>
                 <span>{formValues.tipo || 'Ainda não preenchido'}</span>
+              </div>
+              <div className="request-summary-item">
+                <strong>Posição da vaga</strong>
+                <span>{POSITION_OPTIONS.find((option) => option.value === formValues.posicaoVaga)?.label || 'Ainda não preenchido'}</span>
               </div>
               <div className="request-summary-item">
                 <strong>Cargo</strong>

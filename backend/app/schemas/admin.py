@@ -6,6 +6,7 @@ from app.models.enums import (
     ApprovalRequestKindEnum,
     ApprovalRoleEnum,
     ApprovalStepStatusEnum,
+    AdmissionPositionEnum,
     AdmissionRequestStatusEnum,
     AdmissionRequestTypeEnum,
     CampaignStatusEnum,
@@ -123,6 +124,7 @@ class JobTitleUpdateRequest(BaseModel):
 
 class AdmissionRequestCreateRequest(BaseModel):
     request_type: AdmissionRequestTypeEnum
+    posicao_vaga: AdmissionPositionEnum
     cargo: str = Field(min_length=2, max_length=150)
     setor: str = Field(min_length=2, max_length=150)
     recruitment_scope: RecruitmentScopeEnum
@@ -159,6 +161,7 @@ class AdmissionRequestResponse(BaseModel):
     id: int
     status: AdmissionRequestStatusEnum
     request_type: AdmissionRequestTypeEnum
+    posicao_vaga: AdmissionPositionEnum | None
     cargo: str
     setor: str
     recruitment_scope: RecruitmentScopeEnum

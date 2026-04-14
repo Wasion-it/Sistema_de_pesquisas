@@ -118,6 +118,25 @@ def _ensure_employee_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_admission_request_columns() -> None:
+    inspector = inspect(engine)
+    if "admission_requests" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("admission_requests")}
+    statements: list[str] = []
+
+    if "posicao_vaga" not in existing_columns:
+        statements.append("ALTER TABLE admission_requests ADD COLUMN posicao_vaga VARCHAR(30)")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
 def _ensure_approval_workflow_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -324,6 +343,7 @@ def create_tables() -> None:
     _ensure_department_columns()
     _ensure_job_title_columns()
     _ensure_employee_columns()
+    _ensure_admission_request_columns()
     _ensure_approval_workflow_columns()
     _ensure_default_approval_workflow()
     _backfill_request_approval_steps()

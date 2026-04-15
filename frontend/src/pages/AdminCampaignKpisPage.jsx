@@ -23,6 +23,10 @@ function getQuestionMetaMap(pageData) {
   return new Map((pageData.questions ?? []).map((question) => [question.id, question]))
 }
 
+function getDimensionMetaMap(pageData) {
+  return new Map((pageData.dimensions ?? []).map((dimension) => [dimension.id, dimension]))
+}
+
 function getEffectiveScaleScore(question, numericAnswer) {
   if (!question || numericAnswer == null) {
     return null
@@ -37,6 +41,7 @@ function getEffectiveScaleScore(question, numericAnswer) {
 
 function computeKpis(pageData) {
   const questionMetaMap = getQuestionMetaMap(pageData)
+  const dimensionMetaMap = getDimensionMetaMap(pageData)
   const submitted = (pageData.responses ?? []).filter((r) => r.status === 'SUBMITTED')
   const { audience_count, submitted_responses, draft_responses, total_responses } = pageData.summary
 
@@ -136,6 +141,50 @@ function computeKpis(pageData) {
     }))
     .sort((a, b) => b.avg - a.avg)
 
+  const dimensionMap = {}
+  scaleItems.forEach((answer) => {
+    const question = questionMetaMap.get(answer.question_id)
+    const dimension = question?.dimension_id != null ? dimensionMetaMap.get(question.dimension_id) : null
+    const key = dimension?.id ?? 'unassigned'
+    const normalizedScore = question?.scale_max > 0 ? answer.effectiveScore / question.scale_max : null
+    const scoreWeight = question?.score_weight ?? 1
+
+    if (!dimensionMap[key]) {
+      dimensionMap[key] = {
+        code: dimension?.code ?? 'UNASSIGNED',
+        name: dimension?.name ?? 'Sem dimensão',
+        scores: [],
+        weightedNormalizedScores: [],
+        scoreWeightTotal: 0,
+        questionIds: new Set(),
+      }
+    }
+
+    if (normalizedScore != null) {
+      dimensionMap[key].scores.push(normalizedScore)
+      dimensionMap[key].weightedNormalizedScores.push(normalizedScore * scoreWeight)
+      dimensionMap[key].scoreWeightTotal += scoreWeight
+    }
+
+    if (question) {
+      dimensionMap[key].questionIds.add(question.id)
+    }
+  })
+
+  const dimensionScores = Object.values(dimensionMap)
+    .map((dimension) => ({
+      code: dimension.code,
+      name: dimension.name,
+      avg: dimension.weightedNormalizedScores.reduce((sum, value) => sum + value, 0),
+      maxScore: dimension.scoreWeightTotal,
+      count: dimension.scores.length,
+      questionCount: dimension.questionIds.size,
+      ratio: dimension.scoreWeightTotal > 0
+        ? dimension.weightedNormalizedScores.reduce((sum, value) => sum + value, 0) / dimension.scoreWeightTotal
+        : 0,
+    }))
+    .sort((a, b) => b.ratio - a.ratio)
+
   return {
     adhesionRate,
     completionRate,
@@ -153,6 +202,7 @@ function computeKpis(pageData) {
     audienceCount: audience_count,
     draftCount: draft_responses,
     totalStarted: total_responses,
+    dimensionScores,
   }
 }
 
@@ -282,6 +332,40 @@ function QuestionRanking({ questions }) {
               <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .5s ease' }} />
             </div>
             <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>{q.count} resposta{q.count !== 1 ? 's' : ''}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function DimensionRanking({ dimensions }) {
+  if (dimensions.length === 0) {
+    return <div className="empty-state"><strong>Sem dimensões de risco</strong></div>
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 12 }}>
+      {dimensions.map((dimension, index) => {
+        const pct = Math.max(0, Math.min(100, dimension.ratio * 100))
+        const color = pct >= 80 ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626'
+
+        return (
+          <div key={dimension.code} style={{ display: 'grid', gap: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ fontSize: 13, color: 'var(--slate-700)', fontWeight: 500, lineHeight: 1.4, flex: 1 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-400)', marginRight: 6 }}>{index + 1}.</span>
+                {dimension.name}
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{fmtPct(pct)}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: 999 }}>{dimension.questionCount} pergunta(s)</span>
+              <span style={{ fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: 999 }}>{dimension.count} resposta(s)</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: 'var(--slate-100)', overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .5s ease' }} />
+            </div>
           </div>
         )
       })}
@@ -497,6 +581,17 @@ export function AdminCampaignKpisPage() {
               )}
             </article>
           </section>
+
+          {/* ── Risco por dimensão ── */}
+          <article className="admin-panel-card">
+            <div className="panel-header-row" style={{ marginBottom: 20 }}>
+              <div>
+                <h3>Risco por dimensão</h3>
+                <p>Consolida as respostas de escala por dimensão da pesquisa</p>
+              </div>
+            </div>
+            <DimensionRanking dimensions={kpis.dimensionScores} />
+          </article>
 
           {/* ── Ranking por pergunta ── */}
           <article className="admin-panel-card">

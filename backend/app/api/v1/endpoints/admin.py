@@ -129,6 +129,17 @@ def _serialize_option(option: QuestionOption) -> QuestionOptionResponse:
     )
 
 
+def _serialize_dimension(dimension: SurveyDimension) -> SurveyDimensionResponse:
+    return SurveyDimensionResponse(
+        id=dimension.id,
+        code=dimension.code,
+        name=dimension.name,
+        description=dimension.description,
+        display_order=dimension.display_order,
+        is_active=dimension.is_active,
+    )
+
+
 def _serialize_question(question: SurveyQuestion) -> SurveyQuestionResponse:
     options = sorted(question.options, key=lambda item: item.display_order)
     return SurveyQuestionResponse(
@@ -1124,17 +1135,7 @@ def _serialize_survey_detail(survey: Survey) -> SurveyDetailResponse:
         category=survey.category,
         is_active=survey.is_active,
         updated_at=survey.updated_at,
-        dimensions=[
-            SurveyDimensionResponse(
-                id=dimension.id,
-                code=dimension.code,
-                name=dimension.name,
-                description=dimension.description,
-                display_order=dimension.display_order,
-                is_active=dimension.is_active,
-            )
-            for dimension in dimensions
-        ],
+        dimensions=[_serialize_dimension(dimension) for dimension in dimensions],
         current_version=current_version_response,
         campaigns=[_serialize_campaign(campaign) for campaign in campaigns],
     )
@@ -1974,6 +1975,7 @@ def read_admin_campaign_responses(
         .options(
             selectinload(Campaign.audiences),
             selectinload(Campaign.survey_version).selectinload(SurveyVersion.survey),
+            selectinload(Campaign.survey_version).selectinload(SurveyVersion.survey).selectinload(Survey.dimensions),
             selectinload(Campaign.survey_version)
             .selectinload(SurveyVersion.questions)
             .selectinload(SurveyQuestion.options),
@@ -2011,6 +2013,10 @@ def read_admin_campaign_responses(
         questions=[
             _serialize_question(question)
             for question in sorted(campaign.survey_version.questions, key=lambda item: item.display_order)
+        ],
+        dimensions=[
+            _serialize_dimension(dimension)
+            for dimension in sorted(campaign.survey_version.survey.dimensions, key=lambda item: item.display_order)
         ],
         summary=CampaignResponsesSummaryResponse(
             audience_count=target_population,

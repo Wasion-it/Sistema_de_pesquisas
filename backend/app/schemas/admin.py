@@ -473,6 +473,7 @@ class CampaignResponsesPageResponse(BaseModel):
     version_title: str
     total_questions: int
     questions: list[SurveyQuestionResponse]
+    dimensions: list[SurveyDimensionResponse]
     summary: CampaignResponsesSummaryResponse
     department_progress: list[CampaignDepartmentProgressResponse]
     responses: list[CampaignResponseEntryResponse]

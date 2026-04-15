@@ -33,6 +33,23 @@ const REQUEST_MODULES = [
     ),
   },
   {
+    title: 'Checklist de admissão',
+    description: 'Organize e revise as etapas do checklist usado no fluxo de admissão.',
+    to: '/admin/admission-checklist',
+    accent: 'green',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 11l3 3L22 4" />
+        <path d="M5 4h2" />
+        <path d="M5 12h2" />
+        <path d="M5 20h2" />
+        <path d="M11 4h8" />
+        <path d="M11 12h8" />
+        <path d="M11 20h8" />
+      </svg>
+    ),
+  },
+  {
     title: 'Demissão',
     description: 'Acesse a fila de solicitações de demissão e acompanhe os desligamentos.',
     to: '/admin/dismissal-requests',

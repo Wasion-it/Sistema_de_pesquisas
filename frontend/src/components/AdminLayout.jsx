@@ -53,14 +53,6 @@ export function AdminLayout() {
             </svg>
             Dashboard
           </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/approvals">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M4 6h16" />
-              <path d="M4 12h10" />
-              <path d="M4 18h7" />
-            </svg>
-            Aprovações
-          </NavLink>
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/requests">
             <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
               <rect height="18" rx="2" width="18" x="3" y="3" />
@@ -69,17 +61,6 @@ export function AdminLayout() {
               <path d="M8 17h5" />
             </svg>
             Solicitações
-          </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/my-requests">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M8 6h13" />
-              <path d="M8 12h13" />
-              <path d="M8 18h13" />
-              <path d="M3 6h.01" />
-              <path d="M3 12h.01" />
-              <path d="M3 18h.01" />
-            </svg>
-            Minhas solicitações
           </NavLink>
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
             <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
@@ -100,48 +81,7 @@ export function AdminLayout() {
             </svg>
             Departamentos
           </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/job-titles">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M4 7h16" />
-              <path d="M4 12h16" />
-              <path d="M4 17h10" />
-            </svg>
-            Cargos
-          </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/admission-requests">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M8 6h13" />
-              <path d="M8 12h13" />
-              <path d="M8 18h13" />
-              <path d="M3 6h.01" />
-              <path d="M3 12h.01" />
-              <path d="M3 18h.01" />
-            </svg>
-            Admissão
-          </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/admission-checklist">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M9 11l3 3L22 4" />
-              <path d="M5 4h2" />
-              <path d="M5 12h2" />
-              <path d="M5 20h2" />
-              <path d="M11 4h8" />
-              <path d="M11 12h8" />
-              <path d="M11 20h8" />
-            </svg>
-            Checklist de admissão
-          </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dismissal-requests">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M8 6h13" />
-              <path d="M8 12h13" />
-              <path d="M8 18h13" />
-              <path d="M3 6h.01" />
-              <path d="M3 12h.01" />
-              <path d="M3 18h.01" />
-            </svg>
-            Demissão
-          </NavLink>
+
         </nav>
 
         <div className="admin-user-card">

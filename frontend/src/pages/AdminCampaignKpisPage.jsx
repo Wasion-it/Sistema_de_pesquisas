@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { getAdminCampaignResponses } from '../services/admin'
+import { getAdminCampaignResponses, getAdminSurveyDetail } from '../services/admin'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -19,12 +19,36 @@ function fmtDate(value) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value))
 }
 
-function getQuestionMetaMap(pageData) {
-  return new Map((pageData.questions ?? []).map((question) => [question.id, question]))
+function getQuestionMetaMaps(pageData, surveyData) {
+  const byId = new Map()
+  const byCode = new Map()
+
+  ;[pageData, surveyData?.current_version].forEach((source) => {
+    (source?.questions ?? []).forEach((question) => {
+      byId.set(question.id, question)
+      if (question.code) {
+        byCode.set(String(question.code).toUpperCase(), question)
+      }
+    })
+  })
+
+  return { byId, byCode }
 }
 
-function getDimensionMetaMap(pageData) {
-  return new Map((pageData.dimensions ?? []).map((dimension) => [dimension.id, dimension]))
+function getDimensionMetaMap(pageData, surveyData) {
+  const map = new Map()
+
+  ;[pageData, surveyData].forEach((source) => {
+    (source?.dimensions ?? []).forEach((dimension) => {
+      map.set(dimension.id, dimension)
+    })
+  })
+
+  return map
+}
+
+function resolveQuestionMeta(answer, questionMetaMaps) {
+  return questionMetaMaps.byId.get(answer.question_id) ?? questionMetaMaps.byCode.get(String(answer.question_code ?? '').toUpperCase()) ?? null
 }
 
 function getEffectiveScaleScore(question, numericAnswer) {
@@ -39,9 +63,9 @@ function getEffectiveScaleScore(question, numericAnswer) {
 
 // ─── KPI computation ────────────────────────────────────────────────────────
 
-function computeKpis(pageData) {
-  const questionMetaMap = getQuestionMetaMap(pageData)
-  const dimensionMetaMap = getDimensionMetaMap(pageData)
+function computeKpis(pageData, surveyData) {
+  const questionMetaMaps = getQuestionMetaMaps(pageData, surveyData)
+  const dimensionMetaMap = getDimensionMetaMap(pageData, surveyData)
   const submitted = (pageData.responses ?? []).filter((r) => r.status === 'SUBMITTED')
   const { audience_count, submitted_responses, draft_responses, total_responses } = pageData.summary
 
@@ -58,7 +82,7 @@ function computeKpis(pageData) {
   const scaleItems = allItems
     .filter((a) => a.question_type === 'SCALE_1_5' && a.numeric_answer != null)
     .map((answer) => {
-      const question = questionMetaMap.get(answer.question_id)
+      const question = resolveQuestionMeta(answer, questionMetaMaps)
       const effectiveScore = getEffectiveScaleScore(question, answer.numeric_answer)
       const scoreWeight = question?.score_weight ?? 1
       const weightedScore = effectiveScore != null ? effectiveScore * scoreWeight : null
@@ -121,8 +145,8 @@ function computeKpis(pageData) {
         scores: [],
         weightedScores: [],
         scoreWeight: a.scoreWeight,
-        isNegative: questionMetaMap.get(a.question_id)?.is_negative ?? false,
-        scaleMax: questionMetaMap.get(a.question_id)?.scale_max ?? 5,
+        isNegative: resolveQuestionMeta(a, questionMetaMaps)?.is_negative ?? false,
+        scaleMax: resolveQuestionMeta(a, questionMetaMaps)?.scale_max ?? 5,
       }
     }
     questionMap[key].scores.push(a.effectiveScore)
@@ -143,7 +167,7 @@ function computeKpis(pageData) {
 
   const dimensionMap = {}
   scaleItems.forEach((answer) => {
-    const question = questionMetaMap.get(answer.question_id)
+    const question = resolveQuestionMeta(answer, questionMetaMaps)
     const dimension = question?.dimension_id != null ? dimensionMetaMap.get(question.dimension_id) : null
     const key = dimension?.id ?? 'unassigned'
     const normalizedScore = question?.scale_max > 0 ? answer.effectiveScore / question.scale_max : null
@@ -380,7 +404,9 @@ export function AdminCampaignKpisPage() {
   const { token } = useAuth()
 
   const [pageData, setPageData] = useState(null)
+  const [surveyData, setSurveyData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSurveyLoading, setIsSurveyLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -396,10 +422,26 @@ export function AdminCampaignKpisPage() {
     return () => { mounted = false }
   }, [campaignId, token])
 
+  useEffect(() => {
+    if (!pageData?.survey_id) {
+      return
+    }
+
+    let mounted = true
+    setIsSurveyLoading(true)
+
+    getAdminSurveyDetail(token, pageData.survey_id)
+      .then((data) => { if (mounted) setSurveyData(data) })
+      .catch(() => { if (mounted) setSurveyData(null) })
+      .finally(() => { if (mounted) setIsSurveyLoading(false) })
+
+    return () => { mounted = false }
+  }, [pageData?.survey_id, token])
+
   const kpis = useMemo(() => {
     if (!pageData) return null
-    return computeKpis(pageData)
-  }, [pageData])
+    return computeKpis(pageData, surveyData)
+  }, [pageData, surveyData])
 
   const campaign = pageData?.campaign
   const hasData = kpis && kpis.submittedCount > 0

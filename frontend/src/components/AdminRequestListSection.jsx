@@ -22,6 +22,11 @@ const STATUS_META = {
   CANCELED: { label: 'Cancelada', className: 'inactive' },
 }
 
+const ADMISSION_STATUS_FILTERS = [
+  { value: 'all', label: 'Todos os status' },
+  ...Object.entries(STATUS_META).map(([value, meta]) => ({ value, label: meta.label })),
+]
+
 const REQUEST_TYPE_LABELS = {
   GROWTH: 'Aumento de quadro',
   REPLACEMENT: 'Substituição',
@@ -267,6 +272,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     dismissal: [],
   })
   const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessages, setErrorMessages] = useState({
     admission: '',
@@ -349,21 +355,27 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
   const filteredRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    if (!normalizedQuery) {
-      return activeRequests
-    }
+    return activeRequests.filter((item) => {
+      const matchesStatus =
+        activeTab !== 'admission' ||
+        statusFilter === 'all' ||
+        item.status === statusFilter
 
-    return activeRequests.filter((item) => (
-      activeConfig.getSearchValues(item)
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(normalizedQuery))
-    ))
-  }, [activeConfig, activeRequests, query])
+      const matchesQuery =
+        !normalizedQuery ||
+        activeConfig.getSearchValues(item)
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(normalizedQuery))
+
+      return matchesStatus && matchesQuery
+    })
+  }, [activeConfig, activeRequests, activeTab, query, statusFilter])
 
   const summary = getSummary(filteredRequests)
 
   function handleTabChange(tabKey) {
     setQuery('')
+    setStatusFilter('all')
     setSelectedApprovalRequest(null)
     setSelectedDetailsRequest(null)
     setSelectedHireRequest(null)
@@ -470,14 +482,29 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
       </section>
 
       <section className="admin-toolbar-card">
-        <label className="field-group">
-          <span>Buscar solicitação</span>
-          <input
-            placeholder={activeConfig.searchPlaceholder}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: activeTab === 'admission' ? '2fr 1fr' : '1fr', gap: 16 }}>
+          <label className="field-group">
+            <span>Buscar solicitação</span>
+            <input
+              placeholder={activeConfig.searchPlaceholder}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+
+          {activeTab === 'admission' ? (
+            <label className="field-group">
+              <span>Filtrar por status</span>
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                {ADMISSION_STATUS_FILTERS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       </section>
 
       <section className="admin-panel-card">

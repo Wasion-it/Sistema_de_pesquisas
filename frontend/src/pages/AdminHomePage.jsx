@@ -107,14 +107,26 @@ const ADMIN_MODULES = [
     ),
   },
   {
-    title: 'Indicadores',
-    description: 'Abra o painel com os números consolidados do sistema.',
+    title: 'Dashboard',
+    description: 'Abra a página principal do admin com acesso aos indicadores de pesquisas.',
     to: '/admin/dashboard',
     accent: 'green',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 13l4-4 4 4 6-6 4 4" />
         <path d="M21 7v6h-6" />
+      </svg>
+    ),
+  },
+  {
+    title: 'KPIs de admissão',
+    description: 'Acompanhe o tempo de fechamento das vagas por perfil de contratação.',
+    to: '/admin/dashboard/admissao',
+    accent: 'amber',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 6v6l4 2" />
+        <circle cx="12" cy="12" r="9" />
       </svg>
     ),
   },

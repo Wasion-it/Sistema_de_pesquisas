@@ -51,7 +51,7 @@ export function AdminLayout() {
               <path d="M3 13l4-4 4 4 6-6 4 4" />
               <path d="M21 7v6h-6" />
             </svg>
-            Indicadores
+            Dashboard
           </NavLink>
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/approvals">
             <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">

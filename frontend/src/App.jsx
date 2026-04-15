@@ -1,12 +1,14 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './auth/AuthProvider'
-import { AdminCampaignKpisPage } from './pages/AdminCampaignKpisPage'
 import { AdminLayout } from './components/AdminLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminCampaignKpisPage } from './pages/AdminCampaignKpisPage'
 import { AdminCampaignResponsesPage } from './pages/AdminCampaignResponsesPage'
 import { AdminDepartmentsPage } from './pages/AdminDepartmentsPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { AdminDashboardPesquisasPage } from './pages/AdminDashboardPesquisasPage'
+import { AdminDashboardAdmissaoPage } from './pages/AdminDashboardAdmissaoPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminJobTitlesPage } from './pages/AdminJobTitlesPage'
 import { AdminAdmissionRequestsPage } from './pages/AdminAdmissionRequestsPage'
@@ -69,6 +71,8 @@ export default function App() {
           >
             <Route index element={<AdminHomePage />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="dashboard/pesquisas" element={<AdminDashboardPesquisasPage />} />
+            <Route path="dashboard/admissao" element={<AdminDashboardAdmissaoPage />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="my-requests" element={<MyRequestsPage />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />

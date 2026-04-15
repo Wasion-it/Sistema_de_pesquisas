@@ -257,6 +257,15 @@ export async function getAdminAdmissionRequests(token) {
   return parseResponse(response)
 }
 
+export async function updateAdminAdmissionChecklistProgress(token, requestId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/hr/admission-requests/${requestId}/checklist-progress`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
 export async function getAdminAdmissionChecklist(token) {
   const response = await fetch(`${API_URL}/admin/admission-checklist`, {
     headers: buildHeaders(token),

@@ -60,6 +60,7 @@ class AdmissionRequest(BaseModel):
     justification: Mapped[str | None] = mapped_column(Text, nullable=True)
     manager_reminder: Mapped[str | None] = mapped_column(Text, nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    checklist_completed_steps: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     approval_workflow_template_id: Mapped[int | None] = mapped_column(
         ForeignKey("approval_workflow_templates.id", ondelete="SET NULL"),

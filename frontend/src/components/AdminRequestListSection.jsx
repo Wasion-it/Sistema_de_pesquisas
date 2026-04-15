@@ -526,7 +526,12 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
       <AdmissionChecklistModal
         request={selectedChecklistRequest}
         steps={admissionChecklistSteps}
+        token={token}
         onClose={() => setSelectedChecklistRequest(null)}
+        onUpdated={(updatedRequest) => {
+          setSelectedChecklistRequest(updatedRequest)
+          setRefreshCounter((currentValue) => currentValue + 1)
+        }}
       />
 
       <AdmissionHireModal

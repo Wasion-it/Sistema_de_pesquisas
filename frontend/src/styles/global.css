@@ -2028,6 +2028,12 @@ body:has(.admin-shell) { background: var(--slate-100); }
   gap: 10px;
 }
 
+.checklist-progress-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .approval-queue-grid {
   display: grid;
   gap: 16px;

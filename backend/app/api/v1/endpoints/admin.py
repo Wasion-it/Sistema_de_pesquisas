@@ -58,6 +58,7 @@ from app.schemas.admin import (
     AdmissionPositionEnum,
     AdmissionChecklistStepCreateRequest,
     AdmissionChecklistReorderRequest,
+    AdmissionChecklistProgressUpdateRequest,
     AdmissionChecklistStepListResponse,
     AdmissionChecklistStepResponse,
     AdmissionChecklistStepUpdateRequest,
@@ -265,6 +266,7 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         created_by_user_name=item.created_by_user.full_name,
         created_by_user_email=item.created_by_user.email,
         approval_workflow_template_id=item.approval_workflow_template_id,
+        checklist_completed_steps=item.checklist_completed_steps or 0,
         hired_employee_count=hired_employee_count,
         remaining_positions=max(item.quantity_people - hired_employee_count, 0),
         hired_employees=[_serialize_hired_employee(employee) for employee in item.hired_employees],
@@ -1438,6 +1440,7 @@ def create_admin_admission_request(
         justification=justification,
         manager_reminder=manager_reminder,
         submitted_at=datetime.now(UTC),
+        checklist_completed_steps=0,
         created_by_user_id=user.id,
         approval_workflow_template_id=workflow.id,
     )
@@ -1478,6 +1481,55 @@ def create_admin_admission_request(
     )
     if loaded_item is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was created but could not be loaded")
+
+    return _serialize_admission_request(loaded_item)
+
+
+@router.post("/hr/admission-requests/{request_id}/checklist-progress", response_model=AdmissionRequestResponse)
+def update_admin_admission_request_checklist_progress(
+    request_id: int,
+    payload: AdmissionChecklistProgressUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionRequestResponse:
+    request_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    request_item.checklist_completed_steps = max(payload.completed_steps, 0)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="admission_request",
+            entity_id=str(request_item.id),
+            description="Admission checklist progress updated from administrative portal.",
+            details_json=json.dumps({"request_id": request_item.id, "completed_steps": request_item.checklist_completed_steps}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    loaded_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if loaded_item is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was updated but could not be loaded")
 
     return _serialize_admission_request(loaded_item)
 

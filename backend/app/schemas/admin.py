@@ -151,6 +151,10 @@ class AdmissionChecklistReorderRequest(BaseModel):
     ordered_step_ids: list[int] = Field(min_length=1)
 
 
+class AdmissionChecklistProgressUpdateRequest(BaseModel):
+    completed_steps: int = Field(ge=0, le=1000)
+
+
 class AdmissionRequestCreateRequest(BaseModel):
     request_type: AdmissionRequestTypeEnum
     posicao_vaga: AdmissionPositionEnum
@@ -204,6 +208,7 @@ class AdmissionRequestResponse(BaseModel):
     created_by_user_name: str
     created_by_user_email: str
     approval_workflow_template_id: int | None
+    checklist_completed_steps: int
     hired_employee_count: int
     remaining_positions: int
     hired_employees: list[HiredEmployeeResponse]

@@ -10,6 +10,18 @@ function fmtPct(value) {
   return `${Math.round(value)}%`
 }
 
+function getRiskLevel(pct) {
+  if (pct <= 33) {
+    return { label: 'Alto risco', color: '#dc2626' }
+  }
+
+  if (pct <= 66) {
+    return { label: 'Risco moderado', color: '#d97706' }
+  }
+
+  return { label: 'Baixo risco', color: '#16a34a' }
+}
+
 function fmtScore(value) {
   return value.toFixed(2)
 }
@@ -338,7 +350,7 @@ function QuestionRanking({ questions }) {
       {questions.map((q, i) => {
         const ratio = q.maxScore > 0 ? q.avg / q.maxScore : 0
         const pct = ratio * 100
-        const color = ratio >= 0.8 ? '#16a34a' : ratio >= 0.6 ? '#d97706' : '#dc2626'
+        const risk = getRiskLevel(pct)
         return (
           <div key={q.code} style={{ display: 'grid', gap: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
@@ -346,14 +358,17 @@ function QuestionRanking({ questions }) {
                 <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-400)', marginRight: 6 }}>{i + 1}.</span>
                 {q.text}
               </span>
-              <span style={{ fontSize: 14, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{fmtScore(q.avg)}</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: risk.color, whiteSpace: 'nowrap' }}>
+                {fmtPct(pct)}
+              </span>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: 999 }}>Peso {q.scoreWeight ?? 1}x</span>
               {q.isNegative ? <span style={{ fontSize: 11, color: '#9a3412', background: '#ffedd5', padding: '2px 8px', borderRadius: 999 }}>Pontuação invertida</span> : null}
+              <span style={{ fontSize: 11, color: risk.color, background: `${risk.color}14`, padding: '2px 8px', borderRadius: 999 }}>{risk.label}</span>
             </div>
             <div style={{ height: 6, borderRadius: 3, background: 'var(--slate-100)', overflow: 'hidden' }}>
-              <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .5s ease' }} />
+              <div style={{ width: `${pct}%`, height: '100%', background: risk.color, borderRadius: 3, transition: 'width .5s ease' }} />
             </div>
             <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>{q.count} resposta{q.count !== 1 ? 's' : ''}</span>
           </div>
@@ -372,7 +387,7 @@ function DimensionRanking({ dimensions }) {
     <div style={{ display: 'grid', gap: 12 }}>
       {dimensions.map((dimension, index) => {
         const pct = Math.max(0, Math.min(100, dimension.ratio * 100))
-        const color = pct >= 80 ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626'
+        const risk = getRiskLevel(pct)
 
         return (
           <div key={dimension.code} style={{ display: 'grid', gap: 6 }}>
@@ -381,14 +396,15 @@ function DimensionRanking({ dimensions }) {
                 <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-400)', marginRight: 6 }}>{index + 1}.</span>
                 {dimension.name}
               </span>
-              <span style={{ fontSize: 14, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{fmtPct(pct)}</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: risk.color, whiteSpace: 'nowrap' }}>{fmtPct(pct)}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: 999 }}>{dimension.questionCount} pergunta(s)</span>
               <span style={{ fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: 999 }}>{dimension.count} resposta(s)</span>
+              <span style={{ fontSize: 11, color: risk.color, background: `${risk.color}14`, padding: '2px 8px', borderRadius: 999 }}>{risk.label}</span>
             </div>
             <div style={{ height: 6, borderRadius: 3, background: 'var(--slate-100)', overflow: 'hidden' }}>
-              <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .5s ease' }} />
+              <div style={{ width: `${pct}%`, height: '100%', background: risk.color, borderRadius: 3, transition: 'width .5s ease' }} />
             </div>
           </div>
         )
@@ -629,7 +645,7 @@ export function AdminCampaignKpisPage() {
             <div className="panel-header-row" style={{ marginBottom: 20 }}>
               <div>
                 <h3>Risco por dimensão</h3>
-                <p>Consolida as respostas de escala por dimensão da pesquisa</p>
+                <p>0–33 alto risco · 34–66 risco moderado · 67–100 baixo risco</p>
               </div>
             </div>
             <DimensionRanking dimensions={kpis.dimensionScores} />
@@ -640,7 +656,7 @@ export function AdminCampaignKpisPage() {
             <div className="panel-header-row" style={{ marginBottom: 20 }}>
               <div>
                 <h3>Risco por pergunta</h3>
-                <p>O risco por pergunta considera a média do peso configurado como classificação de risco</p>
+                <p>0–33 alto risco · 34–66 risco moderado · 67–100 baixo risco</p>
               </div>
             </div>
             <QuestionRanking questions={kpis.questionScores} />

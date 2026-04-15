@@ -271,6 +271,7 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         remaining_positions=max(item.quantity_people - hired_employee_count, 0),
         hired_employees=[_serialize_hired_employee(employee) for employee in item.hired_employees],
         submitted_at=item.submitted_at,
+        finalized_at=item.finalized_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
@@ -1677,7 +1678,9 @@ def finalize_admin_admission_request(
             detail="All positions must be filled before finalizing the admission request",
         )
 
+    finalized_at = datetime.now(UTC)
     request_item.status = AdmissionRequestStatusEnum.FINALIZED
+    request_item.finalized_at = finalized_at
     db.add(
         AuditLog(
             actor_user_id=user.id,
@@ -1690,10 +1693,11 @@ def finalize_admin_admission_request(
                     "request_id": request_item.id,
                     "final_status": request_item.status.value,
                     "hired_employee_count": hired_employee_count,
+                    "finalized_at": finalized_at.isoformat(),
                 }
             ),
             ip_address="127.0.0.1",
-            created_at=datetime.now(UTC),
+            created_at=finalized_at,
         )
     )
     db.commit()

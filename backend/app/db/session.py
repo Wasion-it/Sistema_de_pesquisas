@@ -133,12 +133,22 @@ def _ensure_admission_request_columns() -> None:
     if "checklist_completed_steps" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN checklist_completed_steps INTEGER NOT NULL DEFAULT 0")
 
+    if "finalized_at" not in existing_columns:
+        statements.append("ALTER TABLE admission_requests ADD COLUMN finalized_at DATETIME")
+
     if not statements:
         return
 
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))
+
+        if "finalized_at" not in existing_columns:
+            connection.execute(
+                text(
+                    "UPDATE admission_requests SET finalized_at = updated_at WHERE status = 'FINALIZED' AND finalized_at IS NULL"
+                )
+            )
 
 
 def _normalize_admission_request_statuses() -> None:

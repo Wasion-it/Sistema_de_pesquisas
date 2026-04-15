@@ -56,7 +56,7 @@ function getClosureDays(request) {
   }
 
   const startDate = new Date(getBaseDate(request))
-  const endDate = new Date(request.updated_at)
+  const endDate = new Date(request.finalized_at ?? request.updated_at)
   const diff = (endDate.getTime() - startDate.getTime()) / DAY_MS
 
   return Number.isFinite(diff) && diff >= 0 ? diff : null
@@ -208,7 +208,7 @@ export function AdminDashboardAdmissaoPage() {
           <span className="eyebrow">Dashboard / Admissão</span>
           <h2>{greeting}, {user?.full_name?.split(' ')[0] ?? 'Administrador'}</h2>
           <p>
-            Indicadores de fechamento de vagas por perfil. O cálculo usa a data de submissão ou criação como início e a atualização final como fechamento.
+            Indicadores de fechamento de vagas por perfil. O cálculo usa a data de submissão ou criação como início e a data de finalização gravada no banco como fechamento.
           </p>
         </div>
         <div className="admin-home-hero-badge">
@@ -267,8 +267,8 @@ export function AdminDashboardAdmissaoPage() {
                 <span>Fechadas fora do prazo</span>
               </div>
               <div className="mini-metric-card">
-                <strong>{formatDateTime(requests[0]?.updated_at)}</strong>
-                <span>Última atualização considerada</span>
+                <strong>{formatDateTime(requests.find((request) => request.finalized_at)?.finalized_at)}</strong>
+                <span>Última finalização registrada</span>
               </div>
             </div>
           </section>

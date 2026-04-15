@@ -213,6 +213,7 @@ class AdmissionRequestResponse(BaseModel):
     remaining_positions: int
     hired_employees: list[HiredEmployeeResponse]
     submitted_at: datetime | None
+    finalized_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

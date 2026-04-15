@@ -101,6 +101,7 @@ const REQUEST_TABS = {
           <th>Status</th>
           <th>Ações</th>
           <th>Criado em</th>
+          <th>Finalizada em</th>
         </tr>
       )
     },
@@ -178,6 +179,7 @@ const REQUEST_TABS = {
             </div>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
+          <td>{formatDateTime(item.finalized_at)}</td>
         </tr>
       )
     },

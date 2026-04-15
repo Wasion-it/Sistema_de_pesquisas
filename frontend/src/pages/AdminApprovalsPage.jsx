@@ -179,14 +179,15 @@ export function AdminApprovalsPage() {
 
   const activeQueue = queuesByKind[activeTab]
   const activeConfig = REQUEST_KIND_TABS[activeTab]
+  const activeQueueStatusKey = activeTab === 'admission' ? 'PENDING' : 'UNDER_REVIEW'
 
   const summary = useMemo(() => {
     return {
       total: activeQueue.length,
       pending: activeQueue.filter((item) => item.request_status === 'PENDING').length,
-      underReview: activeQueue.filter((item) => item.request_status === 'UNDER_REVIEW').length,
+      underReview: activeQueue.filter((item) => item.request_status === activeQueueStatusKey).length,
     }
-  }, [activeQueue])
+  }, [activeQueue, activeQueueStatusKey])
 
   const allowedApprovalRoles = ROLE_TO_APPROVAL_ROLES[user?.role] ?? new Set()
 
@@ -300,8 +301,8 @@ export function AdminApprovalsPage() {
                     <h3>{item.request_title}</h3>
                     <p>{item.request_subtitle}</p>
                   </div>
-                  <span className={`status-pill ${item.request_status === 'UNDER_REVIEW' ? 'active' : 'inactive'}`}>
-                    {item.request_status === 'UNDER_REVIEW' ? 'Em análise' : 'Pendente'}
+                  <span className={`status-pill ${item.request_status === activeQueueStatusKey ? 'active' : 'inactive'}`}>
+                    {item.request_status === activeQueueStatusKey ? (activeTab === 'admission' ? 'Pendente' : 'Em análise') : 'Pendente'}
                   </span>
                 </div>
 

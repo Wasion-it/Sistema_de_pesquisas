@@ -616,7 +616,7 @@ def read_admin_admission_approval_queue(
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
         )
-        .where(AdmissionRequest.status.in_([AdmissionRequestStatusEnum.PENDING, AdmissionRequestStatusEnum.UNDER_REVIEW]))
+            .where(AdmissionRequest.status == AdmissionRequestStatusEnum.PENDING)
         .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
     ).all()
     return ApprovalQueueListResponse(items=[_serialize_admission_approval_queue_item(item) for item in items])
@@ -715,7 +715,7 @@ def approve_admin_admission_request(
         approve=True,
         user=user,
         comments=payload.comments,
-        pending_status=AdmissionRequestStatusEnum.UNDER_REVIEW,
+        pending_status=AdmissionRequestStatusEnum.PENDING,
         approved_status=AdmissionRequestStatusEnum.APPROVED,
         rejected_status=AdmissionRequestStatusEnum.REJECTED,
     )
@@ -758,7 +758,7 @@ def reject_admin_admission_request(
         approve=False,
         user=user,
         comments=payload.comments,
-        pending_status=AdmissionRequestStatusEnum.UNDER_REVIEW,
+        pending_status=AdmissionRequestStatusEnum.PENDING,
         approved_status=AdmissionRequestStatusEnum.APPROVED,
         rejected_status=AdmissionRequestStatusEnum.REJECTED,
     )

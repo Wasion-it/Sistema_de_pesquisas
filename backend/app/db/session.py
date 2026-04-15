@@ -141,6 +141,16 @@ def _ensure_admission_request_columns() -> None:
             connection.execute(text(statement))
 
 
+def _normalize_admission_request_statuses() -> None:
+    inspector = inspect(engine)
+    if "admission_requests" not in inspector.get_table_names():
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("UPDATE admission_requests SET status = 'PENDING' WHERE status = 'UNDER_REVIEW'"))
+        connection.execute(text("UPDATE admission_requests SET status = 'REJECTED' WHERE status = 'CANCELED'"))
+
+
 def _ensure_default_admission_checklist() -> None:
     from app.models import AdmissionChecklistStep
 
@@ -313,7 +323,7 @@ def _backfill_request_approval_steps() -> None:
         admission_requests = session.scalars(
             select(AdmissionRequest)
             .options(selectinload(AdmissionRequest.approval_steps))
-            .where(AdmissionRequest.status.in_([AdmissionRequestStatusEnum.PENDING, AdmissionRequestStatusEnum.UNDER_REVIEW]))
+            .where(AdmissionRequest.status == AdmissionRequestStatusEnum.PENDING)
         ).all()
 
         for request_item in admission_requests:
@@ -368,6 +378,7 @@ def create_tables() -> None:
     _ensure_job_title_columns()
     _ensure_employee_columns()
     _ensure_admission_request_columns()
+    _normalize_admission_request_statuses()
     _ensure_default_admission_checklist()
     _ensure_approval_workflow_columns()
     _ensure_default_approval_workflow()

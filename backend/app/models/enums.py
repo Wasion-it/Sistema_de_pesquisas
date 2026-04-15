@@ -63,11 +63,9 @@ class AuditActionEnum(str, Enum):
 
 class AdmissionRequestStatusEnum(str, Enum):
     PENDING = "PENDING"
-    UNDER_REVIEW = "UNDER_REVIEW"
     APPROVED = "APPROVED"
     FINALIZED = "FINALIZED"
     REJECTED = "REJECTED"
-    CANCELED = "CANCELED"
 
 
 class AdmissionRequestTypeEnum(str, Enum):

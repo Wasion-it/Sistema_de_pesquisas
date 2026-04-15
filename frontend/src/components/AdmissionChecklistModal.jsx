@@ -5,11 +5,9 @@ import { updateAdminAdmissionChecklistProgress } from '../services/admin'
 
 const STATUS_LABELS = {
   PENDING: 'Pendente',
-  UNDER_REVIEW: 'Em análise',
   APPROVED: 'Aprovada',
   FINALIZED: 'Finalizada',
   REJECTED: 'Rejeitada',
-  CANCELED: 'Cancelada',
 }
 
 function formatSummary(request) {

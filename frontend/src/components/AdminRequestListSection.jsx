@@ -13,6 +13,13 @@ import {
   getAdminDismissalRequests,
 } from '../services/admin'
 
+const ADMISSION_STATUS_META = {
+  PENDING: { label: 'Pendente', className: 'inactive' },
+  APPROVED: { label: 'Aprovada', className: 'active' },
+  FINALIZED: { label: 'Finalizada', className: 'active' },
+  REJECTED: { label: 'Rejeitada', className: 'inactive' },
+}
+
 const STATUS_META = {
   PENDING: { label: 'Pendente', className: 'inactive' },
   UNDER_REVIEW: { label: 'Em análise', className: 'active' },
@@ -24,7 +31,7 @@ const STATUS_META = {
 
 const ADMISSION_STATUS_FILTERS = [
   { value: 'all', label: 'Todos os status' },
-  ...Object.entries(STATUS_META).map(([value, meta]) => ({ value, label: meta.label })),
+  ...Object.entries(ADMISSION_STATUS_META).map(([value, meta]) => ({ value, label: meta.label })),
 ]
 
 const REQUEST_TYPE_LABELS = {
@@ -98,7 +105,7 @@ const REQUEST_TABS = {
       )
     },
     renderRow(item, actions) {
-      const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
+      const statusMeta = ADMISSION_STATUS_META[item.status] ?? ADMISSION_STATUS_META.PENDING
       const hiredCount = item.hired_employee_count ?? 0
       const quantityPeople = item.quantity_people ?? 0
       const remainingPositions = item.remaining_positions ?? Math.max(quantityPeople - hiredCount, 0)

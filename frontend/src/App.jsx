@@ -9,6 +9,7 @@ import { AdminDepartmentsPage } from './pages/AdminDepartmentsPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminDashboardPesquisasPage } from './pages/AdminDashboardPesquisasPage'
 import { AdminDashboardAdmissaoPage } from './pages/AdminDashboardAdmissaoPage'
+import { AdminRequestsPage } from './pages/AdminRequestsPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminJobTitlesPage } from './pages/AdminJobTitlesPage'
 import { AdminAdmissionRequestsPage } from './pages/AdminAdmissionRequestsPage'
@@ -73,6 +74,7 @@ export default function App() {
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="dashboard/pesquisas" element={<AdminDashboardPesquisasPage />} />
             <Route path="dashboard/admissao" element={<AdminDashboardAdmissaoPage />} />
+            <Route path="requests" element={<AdminRequestsPage />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="my-requests" element={<MyRequestsPage />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />

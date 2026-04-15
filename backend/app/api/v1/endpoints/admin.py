@@ -1061,6 +1061,8 @@ def _serialize_campaign_response(response: Response) -> CampaignResponseEntryRes
         started_at=response.started_at,
         submitted_at=response.submitted_at,
         total_answers=len(items),
+        department_name=response.employee.department.name if response.employee and response.employee.department else None,
+        position_name=response.employee.job_title.name if response.employee and response.employee.job_title else None,
         answers=[
             CampaignResponseAnswerResponse(
                 question_id=item.question_id,
@@ -1982,6 +1984,9 @@ def read_admin_campaign_responses(
             selectinload(Campaign.responses)
             .selectinload(Response.employee)
             .selectinload(Employee.department),
+            selectinload(Campaign.responses)
+            .selectinload(Response.employee)
+            .selectinload(Employee.job_title),
             selectinload(Campaign.responses)
             .selectinload(Response.items)
             .selectinload(ResponseItem.question),

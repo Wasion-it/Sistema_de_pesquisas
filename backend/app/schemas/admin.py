@@ -445,6 +445,8 @@ class CampaignResponseEntryResponse(BaseModel):
     started_at: datetime
     submitted_at: datetime | None
     total_answers: int
+    department_name: str | None = None
+    position_name: str | None = None
     answers: list[CampaignResponseAnswerResponse]
 
 

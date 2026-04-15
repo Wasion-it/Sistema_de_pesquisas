@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { CampaignResponseModal } from '../components/CampaignResponseModal'
 import { getAdminCampaignResponses } from '../services/admin'
 
 function formatDateTime(value) {
@@ -15,20 +16,10 @@ function formatDateTime(value) {
   }).format(new Date(value))
 }
 
-function getAnswerValue(answer) {
-  if (answer.selected_option_label) {
-    return answer.selected_option_label
-  }
-
-  if (typeof answer.numeric_answer === 'number') {
-    return String(answer.numeric_answer)
-  }
-
-  if (answer.text_answer) {
-    return answer.text_answer
-  }
-
-  return 'Sem resposta registrada'
+function getResponseSummary(response) {
+  return [response.department_name ?? 'Departamento não informado', response.position_name ?? 'Posição não informada']
+    .filter(Boolean)
+    .join(' · ')
 }
 
 export function AdminCampaignResponsesPage() {
@@ -37,6 +28,8 @@ export function AdminCampaignResponsesPage() {
   const [pageData, setPageData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [selectedResponse, setSelectedResponse] = useState(null)
+  const [selectedResponseNumber, setSelectedResponseNumber] = useState(null)
 
   useEffect(() => {
     let isMounted = true
@@ -70,6 +63,16 @@ export function AdminCampaignResponsesPage() {
   const summary = pageData?.summary
   const departmentProgress = pageData?.department_progress ?? []
   const responses = pageData?.responses ?? []
+
+  function openResponseModal(response, responseNumber) {
+    setSelectedResponse(response)
+    setSelectedResponseNumber(responseNumber)
+  }
+
+  function closeResponseModal() {
+    setSelectedResponse(null)
+    setSelectedResponseNumber(null)
+  }
 
   return (
     <div className="admin-view">
@@ -188,38 +191,44 @@ export function AdminCampaignResponsesPage() {
               </div>
             ) : (
               <div className="admin-response-list">
-                {responses.map((response) => (
+                {responses.map((response, index) => (
                   <article className="admin-response-card" key={response.response_id}>
                     <div className="admin-response-card-header">
                       <div>
-                        <h4>Resposta #{response.response_id}</h4>
-                        <p>
-                          Iniciada em {formatDateTime(response.started_at)}
-                          {response.submitted_at ? ` · Enviada em ${formatDateTime(response.submitted_at)}` : ''}
-                        </p>
+                        <h4>Resposta #{index + 1}</h4>
+                        <p>{getResponseSummary(response)}</p>
                       </div>
                       <span className={`status-pill ${response.status === 'SUBMITTED' ? 'active' : 'inactive'}`}>
                         {response.status === 'SUBMITTED' ? 'Enviada' : 'Rascunho'}
                       </span>
                     </div>
 
-                    <div className="admin-answer-list">
-                      {response.answers.map((answer) => (
-                        <div className="admin-answer-item" key={`${response.response_id}-${answer.question_id}`}>
-                          <strong>{answer.question_text}</strong>
-                          <div className="admin-answer-meta">
-                            <span>{answer.question_code}</span>
-                            <span>{answer.question_type === 'SCALE_1_5' ? 'Escala' : answer.question_type === 'TEXT' ? 'Texto' : 'Opcoes'}</span>
-                          </div>
-                          <div className="admin-answer-value">{getAnswerValue(answer)}</div>
-                        </div>
-                      ))}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: '16px 20px 18px', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                        <span className="question-card-tag">ID {response.response_id}</span>
+                        <span className="question-card-tag">{response.department_name ?? 'Sem departamento'}</span>
+                        <span className="question-card-tag">{response.position_name ?? 'Sem posição'}</span>
+                      </div>
+
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => openResponseModal(response, index + 1)}
+                      >
+                        Ver perguntas e respostas
+                      </button>
                     </div>
                   </article>
                 ))}
               </div>
             )}
           </section>
+
+          <CampaignResponseModal
+            response={selectedResponse}
+            responseNumber={selectedResponseNumber}
+            onClose={closeResponseModal}
+          />
         </>
       ) : null}
     </div>

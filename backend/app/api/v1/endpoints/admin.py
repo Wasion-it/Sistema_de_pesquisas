@@ -1055,14 +1055,15 @@ def _build_department_progress(
 
 def _serialize_campaign_response(response: Response) -> CampaignResponseEntryResponse:
     items = sorted(response.items, key=lambda item: item.question.display_order)
+    audience = response.campaign_audience
     return CampaignResponseEntryResponse(
         response_id=response.id,
         status=response.status.value,
         started_at=response.started_at,
         submitted_at=response.submitted_at,
         total_answers=len(items),
-        department_name=response.employee.department.name if response.employee and response.employee.department else None,
-        position_name=response.employee.job_title.name if response.employee and response.employee.job_title else None,
+        department_name=audience.department_name_snapshot if audience is not None else None,
+        position_name=audience.job_title_name_snapshot if audience is not None else None,
         answers=[
             CampaignResponseAnswerResponse(
                 question_id=item.question_id,
@@ -1981,6 +1982,8 @@ def read_admin_campaign_responses(
             selectinload(Campaign.survey_version)
             .selectinload(SurveyVersion.questions)
             .selectinload(SurveyQuestion.options),
+            selectinload(Campaign.responses)
+            .selectinload(Response.campaign_audience),
             selectinload(Campaign.responses)
             .selectinload(Response.employee)
             .selectinload(Employee.department),

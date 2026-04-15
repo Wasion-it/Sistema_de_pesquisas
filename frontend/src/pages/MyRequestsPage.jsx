@@ -50,6 +50,18 @@ const STATUS_CONFIG = {
       </svg>
     ),
   },
+  FINALIZED: {
+    label: 'Finalizada',
+    color: '#15803d',
+    bg: '#ecfdf5',
+    border: '#bbf7d0',
+    dot: '#16a34a',
+    icon: (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 6L9 17l-5-5" />
+      </svg>
+    ),
+  },
   REJECTED: {
     label: 'Rejeitada',
     color: '#dc2626',
@@ -117,7 +129,7 @@ function getApprovalProgress(steps = []) {
 
 function getCurrentStepLabel(item) {
   if (item.current_step_label) return item.current_step_label
-  if (['APPROVED', 'REJECTED', 'CANCELED'].includes(item.request_status)) return 'Concluída'
+  if (['APPROVED', 'FINALIZED', 'REJECTED', 'CANCELED'].includes(item.request_status)) return 'Concluída'
   return 'Aguardando etapa'
 }
 

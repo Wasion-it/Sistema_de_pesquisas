@@ -4,8 +4,18 @@ const STATUS_TO_STEP_INDEX = {
   PENDING: 0,
   UNDER_REVIEW: 1,
   APPROVED: 2,
+  FINALIZED: 5,
   REJECTED: 5,
   CANCELED: 5,
+}
+
+const STATUS_LABELS = {
+  PENDING: 'Pendente',
+  UNDER_REVIEW: 'Em análise',
+  APPROVED: 'Aprovada',
+  FINALIZED: 'Finalizada',
+  REJECTED: 'Rejeitada',
+  CANCELED: 'Cancelada',
 }
 
 const CHECKLIST_STEPS = [
@@ -72,7 +82,8 @@ export function AdmissionChecklistModal({ request, onClose }) {
   }
 
   const currentIndex = getCurrentStepIndex(request)
-  const statusLabel = String(request.status ?? 'PENDING')
+  const statusKey = String(request.status ?? 'PENDING')
+  const statusLabel = STATUS_LABELS[statusKey] ?? statusKey
 
   const modalContent = (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>

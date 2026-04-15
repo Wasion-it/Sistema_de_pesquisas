@@ -1356,6 +1356,76 @@ def hire_admin_admission_request(
     return _serialize_admission_request(loaded_item)
 
 
+@router.post("/hr/admission-requests/{request_id}/finalize", response_model=AdmissionRequestResponse)
+def finalize_admin_admission_request(
+    request_id: int,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionRequestResponse:
+    request_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    if request_item.status == AdmissionRequestStatusEnum.FINALIZED:
+        return _serialize_admission_request(request_item)
+
+    if request_item.status != AdmissionRequestStatusEnum.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only approved admission requests can be finalized",
+        )
+
+    hired_employee_count = len(request_item.hired_employees)
+    if hired_employee_count < request_item.quantity_people:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="All positions must be filled before finalizing the admission request",
+        )
+
+    request_item.status = AdmissionRequestStatusEnum.FINALIZED
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="admission_request",
+            entity_id=str(request_item.id),
+            description="Admission request finalized from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "request_id": request_item.id,
+                    "final_status": request_item.status.value,
+                    "hired_employee_count": hired_employee_count,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    loaded_item = db.scalar(
+        select(AdmissionRequest)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
+            selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
+        )
+        .where(AdmissionRequest.id == request_id)
+    )
+    if loaded_item is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was finalized but could not be loaded")
+
+    return _serialize_admission_request(loaded_item)
+
+
 @router.get("/hr/admission-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)
 def read_admin_admission_request_approval_status(
     request_id: int,

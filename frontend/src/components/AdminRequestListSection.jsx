@@ -12,6 +12,7 @@ const STATUS_META = {
   PENDING: { label: 'Pendente', className: 'inactive' },
   UNDER_REVIEW: { label: 'Em análise', className: 'active' },
   APPROVED: { label: 'Aprovada', className: 'active' },
+  FINALIZED: { label: 'Finalizada', className: 'active' },
   REJECTED: { label: 'Rejeitada', className: 'inactive' },
   CANCELED: { label: 'Cancelada', className: 'inactive' },
 }
@@ -90,8 +91,11 @@ const REQUEST_TABS = {
       const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
       const hiredCount = item.hired_employee_count ?? 0
       const remainingPositions = item.remaining_positions ?? Math.max((item.quantity_people ?? 0) - hiredCount, 0)
+      const isFinalized = item.status === 'FINALIZED'
       const canRegisterHire = item.status === 'APPROVED' && remainingPositions > 0
-      const hireButtonLabel = item.status !== 'APPROVED'
+      const hireButtonLabel = isFinalized
+        ? 'Finalizada'
+        : item.status !== 'APPROVED'
         ? 'Aguardando aprovação'
         : remainingPositions > 0
           ? 'Cadastrar contratado'
@@ -455,6 +459,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
         request={selectedApprovalRequest}
         token={token}
         onClose={() => setSelectedApprovalRequest(null)}
+        onUpdated={() => setRefreshCounter((currentValue) => currentValue + 1)}
       />
 
       <RequestDetailsModal

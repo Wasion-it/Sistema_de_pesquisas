@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { getAdminAdmissionApprovalStatus, getAdminDismissalApprovalStatus } from '../services/admin'
+import { finalizeAdminAdmissionRequest, getAdminAdmissionApprovalStatus, getAdminDismissalApprovalStatus } from '../services/admin'
 
 function formatDateTime(value) {
   if (!value) return 'Não informado'
@@ -16,6 +16,7 @@ const STATUS_LABELS = {
   PENDING: 'Pendente',
   UNDER_REVIEW: 'Em análise',
   APPROVED: 'Aprovada',
+  FINALIZED: 'Finalizada',
   REJECTED: 'Rejeitada',
   CANCELED: 'Cancelada',
 }
@@ -66,6 +67,12 @@ function getBannerMeta(status) {
         className: 'success',
         title: 'Aprovada',
         description: 'A solicitação está liberada. O RH já pode iniciar o fluxo operacional.',
+      }
+    case 'FINALIZED':
+      return {
+        className: 'success',
+        title: 'Finalizada',
+        description: 'A vaga foi concluída e encerrada pelo RH.',
       }
     case 'UNDER_REVIEW':
       return {
@@ -217,11 +224,12 @@ function HiredEmployeesSection({ hiredEmployees = [] }) {
   )
 }
 
-export function ApprovalStatusModal({ request, token, onClose }) {
+export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
   const { user } = useAuth()
   const [detail, setDetail] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isFinalizing, setIsFinalizing] = useState(false)
 
   const requestKind = useMemo(() => normalizeRequestKind(request?.request_kind), [request])
   const fetchDetail = REQUEST_KIND_TO_FETCHER[requestKind]
@@ -233,6 +241,7 @@ export function ApprovalStatusModal({ request, token, onClose }) {
       setDetail(null)
       setErrorMessage('')
       setIsLoading(false)
+      setIsFinalizing(false)
       return undefined
     }
 
@@ -269,6 +278,31 @@ export function ApprovalStatusModal({ request, token, onClose }) {
   const statusLabel = STATUS_LABELS[status] ?? status
   const bannerMeta = getBannerMeta(status)
   const requestKindLabel = REQUEST_KIND_LABELS[fullRequest.request_kind] ?? fullRequest.request_kind
+  const admissionQuantity = request?.quantity_people ?? 0
+  const admissionHiredCount = request?.hired_employee_count ?? 0
+  const canFinalizeAdmission = request?.request_kind === 'ADMISSION' && status === 'APPROVED' && admissionQuantity > 0 && admissionHiredCount >= admissionQuantity
+
+  async function handleFinalizeAdmission() {
+    if (!token || !request?.request_id) {
+      return
+    }
+
+    setIsFinalizing(true)
+    setErrorMessage('')
+
+    try {
+      await finalizeAdminAdmissionRequest(token, request.request_id)
+      const refreshedRequest = await fetchDetail(token, request.request_id)
+      setDetail(refreshedRequest)
+      if (onUpdated) {
+        onUpdated(refreshedRequest)
+      }
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsFinalizing(false)
+    }
+  }
   const modalContent = (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
       <div className="request-modal" role="dialog" aria-modal="true" aria-labelledby="approval-status-title" onClick={(event) => event.stopPropagation()}>
@@ -314,6 +348,15 @@ export function ApprovalStatusModal({ request, token, onClose }) {
             </div>
 
             <HiredEmployeesSection hiredEmployees={fullRequest.hired_employees ?? []} />
+
+            {canFinalizeAdmission ? (
+              <div className="request-modal-section request-modal-actions">
+                <button className="primary-button" type="button" onClick={handleFinalizeAdmission} disabled={isFinalizing}>
+                  {isFinalizing ? 'Finalizando...' : 'Finalizar vaga'}
+                </button>
+                <p className="request-modal-helper-text">Use essa ação quando todas as posições previstas já tiverem sido preenchidas.</p>
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>

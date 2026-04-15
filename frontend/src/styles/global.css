@@ -2188,6 +2188,17 @@ body:has(.admin-shell) { background: var(--slate-100); }
   margin-top: 20px;
 }
 
+.request-modal-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.request-modal-helper-text {
+  color: var(--slate-500);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .admission-checklist-grid {
   display: grid;
   gap: 12px;

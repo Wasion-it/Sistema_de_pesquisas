@@ -147,6 +147,10 @@ class AdmissionChecklistStepUpdateRequest(BaseModel):
     step_order: int = Field(default=1, ge=1, le=1000)
 
 
+class AdmissionChecklistReorderRequest(BaseModel):
+    ordered_step_ids: list[int] = Field(min_length=1)
+
+
 class AdmissionRequestCreateRequest(BaseModel):
     request_type: AdmissionRequestTypeEnum
     posicao_vaga: AdmissionPositionEnum

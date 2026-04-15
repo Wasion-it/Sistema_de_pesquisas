@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from app.core.config import settings
 from app.db.base import Base, import_all_models
+from app.services.admission_checklist import DEFAULT_ADMISSION_CHECKLIST_STEPS
 
 
 def _build_engine() -> Engine:
@@ -145,16 +146,7 @@ def _ensure_default_admission_checklist() -> None:
         if existing_step is not None:
             return
 
-        default_steps = [
-            (1, "Solicitação criada", "O pedido foi registrado e já pode ser acompanhado pelo RH."),
-            (2, "Em análise", "A solicitação está em avaliação no fluxo de aprovação."),
-            (3, "Aprovada", "O fluxo aprovou a abertura da vaga e o RH pode seguir com a contratação."),
-            (4, "Cadastro do contratado", "A equipe do RH pode registrar o novo colaborador vinculado à solicitação."),
-            (5, "Integração e documentação", "Etapa de conferência final, documentação e entrada do colaborador."),
-            (6, "Concluída ou encerrada", "O processo foi finalizado, aprovado com contratação ou encerrado sem prosseguimento."),
-        ]
-
-        for step_order, title, description in default_steps:
+        for step_order, title, description in DEFAULT_ADMISSION_CHECKLIST_STEPS:
             session.add(
                 AdmissionChecklistStep(
                     step_order=step_order,

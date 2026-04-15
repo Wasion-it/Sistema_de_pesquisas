@@ -6,6 +6,8 @@ import {
   createAdminAdmissionChecklistStep,
   deleteAdminAdmissionChecklistStep,
   getAdminAdmissionChecklist,
+  reorderAdminAdmissionChecklistSteps,
+  resetAdminAdmissionChecklistSteps,
   updateAdminAdmissionChecklistStep,
 } from '../services/admin'
 
@@ -35,6 +37,21 @@ function sortSteps(items = []) {
   })
 }
 
+function moveStep(items, sourceId, targetId) {
+  const sourceIndex = items.findIndex((item) => item.id === sourceId)
+  const targetIndex = items.findIndex((item) => item.id === targetId)
+
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+    return items
+  }
+
+  const nextItems = [...items]
+  const [movedItem] = nextItems.splice(sourceIndex, 1)
+  const insertionIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
+  nextItems.splice(insertionIndex, 0, movedItem)
+  return nextItems
+}
+
 export function AdminAdmissionChecklistPage() {
   const { token } = useAuth()
   const [steps, setSteps] = useState([])
@@ -44,9 +61,17 @@ export function AdminAdmissionChecklistPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [draggingStepId, setDraggingStepId] = useState(null)
+  const [dropTargetId, setDropTargetId] = useState(null)
 
   async function loadChecklist() {
     const data = await getAdminAdmissionChecklist(token)
+    setSteps(sortSteps(data.items ?? []))
+  }
+
+  async function saveChecklistOrder(nextSteps) {
+    const orderedStepIds = nextSteps.map((step) => step.id)
+    const data = await reorderAdminAdmissionChecklistSteps(token, orderedStepIds)
     setSteps(sortSteps(data.items ?? []))
   }
 
@@ -109,6 +134,98 @@ export function AdminAdmissionChecklistPage() {
     setShowForm(false)
     setErrorMessage('')
     setSuccessMessage('')
+  }
+
+  function handleDragStart(stepId) {
+    setDraggingStepId(stepId)
+    setDropTargetId(stepId)
+  }
+
+  function handleDragEnd() {
+    setDraggingStepId(null)
+    setDropTargetId(null)
+  }
+
+  function handleDragOver(event, stepId) {
+    event.preventDefault()
+    if (draggingStepId && draggingStepId !== stepId) {
+      setDropTargetId(stepId)
+    }
+  }
+
+  async function handleDropBefore(event, targetStepId) {
+    event.preventDefault()
+
+    if (!draggingStepId || draggingStepId === targetStepId) {
+      handleDragEnd()
+      return
+    }
+
+    const nextSteps = moveStep(steps, draggingStepId, targetStepId)
+    setSteps(nextSteps)
+    handleDragEnd()
+
+    try {
+      await saveChecklistOrder(nextSteps)
+      setSuccessMessage('Checklist reordenado com sucesso.')
+      setErrorMessage('')
+    } catch (error) {
+      setErrorMessage(error.message)
+      await loadChecklist()
+    }
+  }
+
+  async function handleDropAtEnd(event) {
+    event.preventDefault()
+
+    if (!draggingStepId) {
+      handleDragEnd()
+      return
+    }
+
+    const sourceIndex = steps.findIndex((item) => item.id === draggingStepId)
+    if (sourceIndex < 0 || sourceIndex === steps.length - 1) {
+      handleDragEnd()
+      return
+    }
+
+    const nextSteps = [...steps]
+    const [movedItem] = nextSteps.splice(sourceIndex, 1)
+    nextSteps.push(movedItem)
+    setSteps(nextSteps)
+    handleDragEnd()
+
+    try {
+      await saveChecklistOrder(nextSteps)
+      setSuccessMessage('Checklist reordenado com sucesso.')
+      setErrorMessage('')
+    } catch (error) {
+      setErrorMessage(error.message)
+      await loadChecklist()
+    }
+  }
+
+  async function handleRestoreDefault() {
+    const confirmed = window.confirm('Restaurar o checklist padrão? Isso vai substituir os passos atuais.')
+    if (!confirmed) {
+      return
+    }
+
+    setErrorMessage('')
+    setSuccessMessage('')
+    setIsSubmitting(true)
+
+    try {
+      const data = await resetAdminAdmissionChecklistSteps(token)
+      setSteps(sortSteps(data.items ?? []))
+      setFormValues(INITIAL_FORM)
+      setShowForm(false)
+      setSuccessMessage('Checklist padrão restaurado com sucesso.')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   async function handleSubmit(event) {
@@ -174,6 +291,9 @@ export function AdminAdmissionChecklistPage() {
           <p>Configure os passos que aparecem no modal da solicitação de admissão.</p>
         </div>
         <div className="admin-header-actions">
+          <button className="secondary-button" type="button" onClick={handleRestoreDefault} disabled={isSubmitting}>
+            Restaurar padrão
+          </button>
           <Link className="secondary-link-button" to="/admin/admission-requests">
             Voltar para admissões
           </Link>
@@ -222,25 +342,48 @@ export function AdminAdmissionChecklistPage() {
               <span>Adicione os passos que o RH precisa seguir na admissão.</span>
             </div>
           ) : (
-            <div className="admin-checklist-list">
-              {steps.map((step) => (
-                <div className="admin-checklist-item" key={step.id}>
-                  <div className="admin-checklist-item-order">{step.step_order}</div>
-                  <div className="admin-checklist-item-body">
-                    <strong>{step.title}</strong>
-                    <p>{step.description || 'Sem descrição cadastrada.'}</p>
-                  </div>
-                  <div className="admin-checklist-item-actions">
-                    <button className="secondary-button" type="button" onClick={() => startEdit(step)}>
-                      Editar
+            <>
+              <div className="admin-checklist-list">
+                {steps.map((step) => (
+                  <div
+                    className={`admin-checklist-item${dropTargetId === step.id ? ' drop-target' : ''}${draggingStepId === step.id ? ' dragging' : ''}`}
+                    key={step.id}
+                    onDragOver={(event) => handleDragOver(event, step.id)}
+                    onDrop={(event) => handleDropBefore(event, step.id)}
+                  >
+                    <button
+                      aria-label={`Arrastar passo ${step.step_order}`}
+                      className="admin-checklist-item-order drag-handle"
+                      draggable
+                      type="button"
+                      onDragStart={() => handleDragStart(step.id)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      {step.step_order}
                     </button>
-                    <button className="secondary-button danger" type="button" onClick={() => handleDelete(step)}>
-                      Excluir
-                    </button>
+                    <div className="admin-checklist-item-body">
+                      <strong>{step.title}</strong>
+                      <p>{step.description || 'Sem descrição cadastrada.'}</p>
+                    </div>
+                    <div className="admin-checklist-item-actions">
+                      <button className="secondary-button" type="button" onClick={() => startEdit(step)}>
+                        Editar
+                      </button>
+                      <button className="secondary-button danger" type="button" onClick={() => handleDelete(step)}>
+                        Excluir
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <div
+                className={`admin-checklist-drop-end${draggingStepId ? ' active' : ''}`}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleDropAtEnd}
+              >
+                Solte aqui para mover para o fim
+              </div>
+            </>
           )}
         </article>
 

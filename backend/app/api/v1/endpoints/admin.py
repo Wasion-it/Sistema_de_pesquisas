@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_admin_user
 from app.db.session import get_db
+from app.services.admission_checklist import DEFAULT_ADMISSION_CHECKLIST_STEPS
 from app.models import (
     AdmissionRequestApproval,
     AdmissionRequest,
@@ -56,6 +57,7 @@ from app.schemas.admin import (
     ApprovalStepResponse,
     AdmissionPositionEnum,
     AdmissionChecklistStepCreateRequest,
+    AdmissionChecklistReorderRequest,
     AdmissionChecklistStepListResponse,
     AdmissionChecklistStepResponse,
     AdmissionChecklistStepUpdateRequest,
@@ -212,6 +214,22 @@ def _normalize_admission_checklist_steps(db: Session) -> list[AdmissionChecklist
         step.step_order = index
 
     return steps
+
+
+def _seed_default_admission_checklist_steps(db: Session) -> list[AdmissionChecklistStep]:
+    checklist_steps = []
+    for step_order, title, description in DEFAULT_ADMISSION_CHECKLIST_STEPS:
+        checklist_steps.append(
+            AdmissionChecklistStep(
+                step_order=step_order,
+                title=title,
+                description=description,
+            )
+        )
+
+    db.add_all(checklist_steps)
+    db.flush()
+    return _list_admission_checklist_steps(db)
 
 
 def _serialize_hired_employee(employee: Employee) -> HiredEmployeeResponse:
@@ -513,6 +531,74 @@ def delete_admin_admission_checklist_step(
     )
     db.commit()
     return AdminActionResponse(message="Checklist step deleted successfully")
+
+
+@router.post("/admission-checklist/reorder", response_model=AdmissionChecklistStepListResponse)
+def reorder_admin_admission_checklist_steps(
+    payload: AdmissionChecklistReorderRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionChecklistStepListResponse:
+    existing_steps = db.scalars(select(AdmissionChecklistStep)).all()
+    steps_by_id = {step.id: step for step in existing_steps}
+    ordered_ids = payload.ordered_step_ids
+
+    if len(ordered_ids) != len(existing_steps):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Checklist order must include every step")
+
+    if len(set(ordered_ids)) != len(ordered_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Checklist order cannot contain repeated steps")
+
+    if set(ordered_ids) != set(steps_by_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Checklist order contains unknown steps")
+
+    for index, step_id in enumerate(ordered_ids, start=1):
+        steps_by_id[step_id].step_order = index
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="admission_checklist_step",
+            entity_id="bulk-reorder",
+            description="Admission checklist reordered from administrative portal.",
+            details_json=json.dumps({"ordered_step_ids": ordered_ids}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    steps = _list_admission_checklist_steps(db)
+    return AdmissionChecklistStepListResponse(items=[_serialize_admission_checklist_step(step) for step in steps])
+
+
+@router.post("/admission-checklist/reset-default", response_model=AdmissionChecklistStepListResponse)
+def reset_admin_admission_checklist_steps(
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionChecklistStepListResponse:
+    steps = db.scalars(select(AdmissionChecklistStep)).all()
+    for step in steps:
+        db.delete(step)
+
+    db.flush()
+    seeded_steps = _seed_default_admission_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="admission_checklist_step",
+            entity_id="reset-default",
+            description="Admission checklist restored to default items from administrative portal.",
+            details_json=json.dumps({"step_count": len(seeded_steps)}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    return AdmissionChecklistStepListResponse(items=[_serialize_admission_checklist_step(step) for step in seeded_steps])
 
 
 @router.get("/hr/approvals/admission", response_model=ApprovalQueueListResponse)

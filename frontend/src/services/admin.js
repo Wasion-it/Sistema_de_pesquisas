@@ -292,6 +292,24 @@ export async function deleteAdminAdmissionChecklistStep(token, stepId) {
   return parseResponse(response)
 }
 
+export async function reorderAdminAdmissionChecklistSteps(token, orderedStepIds) {
+  const response = await fetch(
+    `${API_URL}/admin/admission-checklist/reorder`,
+    buildJsonOptions(token, 'POST', { ordered_step_ids: orderedStepIds }),
+  )
+
+  return parseResponse(response)
+}
+
+export async function resetAdminAdmissionChecklistSteps(token) {
+  const response = await fetch(
+    `${API_URL}/admin/admission-checklist/reset-default`,
+    buildJsonOptions(token, 'POST', {}),
+  )
+
+  return parseResponse(response)
+}
+
 export async function getAdminAdmissionRequest(token, requestId) {
   const response = await fetch(`${API_URL}/admin/hr/admission-requests/${requestId}`, {
     headers: buildHeaders(token),

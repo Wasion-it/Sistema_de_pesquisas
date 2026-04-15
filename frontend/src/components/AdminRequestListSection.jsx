@@ -6,7 +6,7 @@ import { AdmissionChecklistModal } from './AdmissionChecklistModal'
 import { AdmissionHireModal } from './AdmissionHireModal'
 import { ApprovalStatusModal } from './ApprovalStatusModal'
 import { RequestDetailsModal } from './RequestDetailsModal'
-import { getAdminAdmissionRequests, getAdminDismissalRequests } from '../services/admin'
+import { finalizeAdminAdmissionRequest, getAdminAdmissionRequests, getAdminDismissalRequests } from '../services/admin'
 
 const STATUS_META = {
   PENDING: { label: 'Pendente', className: 'inactive' },
@@ -90,8 +90,10 @@ const REQUEST_TABS = {
     renderRow(item, actions) {
       const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
       const hiredCount = item.hired_employee_count ?? 0
-      const remainingPositions = item.remaining_positions ?? Math.max((item.quantity_people ?? 0) - hiredCount, 0)
+      const quantityPeople = item.quantity_people ?? 0
+      const remainingPositions = item.remaining_positions ?? Math.max(quantityPeople - hiredCount, 0)
       const isFinalized = item.status === 'FINALIZED'
+      const canFinalizeAdmission = item.status === 'APPROVED' && quantityPeople > 0 && hiredCount >= quantityPeople
       const canRegisterHire = item.status === 'APPROVED' && remainingPositions > 0
       const hireButtonLabel = isFinalized
         ? 'Finalizada'
@@ -137,6 +139,15 @@ const REQUEST_TABS = {
               {actions.onViewChecklist ? (
                 <button className="secondary-button" type="button" onClick={actions.onViewChecklist}>
                   Checklist
+                </button>
+              ) : null}
+              {actions.onFinalizeAdmission && canFinalizeAdmission && !isFinalized ? (
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={actions.onFinalizeAdmission}
+                >
+                  Finalizar vaga
                 </button>
               ) : null}
               <button
@@ -357,6 +368,18 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     setSelectedChecklistRequest(item)
   }
 
+  async function finalizeAdmissionRequest(item) {
+    try {
+      await finalizeAdminAdmissionRequest(token, item.id)
+      setRefreshCounter((currentValue) => currentValue + 1)
+    } catch (error) {
+      setErrorMessages((currentErrors) => ({
+        ...currentErrors,
+        admission: error.message,
+      }))
+    }
+  }
+
   function handleHireSuccess() {
     setSelectedHireRequest(null)
     setRefreshCounter((currentValue) => currentValue + 1)
@@ -446,6 +469,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                     onViewApprovalStatus: () => openApprovalStatus(item),
                     onViewDetails: () => openDetailsModal(item),
                     onViewChecklist: activeTab === 'admission' ? () => openChecklistModal(item) : null,
+                    onFinalizeAdmission: activeTab === 'admission' ? () => finalizeAdmissionRequest(item) : null,
                     onRegisterHire: () => openHireModal(item),
                   }),
                 )}

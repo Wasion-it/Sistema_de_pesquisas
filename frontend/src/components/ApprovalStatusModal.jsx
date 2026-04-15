@@ -349,7 +349,7 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
 
             <HiredEmployeesSection hiredEmployees={fullRequest.hired_employees ?? []} />
 
-            {canFinalizeAdmission ? (
+            {request?.request_kind === 'ADMISSION' && canFinalizeAdmission ? (
               <div className="request-modal-section request-modal-actions">
                 <button className="primary-button" type="button" onClick={handleFinalizeAdmission} disabled={isFinalizing}>
                   {isFinalizing ? 'Finalizando...' : 'Finalizar vaga'}

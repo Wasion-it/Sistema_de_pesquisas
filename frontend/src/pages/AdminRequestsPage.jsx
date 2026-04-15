@@ -4,27 +4,67 @@ import { useAuth } from '../auth/AuthProvider'
 
 const REQUEST_MODULES = [
   {
+    title: 'Minhas solicitações',
+    description: 'Veja o histórico e o status das solicitações que você abriu.',
+    to: '/admin/my-requests',
+    accent: 'slate',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 6h13" />
+        <path d="M8 12h13" />
+        <path d="M8 18h13" />
+        <path d="M3 6h.01" />
+        <path d="M3 12h.01" />
+        <path d="M3 18h.01" />
+      </svg>
+    ),
+  },
+  {
     title: 'Admissão',
-    description: 'Acesse a fila de solicitações, checklist e demais etapas do fluxo de contratação.',
+    description: 'Acesse a fila de solicitações de admissão e o checklist do fluxo.',
     to: '/admin/admission-requests',
     accent: 'amber',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 6v12" />
-        <path d="M6 12h12" />
-        <circle cx="12" cy="12" r="9" />
+        <path d="M20 12H4" />
+        <path d="M20 6H4" />
+        <path d="M20 18H4" />
       </svg>
     ),
   },
   {
     title: 'Demissão',
-    description: 'Abra a fila de desligamentos para acompanhar status e decisões do processo.',
+    description: 'Acesse a fila de solicitações de demissão e acompanhe os desligamentos.',
     to: '/admin/dismissal-requests',
     accent: 'slate',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 12h16" />
+        <path d="M20 12H4" />
         <path d="M13 5l7 7-7 7" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Aprovações',
+    description: 'Acompanhe a trilha de aprovação de admissões e demissões.',
+    to: '/admin/approvals',
+    accent: 'green',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12l4 4L19 6" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Cargos',
+    description: 'Gerencie os cargos disponíveis para apoiar os fluxos de RH.',
+    to: '/admin/job-titles',
+    accent: 'amber',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 7h16" />
+        <path d="M4 12h16" />
+        <path d="M4 17h10" />
       </svg>
     ),
   },
@@ -42,14 +82,14 @@ export function AdminRequestsPage() {
       <section className="admin-home-hero">
         <div>
           <span className="eyebrow">Solicitações RH</span>
-          <h2>{getFirstName(user?.full_name)}, escolha o fluxo</h2>
+          <h2>{getFirstName(user?.full_name)}, escolha o acesso</h2>
           <p>
-            Esta é a página de entrada para as solicitações do painel administrativo. Use os cards abaixo para abrir admissão ou demissão.
+            Esta é a página de entrada para os principais atalhos do painel administrativo. Use os cards abaixo para abrir solicitações, aprovações ou cadastros de apoio.
           </p>
         </div>
         <div className="admin-home-hero-badge">
           <span>Ponto de acesso</span>
-          <strong>Fluxos de RH</strong>
+          <strong>Atalhos do RH</strong>
         </div>
       </section>
 

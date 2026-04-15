@@ -565,52 +565,8 @@ export function AdminCampaignKpisPage() {
             />
           </section>
 
-          {/* ── Distribuição Likert + eNPS ── */}
+          {/* ── eNPS ── */}
           <section className="dashboard-detail-grid">
-            {/* Distribuição de respostas por escala */}
-            <article className="admin-panel-card">
-              <div className="panel-header-row" style={{ marginBottom: 20 }}>
-                <div>
-                  <h3>Distribuição por escala</h3>
-                  <p>{kpis.likertTotal} resposta(s) em perguntas de escala 1–5</p>
-                </div>
-              </div>
-              <LikertBar dist={kpis.likertDist} total={kpis.likertTotal} />
-
-              {/* % de favorabilidade */}
-              {kpis.likertTotal > 0 && (
-                <div style={{
-                  marginTop: 20,
-                  padding: '14px 16px',
-                  borderRadius: 10,
-                  background: 'var(--slate-50)',
-                  border: '1px solid var(--slate-200)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                      Favorabilidade
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--slate-500)', marginTop: 2 }}>
-                      Respostas 4 ou 5 (Concordo / Concordo totalmente)
-                    </div>
-                  </div>
-                  <div style={{
-                    fontSize: '1.8rem', fontWeight: 800,
-                    color: (() => {
-                      const fav = ((kpis.likertDist[4] + kpis.likertDist[5]) / kpis.likertTotal) * 100
-                      return fav >= 70 ? '#16a34a' : fav >= 50 ? '#d97706' : '#dc2626'
-                    })(),
-                    fontFamily: 'var(--font-display)',
-                  }}>
-                    {fmtPct(((kpis.likertDist[4] + kpis.likertDist[5]) / kpis.likertTotal) * 100)}
-                  </div>
-                </div>
-              )}
-            </article>
-
             {/* eNPS */}
             <article className="admin-panel-card">
               <div className="panel-header-row" style={{ marginBottom: 20 }}>

@@ -122,6 +122,31 @@ class JobTitleUpdateRequest(BaseModel):
     is_active: bool = True
 
 
+class AdmissionChecklistStepResponse(BaseModel):
+    id: int
+    step_order: int
+    title: str
+    description: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdmissionChecklistStepListResponse(BaseModel):
+    items: list[AdmissionChecklistStepResponse]
+
+
+class AdmissionChecklistStepCreateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=180)
+    description: str | None = Field(default=None, max_length=5000)
+    step_order: int = Field(default=1, ge=1, le=1000)
+
+
+class AdmissionChecklistStepUpdateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=180)
+    description: str | None = Field(default=None, max_length=5000)
+    step_order: int = Field(default=1, ge=1, le=1000)
+
+
 class AdmissionRequestCreateRequest(BaseModel):
     request_type: AdmissionRequestTypeEnum
     posicao_vaga: AdmissionPositionEnum

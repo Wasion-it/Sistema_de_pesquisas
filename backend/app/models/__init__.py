@@ -1,4 +1,5 @@
 from app.models.audit_log import AuditLog
+from app.models.admission_checklist_step import AdmissionChecklistStep
 from app.models.admission_request import AdmissionRequest
 from app.models.admission_request_approval import AdmissionRequestApproval
 from app.models.approval_workflow_step import ApprovalWorkflowStep
@@ -41,6 +42,7 @@ from app.models.survey_version import SurveyVersion
 from app.models.user import User
 
 __all__ = [
+    "AdmissionChecklistStep",
     "AdmissionRequestApproval",
     "AdmissionRequest",
     "AdmissionRequestStatusEnum",

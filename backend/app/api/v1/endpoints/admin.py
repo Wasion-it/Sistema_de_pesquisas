@@ -14,6 +14,7 @@ from app.db.session import get_db
 from app.models import (
     AdmissionRequestApproval,
     AdmissionRequest,
+    AdmissionChecklistStep,
     AdmissionRequestStatusEnum,
     ApprovalOriginGroupEnum,
     AdmissionRequestTypeEnum,
@@ -54,6 +55,10 @@ from app.schemas.admin import (
     ApprovalQueueListResponse,
     ApprovalStepResponse,
     AdmissionPositionEnum,
+    AdmissionChecklistStepCreateRequest,
+    AdmissionChecklistStepListResponse,
+    AdmissionChecklistStepResponse,
+    AdmissionChecklistStepUpdateRequest,
     AdmissionRequestCreateRequest,
     AdmissionRequestHireRequest,
     AdmissionRequestListResponse,
@@ -179,6 +184,34 @@ def _serialize_job_title(job_title: JobTitle) -> JobTitleManagementItemResponse:
         is_active=job_title.is_active,
         updated_at=job_title.updated_at,
     )
+
+
+def _serialize_admission_checklist_step(step: AdmissionChecklistStep) -> AdmissionChecklistStepResponse:
+    return AdmissionChecklistStepResponse(
+        id=step.id,
+        step_order=step.step_order,
+        title=step.title,
+        description=step.description,
+        created_at=step.created_at,
+        updated_at=step.updated_at,
+    )
+
+
+def _list_admission_checklist_steps(db: Session) -> list[AdmissionChecklistStep]:
+    return list(
+        db.scalars(
+            select(AdmissionChecklistStep).order_by(AdmissionChecklistStep.step_order.asc(), AdmissionChecklistStep.id.asc())
+        ).all()
+    )
+
+
+def _normalize_admission_checklist_steps(db: Session) -> list[AdmissionChecklistStep]:
+    steps = _list_admission_checklist_steps(db)
+
+    for index, step in enumerate(steps, start=1):
+        step.step_order = index
+
+    return steps
 
 
 def _serialize_hired_employee(employee: Employee) -> HiredEmployeeResponse:
@@ -364,6 +397,122 @@ def _mark_request_approval_progress(
             approval_step.comments = comments
 
     request_item.status = rejected_status
+
+
+@router.get("/admission-checklist", response_model=AdmissionChecklistStepListResponse)
+def read_admin_admission_checklist_steps(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionChecklistStepListResponse:
+    steps = _list_admission_checklist_steps(db)
+    return AdmissionChecklistStepListResponse(items=[_serialize_admission_checklist_step(step) for step in steps])
+
+
+@router.post("/admission-checklist", response_model=AdmissionChecklistStepResponse, status_code=status.HTTP_201_CREATED)
+def create_admin_admission_checklist_step(
+    payload: AdmissionChecklistStepCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionChecklistStepResponse:
+    checklist_step = AdmissionChecklistStep(
+        step_order=payload.step_order,
+        title=payload.title.strip(),
+        description=payload.description.strip() if payload.description else None,
+    )
+    db.add(checklist_step)
+    db.flush()
+
+    _normalize_admission_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="admission_checklist_step",
+            entity_id=str(checklist_step.id),
+            description="Admission checklist step created from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "step_id": checklist_step.id,
+                    "title": checklist_step.title,
+                    "step_order": checklist_step.step_order,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(checklist_step)
+    return _serialize_admission_checklist_step(checklist_step)
+
+
+@router.put("/admission-checklist/{step_id}", response_model=AdmissionChecklistStepResponse)
+def update_admin_admission_checklist_step(
+    step_id: int,
+    payload: AdmissionChecklistStepUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdmissionChecklistStepResponse:
+    checklist_step = db.scalar(select(AdmissionChecklistStep).where(AdmissionChecklistStep.id == step_id))
+    if checklist_step is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission checklist step not found")
+
+    checklist_step.step_order = payload.step_order
+    checklist_step.title = payload.title.strip()
+    checklist_step.description = payload.description.strip() if payload.description else None
+
+    db.flush()
+    _normalize_admission_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="admission_checklist_step",
+            entity_id=str(checklist_step.id),
+            description="Admission checklist step updated from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "step_id": checklist_step.id,
+                    "title": checklist_step.title,
+                    "step_order": checklist_step.step_order,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(checklist_step)
+    return _serialize_admission_checklist_step(checklist_step)
+
+
+@router.delete("/admission-checklist/{step_id}", response_model=AdminActionResponse)
+def delete_admin_admission_checklist_step(
+    step_id: int,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdminActionResponse:
+    checklist_step = db.scalar(select(AdmissionChecklistStep).where(AdmissionChecklistStep.id == step_id))
+    if checklist_step is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission checklist step not found")
+
+    db.delete(checklist_step)
+    db.flush()
+    _normalize_admission_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.DELETE,
+            entity_name="admission_checklist_step",
+            entity_id=str(step_id),
+            description="Admission checklist step deleted from administrative portal.",
+            details_json=json.dumps({"step_id": step_id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    return AdminActionResponse(message="Checklist step deleted successfully")
 
 
 @router.get("/hr/approvals/admission", response_model=ApprovalQueueListResponse)

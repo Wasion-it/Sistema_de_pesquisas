@@ -257,6 +257,41 @@ export async function getAdminAdmissionRequests(token) {
   return parseResponse(response)
 }
 
+export async function getAdminAdmissionChecklist(token) {
+  const response = await fetch(`${API_URL}/admin/admission-checklist`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function createAdminAdmissionChecklistStep(token, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/admission-checklist`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function updateAdminAdmissionChecklistStep(token, stepId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/admission-checklist/${stepId}`,
+    buildJsonOptions(token, 'PUT', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function deleteAdminAdmissionChecklistStep(token, stepId) {
+  const response = await fetch(`${API_URL}/admin/admission-checklist/${stepId}`, {
+    method: 'DELETE',
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
 export async function getAdminAdmissionRequest(token, requestId) {
   const response = await fetch(`${API_URL}/admin/hr/admission-requests/${requestId}`, {
     headers: buildHeaders(token),

@@ -110,6 +110,18 @@ export function AdminLayout() {
             </svg>
             Admissão
           </NavLink>
+          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/admission-checklist">
+            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M5 4h2" />
+              <path d="M5 12h2" />
+              <path d="M5 20h2" />
+              <path d="M11 4h8" />
+              <path d="M11 12h8" />
+              <path d="M11 20h8" />
+            </svg>
+            Checklist de admissão
+          </NavLink>
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dismissal-requests">
             <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M8 6h13" />

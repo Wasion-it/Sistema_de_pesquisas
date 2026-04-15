@@ -137,6 +137,35 @@ def _ensure_admission_request_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_default_admission_checklist() -> None:
+    from app.models import AdmissionChecklistStep
+
+    with SessionLocal() as session:
+        existing_step = session.scalar(select(AdmissionChecklistStep.id).limit(1))
+        if existing_step is not None:
+            return
+
+        default_steps = [
+            (1, "Solicitação criada", "O pedido foi registrado e já pode ser acompanhado pelo RH."),
+            (2, "Em análise", "A solicitação está em avaliação no fluxo de aprovação."),
+            (3, "Aprovada", "O fluxo aprovou a abertura da vaga e o RH pode seguir com a contratação."),
+            (4, "Cadastro do contratado", "A equipe do RH pode registrar o novo colaborador vinculado à solicitação."),
+            (5, "Integração e documentação", "Etapa de conferência final, documentação e entrada do colaborador."),
+            (6, "Concluída ou encerrada", "O processo foi finalizado, aprovado com contratação ou encerrado sem prosseguimento."),
+        ]
+
+        for step_order, title, description in default_steps:
+            session.add(
+                AdmissionChecklistStep(
+                    step_order=step_order,
+                    title=title,
+                    description=description,
+                )
+            )
+
+        session.commit()
+
+
 def _ensure_approval_workflow_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -344,6 +373,7 @@ def create_tables() -> None:
     _ensure_job_title_columns()
     _ensure_employee_columns()
     _ensure_admission_request_columns()
+    _ensure_default_admission_checklist()
     _ensure_approval_workflow_columns()
     _ensure_default_approval_workflow()
     _backfill_request_approval_steps()

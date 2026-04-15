@@ -6,7 +6,12 @@ import { AdmissionChecklistModal } from './AdmissionChecklistModal'
 import { AdmissionHireModal } from './AdmissionHireModal'
 import { ApprovalStatusModal } from './ApprovalStatusModal'
 import { RequestDetailsModal } from './RequestDetailsModal'
-import { finalizeAdminAdmissionRequest, getAdminAdmissionRequests, getAdminDismissalRequests } from '../services/admin'
+import {
+  finalizeAdminAdmissionRequest,
+  getAdminAdmissionChecklist,
+  getAdminAdmissionRequests,
+  getAdminDismissalRequests,
+} from '../services/admin'
 
 const STATUS_META = {
   PENDING: { label: 'Pendente', className: 'inactive' },
@@ -271,6 +276,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   const [selectedDetailsRequest, setSelectedDetailsRequest] = useState(null)
   const [selectedChecklistRequest, setSelectedChecklistRequest] = useState(null)
   const [selectedHireRequest, setSelectedHireRequest] = useState(null)
+  const [admissionChecklistSteps, setAdmissionChecklistSteps] = useState([])
   const [refreshCounter, setRefreshCounter] = useState(0)
 
   useEffect(() => {
@@ -317,6 +323,26 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
       isMounted = false
     }
     }, [refreshCounter, token])
+
+  useEffect(() => {
+    let isMounted = true
+
+    getAdminAdmissionChecklist(token)
+      .then((data) => {
+        if (isMounted) {
+          setAdmissionChecklistSteps(data.items ?? [])
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAdmissionChecklistSteps([])
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [token, refreshCounter])
 
   const activeConfig = REQUEST_TABS[activeTab]
   const activeRequests = requestsByTab[activeTab]
@@ -393,9 +419,14 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
           <h2>{activeConfig.title}</h2>
           <p>{activeConfig.description}</p>
         </div>
-        <Link className="secondary-link-button" to="/admin">
-          Voltar ao início
-        </Link>
+        <div className="admin-header-actions">
+          <Link className="secondary-link-button" to="/admin/admission-checklist">
+            Gerenciar checklist
+          </Link>
+          <Link className="secondary-link-button" to="/admin">
+            Voltar ao início
+          </Link>
+        </div>
       </div>
 
       <section className="admin-panel-card admin-request-tabs">
@@ -494,6 +525,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
       <AdmissionChecklistModal
         request={selectedChecklistRequest}
+        steps={admissionChecklistSteps}
         onClose={() => setSelectedChecklistRequest(null)}
       />
 

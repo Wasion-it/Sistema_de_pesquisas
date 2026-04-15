@@ -18,33 +18,6 @@ const STATUS_LABELS = {
   CANCELED: 'Cancelada',
 }
 
-const CHECKLIST_STEPS = [
-  {
-    title: 'Solicitação criada',
-    description: 'O pedido foi registrado e já pode ser acompanhado pelo RH.',
-  },
-  {
-    title: 'Em análise',
-    description: 'A solicitação está em avaliação no fluxo de aprovação.',
-  },
-  {
-    title: 'Aprovada',
-    description: 'O fluxo aprovou a abertura da vaga e o RH pode seguir com a contratação.',
-  },
-  {
-    title: 'Cadastro do contratado',
-    description: 'A equipe do RH pode registrar o novo colaborador vinculado à solicitação.',
-  },
-  {
-    title: 'Integração e documentação',
-    description: 'Etapa de conferência final, documentação e entrada do colaborador.',
-  },
-  {
-    title: 'Concluída ou encerrada',
-    description: 'O processo foi finalizado, aprovado com contratação ou encerrado sem prosseguimento.',
-  },
-]
-
 function formatSummary(request) {
   const hiredCount = request?.hired_employee_count ?? 0
   const totalPositions = request?.quantity_people ?? 0
@@ -53,7 +26,8 @@ function formatSummary(request) {
   return `${hiredCount}/${totalPositions} contratados • ${remainingPositions} posição(ões) em aberto`
 }
 
-function getCurrentStepIndex(request) {
+function getCurrentStepIndex(request, totalSteps) {
+  const lastIndex = Math.max(totalSteps - 1, 0)
   const status = String(request?.status ?? 'PENDING').toUpperCase()
 
   if (status === 'APPROVED') {
@@ -61,13 +35,13 @@ function getCurrentStepIndex(request) {
     const totalPositions = request?.quantity_people ?? 0
 
     if (hiredCount >= totalPositions && totalPositions > 0) {
-      return 5
+      return lastIndex
     }
 
-    return 3
+    return Math.min(3, lastIndex)
   }
 
-  return STATUS_TO_STEP_INDEX[status] ?? 0
+  return Math.min(STATUS_TO_STEP_INDEX[status] ?? 0, lastIndex)
 }
 
 function getStepState(stepIndex, currentIndex) {
@@ -76,14 +50,15 @@ function getStepState(stepIndex, currentIndex) {
   return 'pending'
 }
 
-export function AdmissionChecklistModal({ request, onClose }) {
+export function AdmissionChecklistModal({ request, steps = [], onClose }) {
   if (!request) {
     return null
   }
 
-  const currentIndex = getCurrentStepIndex(request)
+  const currentIndex = getCurrentStepIndex(request, steps.length)
   const statusKey = String(request.status ?? 'PENDING')
   const statusLabel = STATUS_LABELS[statusKey] ?? statusKey
+  const hasSteps = steps.length > 0
 
   const modalContent = (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
@@ -107,24 +82,31 @@ export function AdmissionChecklistModal({ request, onClose }) {
         <div className="request-modal-section">
           <div className="request-modal-section-header">
             <h4>Fluxo de acompanhamento</h4>
-            <span>Visão genérica para o RH</span>
+            <span>Checklist configurado pelo RH</span>
           </div>
 
-          <div className="admission-checklist-grid">
-            {CHECKLIST_STEPS.map((step, index) => {
-              const stepState = getStepState(index, currentIndex)
+          {hasSteps ? (
+            <div className="admission-checklist-grid">
+              {steps.map((step, index) => {
+                const stepState = getStepState(index, currentIndex)
 
-              return (
-                <article className={`admission-checklist-step ${stepState}`} key={step.title}>
-                  <div className="admission-checklist-step-index">{index + 1}</div>
-                  <div className="admission-checklist-step-content">
-                    <strong>{step.title}</strong>
-                    <span>{step.description}</span>
-                  </div>
-                </article>
-              )
-            })}
-          </div>
+                return (
+                  <article className={`admission-checklist-step ${stepState}`} key={step.id ?? `${step.step_order}-${step.title}`}>
+                    <div className="admission-checklist-step-index">{step.step_order ?? index + 1}</div>
+                    <div className="admission-checklist-step-content">
+                      <strong>{step.title}</strong>
+                      <span>{step.description || 'Sem descrição cadastrada.'}</span>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="empty-state" style={{ margin: 0 }}>
+              <strong>Checklist sem passos cadastrados</strong>
+              <span>Use a página de gerenciamento para adicionar os passos que o RH precisa seguir.</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -26,9 +26,24 @@ export function AdminDashboardPage() {
             </svg>
           </div>
           <div className="admin-home-module-body">
-            <span className="admin-home-module-kicker">Dashboard de pesquisas</span>
-            <h3>KPIs consolidados</h3>
+            <span className="admin-home-module-kicker">Modulo de pesquisas</span>
+            <h3>KPIs de pesquisas da empresa</h3>
             <p>Abra a página com os indicadores, fluxo de respostas e pesquisas recentes.</p>
+          </div>
+          <span className="admin-home-module-action">Abrir</span>
+        </Link>
+
+        <Link className="admin-home-module module-amber" to="/admin/dashboard/admissao">
+          <div className="admin-home-module-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 6v6l4 2" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+          </div>
+          <div className="admin-home-module-body">
+            <span className="admin-home-module-kicker">Modulo de solicitações</span>
+            <h3>KPIs de admissão e demissão</h3>
+            <p>Acompanhe as metas de Operacional, Administrativo e Liderança com base na data de finalização.</p>
           </div>
           <span className="admin-home-module-action">Abrir</span>
         </Link>

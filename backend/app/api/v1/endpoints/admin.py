@@ -1663,6 +1663,10 @@ def finalize_admin_admission_request(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
     if request_item.status == AdmissionRequestStatusEnum.FINALIZED:
+        if request_item.finalized_at is None:
+            request_item.finalized_at = request_item.updated_at or datetime.now(UTC)
+            db.commit()
+            db.refresh(request_item)
         return _serialize_admission_request(request_item)
 
     if request_item.status != AdmissionRequestStatusEnum.APPROVED:

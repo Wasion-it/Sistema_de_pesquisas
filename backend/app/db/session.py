@@ -126,6 +126,7 @@ def _ensure_admission_request_columns() -> None:
 
     existing_columns = {column["name"] for column in inspector.get_columns("admission_requests")}
     statements: list[str] = []
+    add_finalized_at_column = False
 
     if "posicao_vaga" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN posicao_vaga VARCHAR(30)")
@@ -135,20 +136,35 @@ def _ensure_admission_request_columns() -> None:
 
     if "finalized_at" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN finalized_at DATETIME")
+        add_finalized_at_column = True
 
     if not statements:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE admission_requests SET finalized_at = COALESCE(finalized_at, updated_at) "
+                    "WHERE status = 'FINALIZED' AND finalized_at IS NULL"
+                )
+            )
         return
 
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))
 
-        if "finalized_at" not in existing_columns:
+        if add_finalized_at_column:
             connection.execute(
                 text(
                     "UPDATE admission_requests SET finalized_at = updated_at WHERE status = 'FINALIZED' AND finalized_at IS NULL"
                 )
             )
+
+        connection.execute(
+            text(
+                "UPDATE admission_requests SET finalized_at = COALESCE(finalized_at, updated_at) "
+                "WHERE status = 'FINALIZED' AND finalized_at IS NULL"
+            )
+        )
 
 
 def _normalize_admission_request_statuses() -> None:

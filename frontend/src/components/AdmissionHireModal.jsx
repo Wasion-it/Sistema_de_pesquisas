@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { createAdminAdmissionHire, getAdminDepartments, getAdminJobTitles } from '../services/admin'
 
@@ -124,7 +125,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
     }
   }
 
-  return (
+  const modalContent = (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
       <div className="request-modal" role="dialog" aria-modal="true" aria-labelledby="hire-request-title" onClick={(event) => event.stopPropagation()}>
         <div className="request-modal-header">
@@ -257,4 +258,10 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
       </div>
     </div>
   )
+
+  if (typeof document === 'undefined') {
+    return modalContent
+  }
+
+  return createPortal(modalContent, document.body)
 }

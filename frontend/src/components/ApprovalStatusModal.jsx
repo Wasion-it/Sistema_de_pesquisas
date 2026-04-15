@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { getAdminAdmissionApprovalStatus, getAdminDismissalApprovalStatus } from '../services/admin'
@@ -268,7 +269,7 @@ export function ApprovalStatusModal({ request, token, onClose }) {
   const statusLabel = STATUS_LABELS[status] ?? status
   const bannerMeta = getBannerMeta(status)
   const requestKindLabel = REQUEST_KIND_LABELS[fullRequest.request_kind] ?? fullRequest.request_kind
-  return (
+  const modalContent = (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
       <div className="request-modal" role="dialog" aria-modal="true" aria-labelledby="approval-status-title" onClick={(event) => event.stopPropagation()}>
         <div className="request-modal-header">
@@ -318,4 +319,10 @@ export function ApprovalStatusModal({ request, token, onClose }) {
       </div>
     </div>
   )
+
+  if (typeof document === 'undefined') {
+    return modalContent
+  }
+
+  return createPortal(modalContent, document.body)
 }

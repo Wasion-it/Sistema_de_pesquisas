@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { AdmissionChecklistModal } from './AdmissionChecklistModal'
 import { AdmissionHireModal } from './AdmissionHireModal'
 import { ApprovalStatusModal } from './ApprovalStatusModal'
 import { RequestDetailsModal } from './RequestDetailsModal'
@@ -129,6 +130,11 @@ const REQUEST_TABS = {
               <button className="secondary-button" type="button" onClick={actions.onViewDetails}>
                 Detalhes do pedido
               </button>
+              {actions.onViewChecklist ? (
+                <button className="secondary-button" type="button" onClick={actions.onViewChecklist}>
+                  Checklist
+                </button>
+              ) : null}
               <button
                 className="primary-button"
                 type="button"
@@ -248,6 +254,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   })
   const [selectedApprovalRequest, setSelectedApprovalRequest] = useState(null)
   const [selectedDetailsRequest, setSelectedDetailsRequest] = useState(null)
+  const [selectedChecklistRequest, setSelectedChecklistRequest] = useState(null)
   const [selectedHireRequest, setSelectedHireRequest] = useState(null)
   const [refreshCounter, setRefreshCounter] = useState(0)
 
@@ -342,6 +349,10 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     })
   }
 
+  function openChecklistModal(item) {
+    setSelectedChecklistRequest(item)
+  }
+
   function handleHireSuccess() {
     setSelectedHireRequest(null)
     setRefreshCounter((currentValue) => currentValue + 1)
@@ -430,6 +441,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                   activeConfig.renderRow(item, {
                     onViewApprovalStatus: () => openApprovalStatus(item),
                     onViewDetails: () => openDetailsModal(item),
+                    onViewChecklist: activeTab === 'admission' ? () => openChecklistModal(item) : null,
                     onRegisterHire: () => openHireModal(item),
                   }),
                 )}
@@ -449,6 +461,11 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
         request={selectedDetailsRequest}
         token={token}
         onClose={() => setSelectedDetailsRequest(null)}
+      />
+
+      <AdmissionChecklistModal
+        request={selectedChecklistRequest}
+        onClose={() => setSelectedChecklistRequest(null)}
       />
 
       <AdmissionHireModal

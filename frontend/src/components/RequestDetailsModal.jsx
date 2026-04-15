@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { getAdminAdmissionRequest, getAdminDismissalRequest } from '../services/admin'
 
@@ -135,7 +136,7 @@ export function RequestDetailsModal({ request, token, onClose }) {
   const statusLabel = STATUS_LABELS[fullRequest.request_status] ?? fullRequest.request_status
   const requestKindLabel = REQUEST_KIND_LABELS[fullRequest.request_kind] ?? fullRequest.request_kind
 
-  return (
+  const modalContent = (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
       <div className="request-modal" role="dialog" aria-modal="true" aria-labelledby="request-details-title" onClick={(event) => event.stopPropagation()}>
         <div className="request-modal-header">
@@ -213,4 +214,10 @@ export function RequestDetailsModal({ request, token, onClose }) {
       </div>
     </div>
   )
+
+  if (typeof document === 'undefined') {
+    return modalContent
+  }
+
+  return createPortal(modalContent, document.body)
 }

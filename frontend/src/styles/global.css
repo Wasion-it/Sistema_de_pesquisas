@@ -2120,12 +2120,12 @@ body:has(.admin-shell) { background: var(--slate-100); }
   position: fixed;
   inset: 0;
   z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   padding: 24px;
   background: rgba(15, 23, 42, .55);
   backdrop-filter: blur(8px);
+  overflow: auto;
 }
 
 .request-modal {
@@ -2186,6 +2186,75 @@ body:has(.admin-shell) { background: var(--slate-100); }
 
 .request-modal-section {
   margin-top: 20px;
+}
+
+.admission-checklist-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.admission-checklist-step {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--slate-200);
+  background: var(--slate-50);
+}
+
+.admission-checklist-step.done {
+  background: var(--green-50);
+  border-color: var(--green-100);
+}
+
+.admission-checklist-step.current {
+  background: var(--blue-50);
+  border-color: var(--blue-200);
+}
+
+.admission-checklist-step.pending {
+  opacity: .72;
+}
+
+.admission-checklist-step-index {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--slate-700);
+  background: #fff;
+  border: 1px solid var(--slate-200);
+}
+
+.admission-checklist-step.done .admission-checklist-step-index {
+  background: var(--green-600);
+  color: #fff;
+  border-color: var(--green-600);
+}
+
+.admission-checklist-step.current .admission-checklist-step-index {
+  background: var(--blue-600);
+  color: #fff;
+  border-color: var(--blue-600);
+}
+
+.admission-checklist-step-content {
+  display: grid;
+  gap: 4px;
+}
+
+.admission-checklist-step-content strong {
+  color: var(--slate-900);
+}
+
+.admission-checklist-step-content span {
+  color: var(--slate-600);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .approval-status-banner {

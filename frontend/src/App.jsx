@@ -61,6 +61,14 @@ export default function App() {
           <Route path="/pesquisas" element={<SurveysPage />} />
           <Route path="/campaigns/:campaignId" element={<PublicCampaignPage />} />
           <Route path="/campaigns/:campaignId/thank-you" element={<PublicCampaignThankYouPage />} />
+          <Route
+            path="/my-requests"
+            element={
+              <ProtectedRoute>
+                <MyRequestsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route
             path="/admin"
@@ -76,7 +84,6 @@ export default function App() {
             <Route path="dashboard/admissao" element={<AdminDashboardAdmissaoPage />} />
             <Route path="requests" element={<AdminRequestsPage />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
-            <Route path="my-requests" element={<MyRequestsPage />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />
             <Route path="job-titles" element={<AdminJobTitlesPage />} />
             <Route path="admission-requests" element={<AdminAdmissionRequestsPage />} />

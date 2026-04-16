@@ -27,7 +27,7 @@ export function RequestsPage() {
         </section>
 
         <section className="module-cards-grid" aria-label="Tipos de solicitação">
-          <Link className="module-card" aria-label="Minhas solicitações" to="/admin/my-requests">
+          <Link className="module-card" aria-label="Minhas solicitações" to="/my-requests">
             <div className="module-card-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 6h13" />

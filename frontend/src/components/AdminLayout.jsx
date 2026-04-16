@@ -14,7 +14,7 @@ function getInitials(name) {
 
 export function AdminLayout() {
   const { signOut, user } = useAuth()
-  const canAccessAdmissions = user?.role === 'RH_ANALISTA'
+  const canAccessAdmissions = user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN'
 
   function handleSignOut() {
     signOut('/')

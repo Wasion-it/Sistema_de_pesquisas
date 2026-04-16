@@ -194,6 +194,10 @@ export function AdminDashboardAdmissaoPage() {
   }, [token])
 
   const visibleRequests = useMemo(() => {
+    if (user?.role === 'RH_ADMIN') {
+      return requests
+    }
+
     if (user?.role !== 'RH_ANALISTA') {
       return []
     }

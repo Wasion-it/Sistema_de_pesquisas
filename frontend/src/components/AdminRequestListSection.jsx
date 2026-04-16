@@ -371,6 +371,10 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
       return activeRequests
     }
 
+    if (user?.role === 'RH_ADMIN') {
+      return activeRequests
+    }
+
     if (user?.role !== 'RH_ANALISTA') {
       return []
     }

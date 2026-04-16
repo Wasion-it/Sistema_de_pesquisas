@@ -391,11 +391,14 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
 
 
 def _can_user_view_admission_request(user: User, request_item: AdmissionRequest) -> bool:
+    if user.role == RoleEnum.RH_ADMIN:
+        return True
+
     return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
 
 
 def _require_recruiter_access(user: User) -> None:
-    if user.role != RoleEnum.RH_ANALISTA:
+    if user.role not in {RoleEnum.RH_ADMIN, RoleEnum.RH_ANALISTA}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admission access restricted to assigned recruiters")
 
 
@@ -1456,7 +1459,8 @@ def read_admin_admission_requests(
         )
         .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
     )
-    statement = statement.where(AdmissionRequest.recruiter_user_id == user.id)
+    if user.role == RoleEnum.RH_ANALISTA:
+        statement = statement.where(AdmissionRequest.recruiter_user_id == user.id)
 
     items = db.scalars(statement).all()
     return AdmissionRequestListResponse(items=[_serialize_admission_request(item) for item in items])

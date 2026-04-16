@@ -24,6 +24,7 @@ from app.models import (
     ResponseItem,
     ResponseStatusEnum,
     Survey,
+    SurveyDimension,
     SurveyQuestion,
     SurveyVersion,
     SurveyVersionStatusEnum,
@@ -42,6 +43,7 @@ from app.schemas.public import (
     PublicCampaignSubmitResponse,
     PublicQuestionOptionResponse,
     PublicResponseAnswerResponse,
+    PublicSurveyDimensionResponse,
 )
 
 router = APIRouter(tags=["public"])
@@ -86,6 +88,7 @@ def _serialize_public_question(question) -> PublicCampaignQuestionResponse:
         question_text=question.question_text,
         help_text=question.help_text,
         question_type=question.question_type.value,
+        dimension_id=question.dimension_id,
         is_required=question.is_required,
         display_order=question.display_order,
         scale_min=question.scale_min,
@@ -101,6 +104,16 @@ def _serialize_public_question(question) -> PublicCampaignQuestionResponse:
             for option in options
             if option.is_active
         ],
+    )
+
+
+def _serialize_public_dimension(dimension: SurveyDimension) -> PublicSurveyDimensionResponse:
+    return PublicSurveyDimensionResponse(
+        id=dimension.id,
+        code=dimension.code,
+        name=dimension.name,
+        description=dimension.description,
+        display_order=dimension.display_order,
     )
 
 
@@ -127,6 +140,7 @@ def _load_public_campaign(db: Session, campaign_id: int) -> Campaign | None:
             .selectinload(Response.items),
             selectinload(Campaign.survey_version).selectinload(SurveyVersion.questions),
             selectinload(Campaign.survey_version).selectinload(SurveyVersion.survey),
+            selectinload(Campaign.survey_version).selectinload(SurveyVersion.survey).selectinload(Survey.dimensions),
             selectinload(Campaign.survey_version)
             .selectinload(SurveyVersion.questions)
             .selectinload(SurveyQuestion.options),
@@ -211,6 +225,10 @@ def _build_campaign_detail(campaign: Campaign, db: Session) -> PublicCampaignDet
         version_description=campaign.survey_version.description,
         available_departments=[PublicLookupOptionResponse(id=item.id, name=item.name) for item in departments],
         available_job_titles=[PublicLookupOptionResponse(id=item.id, name=item.name) for item in job_titles],
+        dimensions=[
+            _serialize_public_dimension(dimension)
+            for dimension in sorted(campaign.survey_version.survey.dimensions, key=lambda item: item.display_order)
+        ],
     )
 
 

@@ -58,6 +58,7 @@ class PublicCampaignDetailResponse(BaseModel):
     version_title: str
     version_description: str | None
     total_questions: int
+    dimensions: list["PublicSurveyDimensionResponse"]
     available_departments: list["PublicLookupOptionResponse"]
     available_job_titles: list["PublicLookupOptionResponse"]
 
@@ -65,6 +66,14 @@ class PublicCampaignDetailResponse(BaseModel):
 class PublicLookupOptionResponse(BaseModel):
     id: int
     name: str
+
+
+class PublicSurveyDimensionResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str | None
+    display_order: int
 
 
 class PublicQuestionOptionResponse(BaseModel):
@@ -79,8 +88,8 @@ class PublicCampaignQuestionResponse(BaseModel):
     id: int
     code: str
     question_text: str
-    help_text: str | None
     question_type: str
+    dimension_id: int | None
     is_required: bool
     display_order: int
     scale_min: int

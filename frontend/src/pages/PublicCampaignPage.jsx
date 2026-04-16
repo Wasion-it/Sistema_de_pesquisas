@@ -28,6 +28,42 @@ const SCALE_COLORS = {
   5: { bg: '#eff6ff', border: '#bfdbfe', num: '#2563eb', numBg: '#dbeafe' },
 }
 
+function groupQuestionsByDimension(participation, campaign) {
+  if (!participation) return []
+
+  const dimensionsById = new Map((campaign?.dimensions ?? []).map((dimension) => [dimension.id, dimension]))
+  const grouped = new Map()
+
+  participation.questions.forEach((question) => {
+    const dimensionId = question.dimension_id ?? null
+    const dimension = dimensionId != null ? dimensionsById.get(dimensionId) : null
+    const key = dimension?.id ?? 'unassigned'
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        key,
+        dimensionId: dimension?.id ?? null,
+        dimensionCode: dimension?.code ?? 'SEM_DIMENSAO',
+        dimensionName: dimension?.name ?? 'Sem dimensão',
+        displayOrder: dimension?.display_order ?? Number.MAX_SAFE_INTEGER,
+        questions: [],
+      })
+    }
+
+    grouped.get(key).questions.push(question)
+  })
+
+  return [...grouped.values()]
+    .map((section) => ({
+      ...section,
+      questions: section.questions.sort((a, b) => a.display_order - b.display_order),
+    }))
+    .sort((a, b) => {
+      if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder
+      return a.dimensionName.localeCompare(b.dimensionName, 'pt-BR')
+    })
+}
+
 export function PublicCampaignPage() {
   const { campaignId } = useParams()
   const navigate = useNavigate()
@@ -61,6 +97,11 @@ export function PublicCampaignPage() {
   const progressPct = participation
     ? Math.round((answeredCount / participation.questions.length) * 100)
     : 0
+
+  const questionSections = useMemo(
+    () => groupQuestionsByDimension(participation, campaign),
+    [participation, campaign],
+  )
 
   useEffect(() => {
     let isMounted = true
@@ -375,28 +416,45 @@ export function PublicCampaignPage() {
               Todas as respostas são confidenciais. Seja honesto — suas opiniões constroem um ambiente melhor.
             </div>
 
-            {participation.questions.map((question, index) => (
-              <article className="collab-question-card" key={question.id}>
-                <div className="collab-question-header">
-                  <span className="collab-question-num">{index + 1}</span>
-                  <div className="collab-question-body">
-                    <p className="collab-question-text">{question.question_text}</p>
-                    {question.help_text && (
-                      <p className="collab-question-hint">{question.help_text}</p>
-                    )}
+            <div style={{ display: 'grid', gap: 18 }}>
+              {questionSections.map((section) => (
+                <section key={section.key} className="collab-question-group" style={{ display: 'grid', gap: 12 }}>
+                  <div className="collab-question-group-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <h3 className="collab-question-group-title" style={{ margin: 0 }}>{section.dimensionName}</h3>
+                    </div>
+                    <span className="collab-question-group-badge" style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '4px 10px', borderRadius: 999 }}>
+                      {section.questions.length} pergunta{section.questions.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  {question.is_required && (
-                    <span
-                      className="collab-required-dot"
-                      title="Obrigatória"
-                    />
-                  )}
-                </div>
-                <div className="collab-question-answer">
-                  {renderQuestionField(question)}
-                </div>
-              </article>
-            ))}
+
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {section.questions.map((question, index) => (
+                      <article className="collab-question-card" key={question.id}>
+                        <div className="collab-question-header">
+                          <span className="collab-question-num">{index + 1}</span>
+                          <div className="collab-question-body">
+                            <p className="collab-question-text">{question.question_text}</p>
+                            {question.help_text && (
+                              <p className="collab-question-hint">{question.help_text}</p>
+                            )}
+                          </div>
+                          {question.is_required && (
+                            <span
+                              className="collab-required-dot"
+                              title="Obrigatória"
+                            />
+                          )}
+                        </div>
+                        <div className="collab-question-answer">
+                          {renderQuestionField(question)}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
 
             {submitErrorMessage && <div className="form-error">{submitErrorMessage}</div>}
 

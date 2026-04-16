@@ -27,7 +27,7 @@ def on_startup() -> None:
 
 @app.get("/", tags=["root"])
 def read_root() -> dict[str, str]:
-    return {"message": "Sistema de Pesquisas API"}
+    return {"message": "Sistema de Recursos Humanos API"}
 
 
 app.include_router(v1_router, prefix=settings.api_v1_prefix)

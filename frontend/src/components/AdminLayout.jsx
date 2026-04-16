@@ -24,7 +24,7 @@ export function AdminLayout() {
       <aside className="admin-sidebar">
         <div className="admin-brand-block">
           <div className="admin-brand-logo">RH</div>
-          <span className="admin-brand-name">Sistema de Pesquisas</span>
+          <span className="admin-brand-name">Sistema de Recursos Humanos</span>
         </div>
 
         <Link className="admin-home-button" replace to="/">

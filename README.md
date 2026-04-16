@@ -1,4 +1,4 @@
-# Sistema de Pesquisas
+# Sistema de Recursos Humanos
 
 Estrutura inicial simples com backend em FastAPI e frontend em React.
 

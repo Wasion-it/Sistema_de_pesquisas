@@ -48,7 +48,7 @@ export function AdminLoginPage() {
             </svg>
           </div>
           <div>
-            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: 1 }}>Sistema de Pesquisas</p>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: 1 }}>Sistema de Recursos Humanos</p>
             <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--slate-900)' }}>Portal Administrativo</p>
           </div>
         </div>

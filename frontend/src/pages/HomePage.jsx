@@ -28,7 +28,12 @@ export function HomePage() {
         <section className="module-cards-grid" aria-label="Módulos disponíveis">
           <Link className="module-card" to="/pesquisas">
             <div className="module-card-icon" aria-hidden="true">
-              <img alt="Logo da empresa" src="/logo-srh.svg" />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 8h8" />
+                <path d="M8 12h8" />
+                <path d="M8 16h5" />
+              </svg>
             </div>
             <div className="module-card-body">
               <span className="module-card-kicker">Módulo</span>
@@ -43,7 +48,12 @@ export function HomePage() {
 
           <Link className="module-card" to="/solicitacoes">
             <div className="module-card-icon" aria-hidden="true">
-              <img alt="Logo da empresa" src="/logo-srh.svg" />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6H4" />
+                <path d="M20 12H4" />
+                <path d="M20 18H4" />
+                <path d="M8 6v12" />
+              </svg>
             </div>
             <div className="module-card-body">
               <span className="module-card-kicker">Módulo</span>

@@ -154,28 +154,32 @@ const REQUEST_TABS = {
               <button className="secondary-button" type="button" onClick={actions.onViewDetails}>
                 Detalhes do pedido
               </button>
-              {actions.onViewChecklist ? (
-                <button className="secondary-button" type="button" onClick={actions.onViewChecklist}>
-                  Checklist
-                </button>
+              {!actions.isReadOnly ? (
+                <>
+                  {actions.onViewChecklist ? (
+                    <button className="secondary-button" type="button" onClick={actions.onViewChecklist}>
+                      Checklist
+                    </button>
+                  ) : null}
+                  {actions.onFinalizeAdmission && canFinalizeAdmission && !isFinalized ? (
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={actions.onFinalizeAdmission}
+                    >
+                      Finalizar vaga
+                    </button>
+                  ) : null}
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={actions.onRegisterHire}
+                    disabled={!canRegisterHire}
+                  >
+                    {hireButtonLabel}
+                  </button>
+                </>
               ) : null}
-              {actions.onFinalizeAdmission && canFinalizeAdmission && !isFinalized ? (
-                <button
-                  className="primary-button"
-                  type="button"
-                  onClick={actions.onFinalizeAdmission}
-                >
-                  Finalizar vaga
-                </button>
-              ) : null}
-              <button
-                className="primary-button"
-                type="button"
-                onClick={actions.onRegisterHire}
-                disabled={!canRegisterHire}
-              >
-                {hireButtonLabel}
-              </button>
             </div>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
@@ -272,7 +276,7 @@ function getTabFromPathname(pathname) {
 }
 
 export function AdminRequestListSection({ initialTab = 'admission' }) {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const activeTab = getTabFromPathname(location.pathname) || initialTab
@@ -361,10 +365,18 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
   const activeConfig = REQUEST_TABS[activeTab]
   const activeRequests = requestsByTab[activeTab]
+  const isRecruiterReadOnly = user?.role === 'RH_ANALISTA' && activeTab === 'admission'
+  const visibleRequests = useMemo(() => {
+    if (!isRecruiterReadOnly) {
+      return activeRequests
+    }
+
+    return activeRequests.filter((item) => item.recruiter_user_id === user?.id)
+  }, [activeRequests, isRecruiterReadOnly, user?.id])
 
   const filteredRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    return activeRequests.filter((item) => {
+    return visibleRequests.filter((item) => {
       const matchesStatus =
         activeTab !== 'admission' ||
         statusFilter === 'all' ||
@@ -378,7 +390,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
       return matchesStatus && matchesQuery
     })
-  }, [activeConfig, activeRequests, activeTab, query, statusFilter])
+  }, [activeConfig, activeTab, query, statusFilter, visibleRequests])
 
   const summary = getSummary(filteredRequests)
 
@@ -535,9 +547,10 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                   activeConfig.renderRow(item, {
                     onViewApprovalStatus: () => openApprovalStatus(item),
                     onViewDetails: () => openDetailsModal(item),
-                    onViewChecklist: activeTab === 'admission' ? () => openChecklistModal(item) : null,
-                    onFinalizeAdmission: activeTab === 'admission' ? () => finalizeAdmissionRequest(item) : null,
-                    onRegisterHire: () => openHireModal(item),
+                    onViewChecklist: activeTab === 'admission' && !isRecruiterReadOnly ? () => openChecklistModal(item) : null,
+                    onFinalizeAdmission: activeTab === 'admission' && !isRecruiterReadOnly ? () => finalizeAdmissionRequest(item) : null,
+                    onRegisterHire: !isRecruiterReadOnly ? () => openHireModal(item) : null,
+                    isReadOnly: isRecruiterReadOnly,
                   }),
                 )}
               </tbody>

@@ -390,6 +390,13 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
     )
 
 
+def _can_user_view_admission_request(user: User, request_item: AdmissionRequest) -> bool:
+    if user.role == RoleEnum.RH_ANALISTA:
+        return request_item.recruiter_user_id == user.id
+
+    return True
+
+
 def _mark_request_approval_progress(
     db: Session,
     request_item,
@@ -1432,10 +1439,10 @@ def create_admin_job_title(
 
 @router.get("/hr/admission-requests", response_model=AdmissionRequestListResponse)
 def read_admin_admission_requests(
-    _: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestListResponse:
-    items = db.scalars(
+    statement = (
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
@@ -1444,14 +1451,18 @@ def read_admin_admission_requests(
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
         .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
-    ).all()
+    )
+    if user.role == RoleEnum.RH_ANALISTA:
+        statement = statement.where(AdmissionRequest.recruiter_user_id == user.id)
+
+    items = db.scalars(statement).all()
     return AdmissionRequestListResponse(items=[_serialize_admission_request(item) for item in items])
 
 
 @router.get("/hr/admission-requests/{request_id}", response_model=AdmissionRequestResponse)
 def read_admin_admission_request_detail(
     request_id: int,
-    _: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
     item = db.scalar(
@@ -1465,6 +1476,9 @@ def read_admin_admission_request_detail(
         .where(AdmissionRequest.id == request_id)
     )
     if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    if not _can_user_view_admission_request(user, item):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
     return _serialize_admission_request(item)
@@ -1571,6 +1585,9 @@ def update_admin_admission_request_checklist_progress(
     if request_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
+    if not _can_user_view_admission_request(user, request_item):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
     request_item.checklist_completed_steps = max(payload.completed_steps, 0)
     db.add(
         AuditLog(
@@ -1619,6 +1636,9 @@ def hire_admin_admission_request(
         .where(AdmissionRequest.id == request_id)
     )
     if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    if not _can_user_view_admission_request(user, request_item):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
     if request_item.status != AdmissionRequestStatusEnum.APPROVED:
@@ -1732,6 +1752,9 @@ def finalize_admin_admission_request(
     if request_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
+    if not _can_user_view_admission_request(user, request_item):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
     if request_item.status == AdmissionRequestStatusEnum.FINALIZED:
         if request_item.finalized_at is None:
             request_item.finalized_at = request_item.updated_at or datetime.now(UTC)
@@ -1795,7 +1818,7 @@ def finalize_admin_admission_request(
 @router.get("/hr/admission-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)
 def read_admin_admission_request_approval_status(
     request_id: int,
-    _: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ApprovalQueueItemResponse:
     item = db.scalar(
@@ -1812,6 +1835,9 @@ def read_admin_admission_request_approval_status(
         .where(AdmissionRequest.id == request_id)
     )
     if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
+
+    if not _can_user_view_admission_request(user, item):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission request not found")
 
     return _serialize_admission_approval_queue_item(item)

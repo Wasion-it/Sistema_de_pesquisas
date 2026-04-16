@@ -193,10 +193,18 @@ export function AdminDashboardAdmissaoPage() {
     }
   }, [token])
 
-  const metrics = useMemo(() => computeOverallMetrics(requests), [requests])
+  const visibleRequests = useMemo(() => {
+    if (user?.role !== 'RH_ANALISTA') {
+      return requests
+    }
+
+    return requests.filter((request) => request.recruiter_user_id === user.id)
+  }, [requests, user?.id, user?.role])
+
+  const metrics = useMemo(() => computeOverallMetrics(visibleRequests), [visibleRequests])
   const positionMetrics = useMemo(
-    () => Object.keys(POSITION_META).map((positionKey) => computePositionMetrics(requests, positionKey)),
-    [requests],
+    () => Object.keys(POSITION_META).map((positionKey) => computePositionMetrics(visibleRequests, positionKey)),
+    [visibleRequests],
   )
 
   const greeting = useMemo(() => getGreeting(), [])

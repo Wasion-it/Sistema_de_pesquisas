@@ -12,6 +12,13 @@ function formatDateTime(value) {
   }).format(new Date(value))
 }
 
+function formatDateOnly(value) {
+  if (!value) return 'Não informado'
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+  }).format(new Date(value))
+}
+
 const STATUS_LABELS = {
   PENDING: 'Pendente',
   UNDER_REVIEW: 'Em análise',
@@ -229,17 +236,19 @@ function CandidatesSection({ candidates = [] }) {
   )
 }
 
-function HiredEmployeesSection({ hiredEmployees = [] }) {
-  if (!hiredEmployees.length) {
+function HiredEmployeesSection({ candidates = [] }) {
+  const hiredCandidates = candidates.filter((candidate) => candidate.is_hired)
+
+  if (!hiredCandidates.length) {
     return (
       <div className="request-modal-section">
         <div className="request-modal-section-header">
-          <h4>Contratados vinculados</h4>
+          <h4>Candidatos contratados</h4>
           <span>0 registros</span>
         </div>
         <div className="empty-state compact">
           <strong>Nenhum contratado registrado ainda</strong>
-          <span>Quando um candidato for marcado como contratado, o vínculo aparece aqui.</span>
+          <span>Quando um candidato for marcado como contratado, os dados de cadastro aparecem aqui.</span>
         </div>
       </div>
     )
@@ -248,17 +257,16 @@ function HiredEmployeesSection({ hiredEmployees = [] }) {
   return (
     <div className="request-modal-section">
       <div className="request-modal-section-header">
-        <h4>Contratados vinculados</h4>
-        <span>{hiredEmployees.length} registro(s)</span>
+        <h4>Candidatos contratados</h4>
+        <span>{hiredCandidates.length} registro(s)</span>
       </div>
       <div className="hired-employees-list">
-        {hiredEmployees.map((employee) => (
-          <article className="hired-employee-card" key={employee.id}>
-            <strong>{employee.full_name}</strong>
-            <span>{employee.employee_code}</span>
-            <small>{employee.department_name} • {employee.job_title_name}</small>
-            <small>{employee.work_email ?? 'Sem email corporativo'}</small>
-            {employee.hire_date ? <small>Admissão em {formatDateTime(employee.hire_date)}</small> : null}
+        {hiredCandidates.map((candidate) => (
+          <article className="hired-employee-card" key={candidate.id}>
+            <strong>{candidate.full_name}</strong>
+            <span>{candidate.email}</span>
+            <small>{candidate.phone_number ?? 'Sem telefone informado'}</small>
+            <small>Data de admissão: {formatDateOnly(candidate.hire_date)}</small>
           </article>
         ))}
       </div>
@@ -405,7 +413,7 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
               <CandidatesSection candidates={fullRequest.candidates ?? []} />
             ) : null}
 
-            <HiredEmployeesSection hiredEmployees={fullRequest.hired_employees ?? []} />
+            <HiredEmployeesSection candidates={fullRequest.candidates ?? []} />
 
             {request?.request_kind === 'ADMISSION' && canFinalizeAdmission ? (
               <div className="request-modal-section request-modal-actions">

@@ -122,6 +122,17 @@ class JobTitleUpdateRequest(BaseModel):
     is_active: bool = True
 
 
+class RecruiterOptionResponse(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    role: str
+
+
+class RecruiterOptionListResponse(BaseModel):
+    items: list[RecruiterOptionResponse]
+
+
 class AdmissionChecklistStepResponse(BaseModel):
     id: int
     step_order: int
@@ -197,6 +208,9 @@ class AdmissionRequestResponse(BaseModel):
     request_type: AdmissionRequestTypeEnum
     posicao_vaga: AdmissionPositionEnum | None
     is_confidential: bool
+    recruiter_user_id: int | None
+    recruiter_user_name: str | None
+    recruiter_user_email: str | None
     cargo: str
     setor: str
     recruitment_scope: RecruitmentScopeEnum
@@ -281,6 +295,9 @@ class ApprovalQueueItemResponse(BaseModel):
     current_step_order: int | None
     current_step_label: str | None
     current_step_role: ApprovalRoleEnum | None
+    recruiter_user_id: int | None
+    recruiter_user_name: str | None
+    recruiter_user_email: str | None
     submitted_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -294,6 +311,7 @@ class ApprovalQueueListResponse(BaseModel):
 
 class ApprovalActionRequest(BaseModel):
     comments: str | None = Field(default=None, max_length=2000)
+    recruiter_user_id: int | None = None
 
 
 class AdminActionResponse(BaseModel):

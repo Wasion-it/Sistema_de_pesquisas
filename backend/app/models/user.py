@@ -35,5 +35,9 @@ class User(BaseModel):
     employee = relationship("Employee", back_populates="user", uselist=False)
     created_campaigns = relationship("Campaign", back_populates="created_by_user")
     audit_logs = relationship("AuditLog", back_populates="actor_user")
-    admission_requests = relationship("AdmissionRequest", back_populates="created_by_user")
+    admission_requests = relationship(
+        "AdmissionRequest",
+        back_populates="created_by_user",
+        foreign_keys="AdmissionRequest.created_by_user_id",
+    )
     dismissal_requests = relationship("DismissalRequest", back_populates="created_by_user")

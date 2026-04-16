@@ -45,6 +45,10 @@ class AdmissionRequest(BaseModel):
         nullable=False,
     )
     is_confidential: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    recruiter_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     cargo: Mapped[str] = mapped_column(String(150), nullable=False)
     setor: Mapped[str] = mapped_column(String(150), nullable=False)
     recruitment_scope: Mapped[RecruitmentScopeEnum] = mapped_column(
@@ -69,7 +73,8 @@ class AdmissionRequest(BaseModel):
         nullable=True,
     )
 
-    created_by_user = relationship("User", back_populates="admission_requests")
+    created_by_user = relationship("User", back_populates="admission_requests", foreign_keys=[created_by_user_id])
+    recruiter_user = relationship("User", foreign_keys=[recruiter_user_id])
     approval_workflow_template = relationship("ApprovalWorkflowTemplate", back_populates="admission_requests")
     hired_employees = relationship("Employee", back_populates="source_admission_request")
     approval_steps = relationship(

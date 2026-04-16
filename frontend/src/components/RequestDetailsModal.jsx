@@ -185,6 +185,7 @@ export function RequestDetailsModal({ request, token, onClose }) {
                   <DetailField label="Tipo de admissão" value={fullRequest.request_type} />
                   <AdmissionPositionField value={fullRequest.posicao_vaga} />
                   <DetailField label="Vaga confidencial" value={fullRequest.is_confidential ? 'Sim' : 'Não'} />
+                  <DetailField label="Recrutador" value={fullRequest.recruiter_user_name ?? 'Ainda não definido'} />
                   <DetailField label="Cargo" value={fullRequest.cargo} />
                   <DetailField label="Setor" value={fullRequest.setor} />
                   <DetailField label="Escopo" value={fullRequest.recruitment_scope} />

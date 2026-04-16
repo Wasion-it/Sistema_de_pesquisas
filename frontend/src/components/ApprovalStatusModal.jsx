@@ -339,6 +339,7 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
               <DetailField label="Status" value={statusLabel} />
               <DetailField label="Fluxo" value={fullRequest.workflow_name} />
               <DetailField label="Solicitante" value={fullRequest.requester_name} />
+              {request?.request_kind === 'ADMISSION' ? <DetailField label="Recrutador" value={fullRequest.recruiter_user_name ?? 'Ainda não definido'} /> : null}
               <DetailField label="Etapa atual" value={fullRequest.current_step_label ?? 'Concluída'} />
               <div>
                 <span>Atualização</span>

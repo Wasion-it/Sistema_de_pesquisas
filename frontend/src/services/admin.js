@@ -222,6 +222,14 @@ export async function getAdminCampaignResponses(token, campaignId) {
   return parseResponse(response)
 }
 
+export async function getAdminRecruiters(token) {
+  const response = await fetch(`${API_URL}/admin/hr/recruiters`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
 export async function createAdminAdmissionRequest(token, payload) {
   const response = await fetch(
     `${API_URL}/admin/hr/admission-requests`,

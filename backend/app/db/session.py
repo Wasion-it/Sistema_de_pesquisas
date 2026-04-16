@@ -134,6 +134,9 @@ def _ensure_admission_request_columns() -> None:
     if "is_confidential" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN is_confidential BOOLEAN NOT NULL DEFAULT 0")
 
+    if "recruiter_user_id" not in existing_columns:
+        statements.append("ALTER TABLE admission_requests ADD COLUMN recruiter_user_id INTEGER REFERENCES users(id)")
+
     if "checklist_completed_steps" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN checklist_completed_steps INTEGER NOT NULL DEFAULT 0")
 

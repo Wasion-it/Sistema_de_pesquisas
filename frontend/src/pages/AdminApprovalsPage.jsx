@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { RequestDetailsModal } from '../components/RequestDetailsModal'
-import { approveAdminApprovalRequest, getAdminApprovalQueue, rejectAdminApprovalRequest } from '../services/admin'
+import { approveAdminApprovalRequest, getAdminApprovalQueue, getAdminRecruiters, rejectAdminApprovalRequest } from '../services/admin'
 
 const REQUEST_KIND_TABS = {
   admission: {
@@ -134,6 +134,81 @@ function ApprovalStepTracker({ steps }) {
   )
 }
 
+function RecruiterApprovalModal({
+  request,
+  recruiterOptions,
+  selectedRecruiterId,
+  onChangeRecruiterId,
+  onClose,
+  onConfirm,
+  isLoading,
+  isSubmitting,
+  errorMessage,
+}) {
+  if (!request) {
+    return null
+  }
+
+  return (
+    <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
+      <div className="request-modal" role="dialog" aria-modal="true" aria-labelledby="recruiter-approval-title" onClick={(event) => event.stopPropagation()}>
+        <div className="request-modal-header">
+          <div>
+            <span className="eyebrow">Aprovação com recrutador</span>
+            <h3 id="recruiter-approval-title">Selecionar recrutador</h3>
+            <p>{request.request_title}</p>
+          </div>
+          <button className="secondary-button" type="button" onClick={onClose}>
+            Fechar
+          </button>
+        </div>
+
+        <div className="request-modal-section">
+          <div className="request-modal-section-header">
+            <h4>Recrutador responsável</h4>
+            <span>{request.current_step_label ?? 'Gerente de RH'}</span>
+          </div>
+
+          {isLoading ? (
+            <div className="empty-state compact">
+              <strong>Carregando recrutadores...</strong>
+            </div>
+          ) : null}
+
+          {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
+
+          {!isLoading ? (
+            <label className="field-group">
+              <span>Selecione o recrutador</span>
+              <select value={selectedRecruiterId} onChange={(event) => onChangeRecruiterId(event.target.value)}>
+                <option value="">Selecione</option>
+                {recruiterOptions.map((recruiter) => (
+                  <option key={recruiter.id} value={recruiter.id}>
+                    {recruiter.full_name} • {recruiter.email}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <p className="request-modal-helper-text">
+            A solicitação só será aprovada quando um recrutador ativo for vinculado.
+          </p>
+
+          <div className="request-modal-actions">
+            <button className="secondary-button" type="button" onClick={onClose} disabled={isSubmitting}>
+              Cancelar
+            </button>
+            <button className="primary-button" type="button" onClick={onConfirm} disabled={isSubmitting || !selectedRecruiterId || isLoading}>
+              {isSubmitting ? 'Aprovando...' : 'Confirmar aprovação'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function AdminApprovalsPage() {
   const { token, user } = useAuth()
   const [activeTab, setActiveTab] = useState('admission')
@@ -142,6 +217,11 @@ export function AdminApprovalsPage() {
   const [errorMessages, setErrorMessages] = useState({ admission: '', dismissal: '' })
   const [actionState, setActionState] = useState({ kind: '', requestId: null, action: '' })
   const [selectedRequest, setSelectedRequest] = useState(null)
+  const [recruiterApprovalRequest, setRecruiterApprovalRequest] = useState(null)
+  const [recruiterOptions, setRecruiterOptions] = useState([])
+  const [isLoadingRecruiters, setIsLoadingRecruiters] = useState(false)
+  const [selectedRecruiterId, setSelectedRecruiterId] = useState('')
+  const [recruiterErrorMessage, setRecruiterErrorMessage] = useState('')
 
   async function loadQueues() {
     setIsLoading(true)
@@ -177,6 +257,41 @@ export function AdminApprovalsPage() {
     loadQueues()
   }, [token])
 
+  useEffect(() => {
+    let isMounted = true
+
+    if (!recruiterApprovalRequest || !token) {
+      setRecruiterOptions([])
+      setIsLoadingRecruiters(false)
+      setRecruiterErrorMessage('')
+      return undefined
+    }
+
+    setIsLoadingRecruiters(true)
+    setRecruiterErrorMessage('')
+    getAdminRecruiters(token)
+      .then((data) => {
+        if (isMounted) {
+          setRecruiterOptions(data.items ?? [])
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setRecruiterErrorMessage(error.message)
+          setRecruiterOptions([])
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingRecruiters(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [recruiterApprovalRequest, token])
+
   const activeQueue = queuesByKind[activeTab]
   const activeConfig = REQUEST_KIND_TABS[activeTab]
   const activeQueueStatusKey = activeTab === 'admission' ? 'PENDING' : 'UNDER_REVIEW'
@@ -195,13 +310,79 @@ export function AdminApprovalsPage() {
     return Boolean(item.steps?.some((step) => step.status === 'PENDING' && allowedApprovalRoles.has(step.approver_role)))
   }
 
+  function getActionableStep(item) {
+    return item.steps?.find((step) => step.status === 'PENDING' && allowedApprovalRoles.has(step.approver_role)) ?? null
+  }
+
   function getActionableStepLabel(item) {
-    const actionableStep = item.steps?.find((step) => step.status === 'PENDING' && allowedApprovalRoles.has(step.approver_role))
+    const actionableStep = getActionableStep(item)
     if (actionableStep) {
       return APPROVAL_ROLE_LABELS[actionableStep.approver_role] ?? actionableStep.approver_role
     }
 
     return APPROVAL_ROLE_LABELS[item.current_step_role] ?? item.current_step_role ?? 'o próximo aprovador'
+  }
+
+  function requiresRecruiterSelection(item) {
+    const actionableStep = getActionableStep(item)
+    return user?.role === 'RH_ADMIN' && normalizeRequestKind(item.request_kind) === 'admission' && actionableStep?.approver_role === 'RH_MANAGER'
+  }
+
+  function openApprovalConfirmation(item) {
+    if (requiresRecruiterSelection(item)) {
+      setRecruiterApprovalRequest(item)
+      setSelectedRecruiterId('')
+      setRecruiterErrorMessage('')
+      return
+    }
+
+    handleAction(item.request_kind, item.request_id, 'approve')
+  }
+
+  function closeRecruiterModal() {
+    setRecruiterApprovalRequest(null)
+    setSelectedRecruiterId('')
+    setRecruiterErrorMessage('')
+  }
+
+  async function confirmRecruiterApproval() {
+    if (!recruiterApprovalRequest || !selectedRecruiterId) {
+      setRecruiterErrorMessage('Selecione um recrutador para continuar.')
+      return
+    }
+
+    const normalizedKind = normalizeRequestKind(recruiterApprovalRequest.request_kind)
+    setActionState({ kind: normalizedKind, requestId: recruiterApprovalRequest.request_id, action: 'approve' })
+    setRecruiterErrorMessage('')
+
+    try {
+      await approveAdminApprovalRequest(token, normalizedKind, recruiterApprovalRequest.request_id, {
+        recruiter_user_id: Number(selectedRecruiterId),
+      })
+      setRecruiterApprovalRequest(null)
+      setSelectedRecruiterId('')
+      await loadQueues()
+    } catch (error) {
+      setRecruiterErrorMessage(error.message)
+    } finally {
+      setActionState({ kind: '', requestId: null, action: '' })
+    }
+  }
+
+  async function handleReject(kind, requestId) {
+    const normalizedKind = normalizeRequestKind(kind)
+    setActionState({ kind: normalizedKind, requestId, action: 'reject' })
+    try {
+      await rejectAdminApprovalRequest(token, normalizedKind, requestId, {})
+      await loadQueues()
+    } catch (error) {
+      setErrorMessages((current) => ({
+        ...current,
+        [kind]: error.message,
+      }))
+    } finally {
+      setActionState({ kind: '', requestId: null, action: '' })
+    }
   }
 
   async function handleAction(kind, requestId, action) {
@@ -343,7 +524,7 @@ export function AdminApprovalsPage() {
                     className="primary-button"
                     disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
                     type="button"
-                    onClick={() => handleAction(requestKind, item.request_id, 'approve')}
+                    onClick={() => openApprovalConfirmation(item)}
                   >
                     {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'approve'
                       ? 'Aprovando...'
@@ -353,7 +534,7 @@ export function AdminApprovalsPage() {
                     className="secondary-button"
                     disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
                     type="button"
-                    onClick={() => handleAction(requestKind, item.request_id, 'reject')}
+                    onClick={() => handleReject(requestKind, item.request_id)}
                   >
                     {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'reject'
                       ? 'Rejeitando...'
@@ -370,6 +551,17 @@ export function AdminApprovalsPage() {
       </section>
 
       <RequestDetailsModal request={selectedRequest} token={token} onClose={() => setSelectedRequest(null)} />
+      <RecruiterApprovalModal
+        request={recruiterApprovalRequest}
+        recruiterOptions={recruiterOptions}
+        selectedRecruiterId={selectedRecruiterId}
+        onChangeRecruiterId={setSelectedRecruiterId}
+        onClose={closeRecruiterModal}
+        onConfirm={confirmRecruiterApproval}
+        isLoading={isLoadingRecruiters}
+        isSubmitting={actionState.kind === 'admission' && actionState.requestId === recruiterApprovalRequest?.request_id && actionState.action === 'approve'}
+        errorMessage={recruiterErrorMessage}
+      />
     </div>
   )
 }

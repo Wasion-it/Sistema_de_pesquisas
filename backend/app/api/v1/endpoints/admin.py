@@ -89,6 +89,8 @@ from app.schemas.admin import (
     HiredEmployeeResponse,
     PublishSurveyRequest,
     QuestionOptionResponse,
+    RecruiterOptionListResponse,
+    RecruiterOptionResponse,
     SurveyCreateRequest,
     SurveyDetailResponse,
     SurveyDimensionCreateRequest,
@@ -257,6 +259,15 @@ def _serialize_hired_employee(employee: Employee) -> HiredEmployeeResponse:
     )
 
 
+def _serialize_recruiter_option(user: User) -> RecruiterOptionResponse:
+    return RecruiterOptionResponse(
+        id=user.id,
+        full_name=user.full_name,
+        email=user.email,
+        role=user.role.value,
+    )
+
+
 def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResponse:
     hired_employee_count = len(item.hired_employees)
     return AdmissionRequestResponse(
@@ -265,6 +276,9 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         request_type=item.request_type,
         posicao_vaga=item.posicao_vaga,
         is_confidential=item.is_confidential,
+        recruiter_user_id=item.recruiter_user_id,
+        recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
+        recruiter_user_email=item.recruiter_user.email if item.recruiter_user else None,
         cargo=item.cargo,
         setor=item.setor,
         recruitment_scope=item.recruitment_scope,
@@ -339,6 +353,9 @@ def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> Approval
         current_step_order=current_step.step_order if current_step else None,
         current_step_label=current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None),
         current_step_role=current_step.approver_role if current_step else None,
+        recruiter_user_id=item.recruiter_user_id,
+        recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
+        recruiter_user_email=item.recruiter_user.email if item.recruiter_user else None,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -362,6 +379,9 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         current_step_order=current_step.step_order if current_step else None,
         current_step_label=current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None),
         current_step_role=current_step.approver_role if current_step else None,
+        recruiter_user_id=None,
+        recruiter_user_name=None,
+        recruiter_user_email=None,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -625,6 +645,7 @@ def read_admin_admission_approval_queue(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -633,6 +654,20 @@ def read_admin_admission_approval_queue(
         .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
     ).all()
     return ApprovalQueueListResponse(items=[_serialize_admission_approval_queue_item(item) for item in items])
+
+
+@router.get("/hr/recruiters", response_model=RecruiterOptionListResponse)
+def read_admin_recruiters(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> RecruiterOptionListResponse:
+    items = db.scalars(
+        select(User)
+        .where(User.is_active.is_(True))
+        .where(User.role == RoleEnum.RH_ANALISTA)
+        .order_by(User.full_name.asc())
+    ).all()
+    return RecruiterOptionListResponse(items=[_serialize_recruiter_option(user) for user in items])
 
 
 @router.get("/hr/approvals/dismissal", response_model=ApprovalQueueListResponse)
@@ -663,6 +698,7 @@ def read_my_requests(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -705,6 +741,7 @@ def approve_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -719,6 +756,24 @@ def approve_admin_admission_request(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
     _assert_user_can_act_on_step(user, current_step)
+
+    if current_step.approver_role == ApprovalRoleEnum.RH_MANAGER:
+        recruiter_user_id = payload.recruiter_user_id
+        if recruiter_user_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is required for RH manager approval")
+
+        recruiter_user = db.scalar(
+            select(User)
+            .where(User.id == recruiter_user_id)
+            .where(User.is_active.is_(True))
+            .where(User.role == RoleEnum.RH_ANALISTA)
+        )
+        if recruiter_user is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected recruiter is not available")
+
+        request_item.recruiter_user_id = recruiter_user.id
+    elif payload.recruiter_user_id is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is only allowed for RH manager approval")
 
     _mark_request_approval_progress(
         db,
@@ -748,6 +803,7 @@ def reject_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -1383,6 +1439,7 @@ def read_admin_admission_requests(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1401,6 +1458,7 @@ def read_admin_admission_request_detail(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1481,6 +1539,7 @@ def create_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1503,6 +1562,7 @@ def update_admin_admission_request_checklist_progress(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1530,6 +1590,7 @@ def update_admin_admission_request_checklist_progress(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1552,6 +1613,7 @@ def hire_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees),
         )
         .where(AdmissionRequest.id == request_id)
@@ -1639,6 +1701,7 @@ def hire_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1660,6 +1723,7 @@ def finalize_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1716,6 +1780,7 @@ def finalize_admin_admission_request(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1737,6 +1802,7 @@ def read_admin_admission_request_approval_status(
         select(AdmissionRequest)
         .options(
             selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),

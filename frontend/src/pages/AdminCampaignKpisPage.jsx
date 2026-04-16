@@ -899,21 +899,6 @@ function QuestionRow({ q, index, showRank }) {
               Invertida
             </span>
           )}
-          {q.variance != null && (
-            <span
-              style={{
-                padding: '2px 8px',
-                borderRadius: 4,
-                background: q.variance > 1.5 ? '#fef3c7' : '#f0fdf4',
-                color: q.variance > 1.5 ? '#92400e' : '#166534',
-                fontSize: 11,
-                fontWeight: 700,
-              }}
-              title="Variância das respostas — valores altos indicam opiniões polarizadas"
-            >
-              σ² {q.variance.toFixed(2)} {q.variance > 1.5 ? '⚠ Polarizada' : ''}
-            </span>
-          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ ...S.barTrack(6), flex: 1 }}>

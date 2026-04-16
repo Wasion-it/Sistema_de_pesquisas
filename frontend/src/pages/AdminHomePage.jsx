@@ -118,6 +118,9 @@ const ADMIN_MODULES = [
 
 export function AdminHomePage() {
   const { user } = useAuth()
+  const visibleModules = user?.role === 'RH_ANALISTA'
+    ? ADMIN_MODULES
+    : ADMIN_MODULES.filter((module) => module.title !== 'Admissão' && module.title !== 'KPIs de admissão')
 
   return (
     <div className="admin-view admin-home-view">
@@ -137,7 +140,7 @@ export function AdminHomePage() {
       </section>
 
       <section className="admin-home-modules" aria-label="Módulos administrativos">
-        {ADMIN_MODULES.map((module) => (
+        {visibleModules.map((module) => (
           <Link className={`admin-home-module module-${module.accent}`} key={module.title} to={module.to}>
             <div className="admin-home-module-icon" aria-hidden="true">
               {module.icon}

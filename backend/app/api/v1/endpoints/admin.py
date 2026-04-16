@@ -391,10 +391,12 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
 
 
 def _can_user_view_admission_request(user: User, request_item: AdmissionRequest) -> bool:
-    if user.role == RoleEnum.RH_ANALISTA:
-        return request_item.recruiter_user_id == user.id
+    return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
 
-    return True
+
+def _require_recruiter_access(user: User) -> None:
+    if user.role != RoleEnum.RH_ANALISTA:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admission access restricted to assigned recruiters")
 
 
 def _mark_request_approval_progress(
@@ -1442,6 +1444,8 @@ def read_admin_admission_requests(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestListResponse:
+    _require_recruiter_access(user)
+
     statement = (
         select(AdmissionRequest)
         .options(
@@ -1452,8 +1456,7 @@ def read_admin_admission_requests(
         )
         .order_by(AdmissionRequest.submitted_at.desc().nullslast(), AdmissionRequest.created_at.desc())
     )
-    if user.role == RoleEnum.RH_ANALISTA:
-        statement = statement.where(AdmissionRequest.recruiter_user_id == user.id)
+    statement = statement.where(AdmissionRequest.recruiter_user_id == user.id)
 
     items = db.scalars(statement).all()
     return AdmissionRequestListResponse(items=[_serialize_admission_request(item) for item in items])
@@ -1465,6 +1468,8 @@ def read_admin_admission_request_detail(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
+    _require_recruiter_access(user)
+
     item = db.scalar(
         select(AdmissionRequest)
         .options(
@@ -1572,6 +1577,8 @@ def update_admin_admission_request_checklist_progress(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
+    _require_recruiter_access(user)
+
     request_item = db.scalar(
         select(AdmissionRequest)
         .options(
@@ -1626,6 +1633,8 @@ def hire_admin_admission_request(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
+    _require_recruiter_access(user)
+
     request_item = db.scalar(
         select(AdmissionRequest)
         .options(
@@ -1739,6 +1748,8 @@ def finalize_admin_admission_request(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
+    _require_recruiter_access(user)
+
     request_item = db.scalar(
         select(AdmissionRequest)
         .options(
@@ -1821,6 +1832,8 @@ def read_admin_admission_request_approval_status(
     user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ApprovalQueueItemResponse:
+    _require_recruiter_access(user)
+
     item = db.scalar(
         select(AdmissionRequest)
         .options(

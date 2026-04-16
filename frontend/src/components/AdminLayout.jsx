@@ -14,6 +14,7 @@ function getInitials(name) {
 
 export function AdminLayout() {
   const { signOut, user } = useAuth()
+  const canAccessAdmissions = user?.role === 'RH_ANALISTA'
 
   function handleSignOut() {
     signOut('/')
@@ -53,15 +54,17 @@ export function AdminLayout() {
             </svg>
             Dashboard
           </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/requests">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <rect height="18" rx="2" width="18" x="3" y="3" />
-              <path d="M8 7h8" />
-              <path d="M8 12h8" />
-              <path d="M8 17h5" />
-            </svg>
-            Solicitações
-          </NavLink>
+          {canAccessAdmissions ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/admission-requests">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <rect height="18" rx="2" width="18" x="3" y="3" />
+                <path d="M8 7h8" />
+                <path d="M8 12h8" />
+                <path d="M8 17h5" />
+              </svg>
+              Solicitações
+            </NavLink>
+          ) : null}
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
             <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
               <line x1="3" x2="21" y1="6" y2="6" />
@@ -81,7 +84,6 @@ export function AdminLayout() {
             </svg>
             Departamentos
           </NavLink>
-
         </nav>
 
         <div className="admin-user-card">

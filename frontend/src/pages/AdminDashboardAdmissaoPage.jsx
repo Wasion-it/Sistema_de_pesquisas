@@ -195,7 +195,7 @@ export function AdminDashboardAdmissaoPage() {
 
   const visibleRequests = useMemo(() => {
     if (user?.role !== 'RH_ANALISTA') {
-      return requests
+      return []
     }
 
     return requests.filter((request) => request.recruiter_user_id === user.id)

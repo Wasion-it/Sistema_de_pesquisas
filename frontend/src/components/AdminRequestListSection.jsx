@@ -367,12 +367,16 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   const activeRequests = requestsByTab[activeTab]
   const isRecruiterReadOnly = user?.role === 'RH_ANALISTA' && activeTab === 'admission'
   const visibleRequests = useMemo(() => {
-    if (!isRecruiterReadOnly) {
+    if (activeTab !== 'admission') {
       return activeRequests
     }
 
+    if (user?.role !== 'RH_ANALISTA') {
+      return []
+    }
+
     return activeRequests.filter((item) => item.recruiter_user_id === user?.id)
-  }, [activeRequests, isRecruiterReadOnly, user?.id])
+  }, [activeRequests, activeTab, user?.id, user?.role])
 
   const filteredRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()

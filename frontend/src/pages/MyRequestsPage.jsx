@@ -566,7 +566,11 @@ export function MyRequestsPage() {
   const firstName = user?.full_name?.split(' ')[0] ?? 'usuário'
 
   return (
-    <div className="admin-view">
+    <main
+      className="page-shell"
+      style={{ background: 'linear-gradient(150deg, var(--slate-50) 0%, var(--blue-50) 50%, #eef2ff 100%)' }}
+    >
+      <div className="admin-view admin-home-view" style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
       {/* ── Header ── */}
       <div style={{
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
@@ -584,7 +588,7 @@ export function MyRequestsPage() {
             {firstName} · Acompanhe o andamento de cada pedido em tempo real.
           </p>
         </div>
-        <Link className="secondary-link-button" to="/admin">← Início</Link>
+        <Link className="secondary-link-button" to="/">← Voltar para a home</Link>
       </div>
 
       {/* ── Error ── */}
@@ -731,6 +735,7 @@ export function MyRequestsPage() {
         token={token}
         onClose={() => setSelectedRequest(null)}
       />
-    </div>
+      </div>
+    </main>
   )
 }

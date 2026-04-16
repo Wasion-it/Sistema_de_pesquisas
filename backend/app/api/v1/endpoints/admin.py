@@ -343,6 +343,8 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
         departamento=item.departamento,
         dismissal_type=item.dismissal_type,
         has_replacement=item.has_replacement,
+        can_be_rehired=item.can_be_rehired,
+        rehire_justification=item.rehire_justification,
         estimated_termination_date=item.estimated_termination_date,
         contract_regime=item.contract_regime,
         manager_reminder=item.manager_reminder,
@@ -418,6 +420,7 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         created_at=item.created_at,
         updated_at=item.updated_at,
         steps=[_serialize_approval_step(approval_step) for approval_step in ordered_steps],
+        candidates=[],
         hired_employees=[],
     )
 
@@ -1989,12 +1992,16 @@ def create_admin_dismissal_request(
     employee_name = payload.employee_name.strip()
     cargo = payload.cargo.strip()
     departamento = payload.departamento.strip()
+    rehire_justification = payload.rehire_justification.strip() if payload.rehire_justification else None
     reminder = None
 
     if payload.has_replacement:
         reminder = (
             "Caso seja substituição de funcionário, informe ao gestor que ele deve solicitar a demissão do substituído."
         )
+
+    if not payload.can_be_rehired and not rehire_justification:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Justification is required when the employee cannot be rehired")
 
     dismissal_request = DismissalRequest(
         status=DismissalRequestStatusEnum.PENDING,
@@ -2003,6 +2010,8 @@ def create_admin_dismissal_request(
         departamento=departamento,
         dismissal_type=payload.dismissal_type,
         has_replacement=payload.has_replacement,
+        can_be_rehired=payload.can_be_rehired,
+        rehire_justification=rehire_justification,
         estimated_termination_date=payload.estimated_termination_date,
         contract_regime=payload.contract_regime,
         manager_reminder=reminder,
@@ -2027,6 +2036,7 @@ def create_admin_dismissal_request(
                     "employee_name": dismissal_request.employee_name,
                     "dismissal_type": dismissal_request.dismissal_type.value,
                     "has_replacement": dismissal_request.has_replacement,
+                    "can_be_rehired": dismissal_request.can_be_rehired,
                 }
             ),
             ip_address="127.0.0.1",

@@ -10,6 +10,8 @@ const INITIAL_FORM = {
   departamento: '',
   tipo: '',
   substituicao: '',
+  podeSerRecontratada: '',
+  justificativaRecontratacao: '',
   dataDesligamento: '',
   regimeContratacao: '',
 }
@@ -56,7 +58,28 @@ export function DemissaoFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isSubmitDisabled = useMemo(
-    () => Object.values(formValues).some((value) => value.trim().length === 0),
+    () => {
+      const requiredFields = [
+        formValues.nome,
+        formValues.cargo,
+        formValues.departamento,
+        formValues.tipo,
+        formValues.substituicao,
+        formValues.podeSerRecontratada,
+        formValues.dataDesligamento,
+        formValues.regimeContratacao,
+      ]
+
+      if (requiredFields.some((value) => value.trim().length === 0)) {
+        return true
+      }
+
+      if (formValues.podeSerRecontratada === 'Não') {
+        return formValues.justificativaRecontratacao.trim().length === 0
+      }
+
+      return false
+    },
     [formValues],
   )
 
@@ -65,6 +88,21 @@ export function DemissaoFormPage() {
     setFormValues((current) => ({
       ...current,
       [name]: value,
+    }))
+    if (successMessage) {
+      setSuccessMessage('')
+    }
+    if (errorMessage) {
+      setErrorMessage('')
+    }
+  }
+
+  function handleRehireChange(event) {
+    const { value } = event.target
+    setFormValues((current) => ({
+      ...current,
+      podeSerRecontratada: value,
+      justificativaRecontratacao: value === 'Sim' ? '' : current.justificativaRecontratacao,
     }))
     if (successMessage) {
       setSuccessMessage('')
@@ -91,6 +129,11 @@ export function DemissaoFormPage() {
         departamento: formValues.departamento.trim(),
         dismissal_type: DismissalTypeMap[formValues.tipo],
         has_replacement: formValues.substituicao === 'Sim',
+        can_be_rehired: formValues.podeSerRecontratada === 'Sim',
+        rehire_justification:
+          formValues.podeSerRecontratada === 'Não'
+            ? formValues.justificativaRecontratacao.trim()
+            : null,
         estimated_termination_date: formValues.dataDesligamento,
         contract_regime: ContractRegimeMap[formValues.regimeContratacao],
       }
@@ -206,6 +249,28 @@ export function DemissaoFormPage() {
                 </label>
 
                 <label className="field-group">
+                  <span>Pode ser recontratada no futuro?</span>
+                  <select name="podeSerRecontratada" value={formValues.podeSerRecontratada} onChange={handleRehireChange}>
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                  </select>
+                </label>
+
+                {formValues.podeSerRecontratada === 'Não' ? (
+                  <label className="field-group" style={{ gridColumn: '1 / -1' }}>
+                    <span>Justificativa</span>
+                    <textarea
+                      name="justificativaRecontratacao"
+                      placeholder="Informe o motivo para não permitir recontratação futura"
+                      rows="4"
+                      value={formValues.justificativaRecontratacao}
+                      onChange={handleFieldChange}
+                    />
+                  </label>
+                ) : null}
+
+                <label className="field-group">
                   <span>Data estimada do desligamento</span>
                   <input
                     name="dataDesligamento"
@@ -262,6 +327,16 @@ export function DemissaoFormPage() {
                 <strong>Substituição</strong>
                 <span>{formValues.substituicao || 'Ainda não preenchido'}</span>
               </div>
+              <div className="request-summary-item">
+                <strong>Pode ser recontratada</strong>
+                <span>{formValues.podeSerRecontratada || 'Ainda não preenchido'}</span>
+              </div>
+              {formValues.podeSerRecontratada === 'Não' ? (
+                <div className="request-summary-item">
+                  <strong>Justificativa</strong>
+                  <span>{formValues.justificativaRecontratacao || 'Ainda não preenchido'}</span>
+                </div>
+              ) : null}
               <div className="request-summary-item">
                 <strong>Data estimada</strong>
                 <span>{formValues.dataDesligamento || 'Ainda não preenchido'}</span>

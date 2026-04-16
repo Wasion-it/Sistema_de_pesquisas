@@ -258,6 +258,8 @@ class DismissalRequestCreateRequest(BaseModel):
     departamento: str = Field(min_length=2, max_length=150)
     dismissal_type: DismissalRequestTypeEnum
     has_replacement: bool = False
+    can_be_rehired: bool = True
+    rehire_justification: str | None = Field(default=None, max_length=5000)
     estimated_termination_date: date
     contract_regime: ContractRegimeEnum
 
@@ -270,6 +272,8 @@ class DismissalRequestResponse(BaseModel):
     departamento: str
     dismissal_type: DismissalRequestTypeEnum
     has_replacement: bool
+    can_be_rehired: bool
+    rehire_justification: str | None
     estimated_termination_date: date
     contract_regime: ContractRegimeEnum
     manager_reminder: str | None

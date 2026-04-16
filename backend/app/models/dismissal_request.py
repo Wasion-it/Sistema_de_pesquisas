@@ -41,6 +41,8 @@ class DismissalRequest(BaseModel):
     cargo: Mapped[str] = mapped_column(String(150), nullable=False)
     departamento: Mapped[str] = mapped_column(String(150), nullable=False)
     has_replacement: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    can_be_rehired: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    rehire_justification: Mapped[str | None] = mapped_column(Text, nullable=True)
     estimated_termination_date: Mapped[date] = mapped_column(Date, nullable=False)
     contract_regime: Mapped[ContractRegimeEnum] = mapped_column(
         Enum(ContractRegimeEnum, native_enum=False, length=20),

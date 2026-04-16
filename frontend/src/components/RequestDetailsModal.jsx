@@ -205,6 +205,10 @@ export function RequestDetailsModal({ request, token, onClose }) {
                   <DetailField label="Departamento" value={fullRequest.departamento} />
                   <DetailField label="Tipo de demissão" value={fullRequest.dismissal_type} />
                   <DetailField label="Substituição" value={fullRequest.has_replacement ? 'Sim' : 'Não'} />
+                  <DetailField label="Pode ser recontratada" value={fullRequest.can_be_rehired ? 'Sim' : 'Não'} />
+                  {!fullRequest.can_be_rehired ? (
+                    <DetailField label="Justificativa" value={fullRequest.rehire_justification ?? 'Não informada'} />
+                  ) : null}
                   <DetailField label="Data estimada" value={formatDateTime(fullRequest.estimated_termination_date)} />
                   <DetailField label="Regime" value={fullRequest.contract_regime} />
                   <DetailField label="Observação do gestor" value={fullRequest.manager_reminder ?? 'Não informada'} />

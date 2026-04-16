@@ -194,11 +194,8 @@ class HiredEmployeeResponse(BaseModel):
 
 class AdmissionRequestCandidateRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=150)
-    employee_code: str = Field(min_length=2, max_length=50)
-    work_email: str = Field(min_length=3, max_length=255)
-    personal_email: str | None = Field(default=None, max_length=255)
-    department_id: int
-    job_title_id: int
+    email: str = Field(min_length=3, max_length=255)
+    phone_number: str | None = Field(default=None, max_length=30)
     hire_date: date | None = None
     is_hired: bool = False
 
@@ -206,14 +203,11 @@ class AdmissionRequestCandidateRequest(BaseModel):
 class AdmissionRequestCandidateResponse(BaseModel):
     id: int
     full_name: str
-    employee_code: str
-    work_email: str | None
-    personal_email: str | None
+    email: str
+    phone_number: str | None
     hire_date: date | None
     is_hired: bool
     employee_id: int | None
-    department_name: str
-    job_title_name: str
 
 
 class AdmissionRequestHireRequest(BaseModel):

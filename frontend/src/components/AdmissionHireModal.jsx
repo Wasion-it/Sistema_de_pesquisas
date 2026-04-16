@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { createAdminAdmissionHire, getAdminDepartments, getAdminJobTitles } from '../services/admin'
+import { createAdminAdmissionHire } from '../services/admin'
 
 function buildLocalDateInputValue(value = new Date()) {
   const date = new Date(value)
@@ -13,12 +13,9 @@ function createCandidateDraft() {
   return {
     id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     full_name: '',
-    employee_code: '',
-    work_email: '',
-    personal_email: '',
-    department_id: '',
-    job_title_id: '',
-    hire_date: buildLocalDateInputValue(),
+    email: '',
+    phone_number: '',
+    hire_date: '',
     is_hired: false,
   }
 }
@@ -42,9 +39,6 @@ function formatRequestLabel(request) {
 
 export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
   const [form, setForm] = useState(makeInitialForm)
-  const [departments, setDepartments] = useState([])
-  const [jobTitles, setJobTitles] = useState([])
-  const [isLoadingLookups, setIsLoadingLookups] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -53,45 +47,13 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
   useEffect(() => {
     if (!request) {
       setForm(makeInitialForm())
-      setDepartments([])
-      setJobTitles([])
       setErrorMessage('')
-      setIsLoadingLookups(false)
       setIsSubmitting(false)
       return undefined
     }
 
     setForm(makeInitialForm())
     setErrorMessage('')
-    setIsLoadingLookups(true)
-
-    let isMounted = true
-
-    Promise.allSettled([getAdminDepartments(token), getAdminJobTitles(token)]).then(([departmentResult, jobTitleResult]) => {
-      if (!isMounted) {
-        return
-      }
-
-      if (departmentResult.status === 'fulfilled') {
-        setDepartments((departmentResult.value.items ?? []).filter((item) => item.is_active))
-      } else {
-        setDepartments([])
-        setErrorMessage(departmentResult.reason?.message ?? 'Erro ao carregar departamentos.')
-      }
-
-      if (jobTitleResult.status === 'fulfilled') {
-        setJobTitles((jobTitleResult.value.items ?? []).filter((item) => item.is_active))
-      } else {
-        setJobTitles([])
-        setErrorMessage((currentError) => currentError || (jobTitleResult.reason?.message ?? 'Erro ao carregar cargos.'))
-      }
-
-      setIsLoadingLookups(false)
-    })
-
-    return () => {
-      isMounted = false
-    }
   }, [request, token])
 
   if (!request) {
@@ -114,7 +76,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
   }
 
   function addCandidate() {
-    if (isSubmitting || isLoadingLookups) {
+    if (isSubmitting) {
       return
     }
 
@@ -147,14 +109,11 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
     })
   }
 
-    function buildCandidatePayload(candidate) {
+  function buildCandidatePayload(candidate) {
     return {
       full_name: candidate.full_name.trim(),
-      employee_code: candidate.employee_code.trim(),
-      work_email: candidate.work_email.trim(),
-      personal_email: candidate.personal_email.trim() || null,
-      department_id: Number(candidate.department_id),
-      job_title_id: Number(candidate.job_title_id),
+      email: candidate.email.trim(),
+      phone_number: candidate.phone_number.trim() || null,
       hire_date: candidate.hire_date || null,
       is_hired: Boolean(candidate.is_hired),
     }
@@ -170,18 +129,13 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
     let hiredSelectionCount = 0
 
     for (const [index, candidatePayload] of candidatePayloads.entries()) {
-      if (!candidatePayload.full_name || !candidatePayload.employee_code || !candidatePayload.work_email || !candidatePayload.department_id || !candidatePayload.job_title_id) {
+      if (!candidatePayload.full_name || !candidatePayload.email) {
         return `Preencha todos os campos obrigatórios do candidato ${index + 1}.`
       }
 
-      const normalizedEmployeeCode = candidatePayload.employee_code.toUpperCase()
-      const normalizedWorkEmail = candidatePayload.work_email.toLowerCase()
+      const normalizedEmail = candidatePayload.email.toLowerCase()
 
-      if (seenEmployeeCodes.has(normalizedEmployeeCode)) {
-        return `O código de matrícula do candidato ${index + 1} já foi informado em outro registro.`
-      }
-
-      if (seenWorkEmails.has(normalizedWorkEmail)) {
+      if (seenWorkEmails.has(normalizedEmail)) {
         return `O email corporativo do candidato ${index + 1} já foi informado em outro registro.`
       }
 
@@ -189,8 +143,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
         hiredSelectionCount += 1
       }
 
-      seenEmployeeCodes.add(normalizedEmployeeCode)
-      seenWorkEmails.add(normalizedWorkEmail)
+      seenWorkEmails.add(normalizedEmail)
     }
 
     if (hiredSelectionCount > remainingPositions) {
@@ -257,12 +210,6 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
           </span>
         </div>
 
-        {isLoadingLookups ? (
-          <div className="empty-state">
-            <strong>Carregando departamentos e cargos...</strong>
-          </div>
-        ) : null}
-
         {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
 
         <form onSubmit={handleSubmit}>
@@ -303,79 +250,38 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
                     </label>
 
                     <label className="field-group">
-                      <span>Matrícula</span>
-                      <input
-                        required
-                        value={candidate.employee_code}
-                        onChange={(event) => updateCandidate(candidate.id, 'employee_code', event.target.value)}
-                        placeholder="EMP-2026-001"
-                      />
-                    </label>
-
-                    <label className="field-group">
-                      <span>Email corporativo</span>
+                      <span>Email</span>
                       <input
                         required
                         type="email"
-                        value={candidate.work_email}
-                        onChange={(event) => updateCandidate(candidate.id, 'work_email', event.target.value)}
+                        value={candidate.email}
+                        onChange={(event) => updateCandidate(candidate.id, 'email', event.target.value)}
                         placeholder="nome.sobrenome@empresa.com"
                       />
                     </label>
 
                     <label className="field-group">
-                      <span>Email pessoal</span>
+                      <span>Telefone</span>
                       <input
-                        type="email"
-                        value={candidate.personal_email}
-                        onChange={(event) => updateCandidate(candidate.id, 'personal_email', event.target.value)}
-                        placeholder="nome@gmail.com"
-                      />
-                    </label>
-
-                    <label className="field-group">
-                      <span>Departamento</span>
-                      <select
-                        required
-                        value={candidate.department_id}
-                        onChange={(event) => updateCandidate(candidate.id, 'department_id', event.target.value)}
-                        disabled={isLoadingLookups}
-                      >
-                        <option value="">Selecione um departamento</option>
-                        {departments.map((department) => (
-                          <option key={department.id} value={department.id}>
-                            {department.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="field-group">
-                      <span>Cargo</span>
-                      <select
-                        required
-                        value={candidate.job_title_id}
-                        onChange={(event) => updateCandidate(candidate.id, 'job_title_id', event.target.value)}
-                        disabled={isLoadingLookups}
-                      >
-                        <option value="">Selecione um cargo</option>
-                        {jobTitles.map((jobTitle) => (
-                          <option key={jobTitle.id} value={jobTitle.id}>
-                            {jobTitle.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="field-group">
-                      <span>Data de admissão</span>
-                      <input
-                        type="date"
-                        value={candidate.hire_date}
-                        onChange={(event) => updateCandidate(candidate.id, 'hire_date', event.target.value)}
+                        value={candidate.phone_number}
+                        onChange={(event) => updateCandidate(candidate.id, 'phone_number', event.target.value)}
+                        placeholder="(11) 99999-9999"
                       />
                     </label>
                   </div>
+
+                  {candidate.is_hired ? (
+                    <div className="candidate-hire-date-row">
+                      <label className="field-group">
+                        <span>Data de admissão</span>
+                        <input
+                          type="date"
+                          value={candidate.hire_date}
+                          onChange={(event) => updateCandidate(candidate.id, 'hire_date', event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
 
                   <div className="candidate-form-card-footer">
                     <button
@@ -399,7 +305,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
                 className="secondary-button"
                 type="button"
                 onClick={addCandidate}
-                disabled={isSubmitting || isLoadingLookups}
+                disabled={isSubmitting}
               >
                 Adicionar candidato
               </button>
@@ -407,7 +313,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
           </div>
 
           <div className="form-actions-row">
-            <button className="primary-button" type="submit" disabled={isSubmitting || isLoadingLookups}>
+            <button className="primary-button" type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Salvando...' : 'Cadastrar candidatos'}
             </button>
             <button className="secondary-button" type="button" onClick={onClose}>

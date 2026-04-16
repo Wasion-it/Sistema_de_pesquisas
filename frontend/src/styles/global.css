@@ -2530,6 +2530,10 @@ body:has(.admin-shell) { background: var(--slate-100); }
   justify-content: flex-end;
 }
 
+.candidate-hire-date-row {
+  margin-top: -2px;
+}
+
 .candidate-form-card-eyebrow {
   display: block;
   margin-bottom: 3px;

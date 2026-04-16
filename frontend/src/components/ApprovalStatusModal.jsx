@@ -215,14 +215,13 @@ function CandidatesSection({ candidates = [] }) {
             <div className="candidate-status-card-header">
               <div>
                 <strong>{candidate.full_name}</strong>
-                <span>{candidate.employee_code}</span>
+                <span>{candidate.email}</span>
               </div>
               <span className={`status-pill ${candidate.is_hired ? 'active' : 'inactive'}`}>
                 {candidate.is_hired ? 'Contratado' : 'Participante'}
               </span>
             </div>
-            <small>{candidate.department_name} • {candidate.job_title_name}</small>
-            <small>{candidate.work_email ?? 'Sem email corporativo'}</small>
+            <small>{candidate.phone_number ?? 'Sem telefone informado'}</small>
           </article>
         ))}
       </div>

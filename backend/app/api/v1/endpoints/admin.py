@@ -265,14 +265,11 @@ def _serialize_admission_request_candidate(candidate: AdmissionRequestCandidate)
     return AdmissionRequestCandidateResponse(
         id=candidate.id,
         full_name=candidate.full_name,
-        employee_code=candidate.employee_code,
-        work_email=candidate.work_email,
-        personal_email=candidate.personal_email,
+        email=candidate.email,
+        phone_number=candidate.phone_number,
         hire_date=candidate.hire_date,
         is_hired=candidate.is_hired,
         employee_id=candidate.employee_id,
-        department_name=candidate.department.name,
-        job_title_name=candidate.job_title.name,
     )
 
 
@@ -1473,8 +1470,6 @@ def read_admin_admission_requests(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1500,8 +1495,6 @@ def read_admin_admission_request_detail(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1586,8 +1579,6 @@ def create_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1613,8 +1604,6 @@ def update_admin_admission_request_checklist_progress(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1646,8 +1635,6 @@ def update_admin_admission_request_checklist_progress(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1673,8 +1660,6 @@ def hire_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1695,56 +1680,39 @@ def hire_admin_admission_request(
     if len(payload.candidates) == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one candidate is required")
 
+    default_department = db.scalar(select(Department).where(Department.is_active.is_(True)).order_by(Department.id.asc()))
+    default_job_title = db.scalar(select(JobTitle).where(JobTitle.is_active.is_(True)).order_by(JobTitle.id.asc()))
+    if default_department is None or default_job_title is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Default department or job title is not available")
+
     normalized_candidates: list[dict[str, object]] = []
-    seen_employee_codes: set[str] = set()
-    seen_work_emails: set[str] = set()
+    seen_emails: set[str] = set()
     requested_hired_count = 0
 
     for index, candidate_payload in enumerate(payload.candidates, start=1):
         full_name = candidate_payload.full_name.strip()
-        employee_code = candidate_payload.employee_code.strip().upper()
-        work_email = candidate_payload.work_email.strip().lower()
-        personal_email = candidate_payload.personal_email.strip().lower() if candidate_payload.personal_email else None
+        email = candidate_payload.email.strip().lower()
+        phone_number = candidate_payload.phone_number.strip() if candidate_payload.phone_number else None
 
         if not full_name:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Candidate {index} must have a full name")
 
-        if employee_code in seen_employee_codes:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Candidate {index} has a duplicated employee code in the same batch")
+        if email in seen_emails:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Candidate {index} has a duplicated email in the same batch")
 
-        if work_email in seen_work_emails:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Candidate {index} has a duplicated work email in the same batch")
-
-        department = db.scalar(
-            select(Department)
-            .where(Department.id == candidate_payload.department_id)
-            .where(Department.is_active.is_(True))
-        )
-        if department is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Department for candidate {index} not found or inactive")
-
-        job_title = db.scalar(
-            select(JobTitle)
-            .where(JobTitle.id == candidate_payload.job_title_id)
-            .where(JobTitle.is_active.is_(True))
-        )
-        if job_title is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job title for candidate {index} not found or inactive")
+        if db.scalar(select(AdmissionRequestCandidate.id).where(AdmissionRequestCandidate.admission_request_id == request_item.id).where(func.lower(AdmissionRequestCandidate.email) == email)) is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Email already exists for this admission request: candidate {index}")
 
         if candidate_payload.is_hired:
             requested_hired_count += 1
 
-        seen_employee_codes.add(employee_code)
-        seen_work_emails.add(work_email)
+        seen_emails.add(email)
         normalized_candidates.append(
             {
                 "payload": candidate_payload,
                 "full_name": full_name,
-                "employee_code": employee_code,
-                "work_email": work_email,
-                "personal_email": personal_email,
-                "department": department,
-                "job_title": job_title,
+                "email": email,
+                "phone_number": phone_number,
             }
         )
 
@@ -1757,24 +1725,12 @@ def hire_admin_admission_request(
 
     for candidate_data in normalized_candidates:
         candidate_payload = candidate_data["payload"]
-        employee_code = candidate_data["employee_code"]
-        work_email = candidate_data["work_email"]
-
-        if candidate_payload.is_hired:
-            if db.scalar(select(Employee).where(Employee.employee_code == employee_code)) is not None:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Employee code already exists")
-
-            if db.scalar(select(Employee).where(func.lower(Employee.work_email) == work_email)) is not None:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Work email already exists")
 
         candidate = AdmissionRequestCandidate(
             admission_request_id=request_item.id,
-            department_id=candidate_data["department"].id,
-            job_title_id=candidate_data["job_title"].id,
             full_name=candidate_data["full_name"],
-            employee_code=employee_code,
-            work_email=work_email,
-            personal_email=candidate_data["personal_email"],
+            email=candidate_data["email"],
+            phone_number=candidate_data["phone_number"],
             hire_date=candidate_payload.hire_date or datetime.now(UTC).date(),
             is_hired=bool(candidate_payload.is_hired),
         )
@@ -1782,15 +1738,19 @@ def hire_admin_admission_request(
         db.flush()
 
         if candidate_payload.is_hired:
+            employee_code = f"ADM-{request_item.id}-{candidate.id}"
+            if db.scalar(select(Employee).where(Employee.employee_code == employee_code)) is not None:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Generated employee code already exists")
+
             employee = Employee(
                 employee_code=employee_code,
                 source_admission_request_id=request_item.id,
-                department_id=candidate_data["department"].id,
-                job_title_id=candidate_data["job_title"].id,
+                department_id=default_department.id,
+                job_title_id=default_job_title.id,
                 manager_id=None,
                 full_name=candidate_data["full_name"],
-                work_email=work_email,
-                personal_email=candidate_data["personal_email"],
+                work_email=candidate_data["email"],
+                personal_email=None,
                 hire_date=candidate_payload.hire_date or datetime.now(UTC).date(),
                 status=EmployeeStatusEnum.ACTIVE,
             )
@@ -1824,8 +1784,6 @@ def hire_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1850,8 +1808,6 @@ def finalize_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1912,8 +1868,6 @@ def finalize_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1941,8 +1895,6 @@ def read_admin_admission_request_approval_status(
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.department),
-            selectinload(AdmissionRequest.candidates).selectinload(AdmissionRequestCandidate.job_title),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )

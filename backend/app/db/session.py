@@ -119,6 +119,59 @@ def _ensure_employee_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_admission_request_candidate_columns() -> None:
+    inspector = inspect(engine)
+    if "admission_request_candidates" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("admission_request_candidates")}
+    desired_columns = {"id", "created_at", "updated_at", "admission_request_id", "employee_id", "full_name", "email", "phone_number", "hire_date", "is_hired"}
+    legacy_columns = {"employee_code", "department_id", "job_title_id", "work_email", "personal_email"}
+
+    if desired_columns.issubset(existing_columns) and not (existing_columns & legacy_columns):
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("PRAGMA foreign_keys=OFF"))
+        connection.execute(text("ALTER TABLE admission_request_candidates RENAME TO admission_request_candidates_legacy"))
+        connection.execute(
+            text(
+                "CREATE TABLE admission_request_candidates ("
+                "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+                "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                "admission_request_id INTEGER NOT NULL, "
+                "employee_id INTEGER, "
+                "full_name VARCHAR(150) NOT NULL, "
+                "email VARCHAR(255) NOT NULL, "
+                "phone_number VARCHAR(30), "
+                "hire_date DATE, "
+                "is_hired BOOLEAN NOT NULL DEFAULT 0, "
+                "FOREIGN KEY(admission_request_id) REFERENCES admission_requests(id) ON DELETE CASCADE, "
+                "FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+                ")"
+            )
+        )
+
+        email_expr = "COALESCE(NULLIF(email, ''), NULLIF(work_email, ''), NULLIF(personal_email, ''), '')" if "email" not in existing_columns else "COALESCE(NULLIF(email, ''), '')"
+        phone_expr = "phone_number" if "phone_number" in existing_columns else "NULL"
+        hire_date_expr = "hire_date" if "hire_date" in existing_columns else "NULL"
+        employee_id_expr = "employee_id" if "employee_id" in existing_columns else "NULL"
+        is_hired_expr = "COALESCE(is_hired, 0)" if "is_hired" in existing_columns else "0"
+
+        connection.execute(
+            text(
+                f"INSERT INTO admission_request_candidates (id, created_at, updated_at, admission_request_id, employee_id, full_name, email, phone_number, hire_date, is_hired) "
+                f"SELECT id, created_at, updated_at, admission_request_id, {employee_id_expr}, full_name, {email_expr}, {phone_expr}, {hire_date_expr}, {is_hired_expr} "
+                f"FROM admission_request_candidates_legacy"
+            )
+        )
+        connection.execute(text("DROP TABLE admission_request_candidates_legacy"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_admission_request_candidates_request_id ON admission_request_candidates(admission_request_id)"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_admission_request_candidates_is_hired ON admission_request_candidates(is_hired)"))
+        connection.execute(text("PRAGMA foreign_keys=ON"))
+
+
 def _ensure_admission_request_columns() -> None:
     inspector = inspect(engine)
     if "admission_requests" not in inspector.get_table_names():
@@ -126,42 +179,25 @@ def _ensure_admission_request_columns() -> None:
 
     existing_columns = {column["name"] for column in inspector.get_columns("admission_requests")}
     statements: list[str] = []
-    add_finalized_at_column = False
-
-    if "posicao_vaga" not in existing_columns:
-        statements.append("ALTER TABLE admission_requests ADD COLUMN posicao_vaga VARCHAR(30)")
-
-    if "is_confidential" not in existing_columns:
-        statements.append("ALTER TABLE admission_requests ADD COLUMN is_confidential BOOLEAN NOT NULL DEFAULT 0")
-
-    if "recruiter_user_id" not in existing_columns:
-        statements.append("ALTER TABLE admission_requests ADD COLUMN recruiter_user_id INTEGER REFERENCES users(id)")
 
     if "checklist_completed_steps" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN checklist_completed_steps INTEGER NOT NULL DEFAULT 0")
 
     if "finalized_at" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN finalized_at DATETIME")
-        add_finalized_at_column = True
 
     if not statements:
-        with engine.begin() as connection:
-            connection.execute(
-                text(
-                    "UPDATE admission_requests SET finalized_at = COALESCE(finalized_at, updated_at) "
-                    "WHERE status = 'FINALIZED' AND finalized_at IS NULL"
-                )
-            )
         return
 
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))
 
-        if add_finalized_at_column:
+        if "finalized_at" not in existing_columns:
             connection.execute(
                 text(
-                    "UPDATE admission_requests SET finalized_at = updated_at WHERE status = 'FINALIZED' AND finalized_at IS NULL"
+                    "UPDATE admission_requests SET finalized_at = updated_at "
+                    "WHERE status = 'FINALIZED' AND finalized_at IS NULL"
                 )
             )
 
@@ -409,6 +445,7 @@ def create_tables() -> None:
     _ensure_department_columns()
     _ensure_job_title_columns()
     _ensure_employee_columns()
+    _ensure_admission_request_candidate_columns()
     _ensure_admission_request_columns()
     _normalize_admission_request_statuses()
     _ensure_default_admission_checklist()

@@ -33,19 +33,17 @@ export function AdminDashboardPage() {
           <span className="admin-home-module-action">Abrir</span>
         </Link>
 
-        <Link className="admin-home-module module-amber" to="/admin/requests">
+        <Link className="admin-home-module module-amber" to="/admin/dashboard/admissao">
           <div className="admin-home-module-icon" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect height="18" rx="2" width="18" x="3" y="3" />
-              <path d="M8 7h8" />
-              <path d="M8 12h8" />
-              <path d="M8 17h5" />
+              <path d="M12 6v6l4 2" />
+              <circle cx="12" cy="12" r="9" />
             </svg>
           </div>
           <div className="admin-home-module-body">
-            <span className="admin-home-module-kicker">Modulo de solicitações</span>
-            <h3>Entrar nas solicitações do RH</h3>
-            <p>Abra a página padrão com os atalhos para admissão e demissão antes de seguir para os detalhes.</p>
+            <span className="admin-home-module-kicker">Modulo de admissão</span>
+            <h3>KPIs de admissão</h3>
+            <p>Abra a página com os indicadores de fechamento de vagas e o SLA contado a partir da aprovação do RH.</p>
           </div>
           <span className="admin-home-module-action">Abrir</span>
         </Link>

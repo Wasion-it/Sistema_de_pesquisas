@@ -311,11 +311,27 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         remaining_positions=max(item.quantity_people - hired_employee_count, 0),
         candidates=[_serialize_admission_request_candidate(candidate) for candidate in item.candidates],
         hired_employees=[_serialize_hired_employee(employee) for employee in item.hired_employees],
+        sla_started_at=_get_admission_sla_started_at(item),
         submitted_at=item.submitted_at,
         finalized_at=item.finalized_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
+
+
+def _get_admission_sla_started_at(item: AdmissionRequest) -> datetime | None:
+    ordered_steps = sorted(item.approval_steps, key=lambda approval_step: approval_step.step_order)
+    manager_step = next(
+        (
+            approval_step
+            for approval_step in ordered_steps
+            if approval_step.approver_role == ApprovalRoleEnum.RH_MANAGER
+            and approval_step.status == ApprovalStepStatusEnum.APPROVED
+            and approval_step.decided_at is not None
+        ),
+        None,
+    )
+    return manager_step.decided_at if manager_step else None
 
 
 def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResponse:
@@ -1470,6 +1486,7 @@ def read_admin_admission_requests(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.approval_steps),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1495,6 +1512,7 @@ def read_admin_admission_request_detail(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.approval_steps),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )

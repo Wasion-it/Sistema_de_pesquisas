@@ -241,6 +241,7 @@ class AdmissionRequestResponse(BaseModel):
     remaining_positions: int
     candidates: list[AdmissionRequestCandidateResponse]
     hired_employees: list[HiredEmployeeResponse]
+    sla_started_at: datetime | None
     submitted_at: datetime | None
     finalized_at: datetime | None
     created_at: datetime

@@ -46,8 +46,8 @@ function formatDateTime(value) {
   }).format(new Date(value))
 }
 
-function getBaseDate(request) {
-  return request.submitted_at ?? request.created_at
+function getSlaStartDate(request) {
+  return request.sla_started_at ?? request.submitted_at ?? request.created_at
 }
 
 function getClosureDays(request) {
@@ -55,7 +55,7 @@ function getClosureDays(request) {
     return null
   }
 
-  const startDate = new Date(getBaseDate(request))
+  const startDate = new Date(getSlaStartDate(request))
   const endDate = new Date(request.finalized_at ?? request.updated_at)
   const diff = (endDate.getTime() - startDate.getTime()) / DAY_MS
 
@@ -220,7 +220,7 @@ export function AdminDashboardAdmissaoPage() {
           <span className="eyebrow">Dashboard / Admissão</span>
           <h2>{greeting}, {user?.full_name?.split(' ')[0] ?? 'Administrador'}</h2>
           <p>
-            Indicadores de fechamento de vagas por perfil. O cálculo usa a data de submissão ou criação como início e a data de finalização gravada no banco como fechamento.
+            Indicadores de fechamento de vagas por perfil. O cálculo usa a data de aprovação do gerente de RH como início do SLA e a data de finalização gravada no banco como fechamento.
           </p>
         </div>
         <div className="admin-home-hero-badge">

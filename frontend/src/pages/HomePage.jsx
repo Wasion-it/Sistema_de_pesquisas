@@ -2,7 +2,10 @@
 
 export function HomePage() {
   return (
-    <main className="collab-shell">
+    <main
+      className="page-shell"
+      style={{ background: 'linear-gradient(150deg, var(--slate-50) 0%, var(--blue-50) 50%, #eef2ff 100%)' }}
+    >
       <header className="collab-header">
         <div className="collab-header-inner">
           <span className="collab-brand">Sistema de Recursos Humanos</span>
@@ -15,19 +18,25 @@ export function HomePage() {
         </div>
       </header>
 
-      <div className="collab-content">
-        <section className="module-hero-card">
-          <span className="eyebrow">Portal do colaborador</span>
-          <h1>Escolha um módulo</h1>
-          <p>
-            Este é o ponto de entrada do portal. Acesse a área de pesquisas para ver
-            as campanhas disponíveis e responder quando estiverem abertas.
-          </p>
+      <div className="admin-view admin-home-view" style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
+        <section className="admin-home-hero">
+          <div>
+            <span className="eyebrow">Portal do colaborador</span>
+            <h2>Escolha um módulo</h2>
+            <p>
+              Este é o ponto de entrada do portal. Acesse a área de pesquisas para ver
+              as campanhas disponíveis e responder quando estiverem abertas.
+            </p>
+          </div>
+          <div className="admin-home-hero-badge">
+            <span>Entrada pública</span>
+            <strong>Portal do colaborador</strong>
+          </div>
         </section>
 
-        <section className="module-cards-grid" aria-label="Módulos disponíveis">
-          <Link className="module-card" to="/pesquisas">
-            <div className="module-card-icon" aria-hidden="true">
+        <section className="admin-home-modules" aria-label="Módulos disponíveis">
+          <Link className="admin-home-module module-blue" to="/pesquisas">
+            <div className="admin-home-module-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 4h16v16H4z" />
                 <path d="M8 8h8" />
@@ -35,19 +44,19 @@ export function HomePage() {
                 <path d="M8 16h5" />
               </svg>
             </div>
-            <div className="module-card-body">
-              <span className="module-card-kicker">Módulo</span>
-              <h2>Pesquisas</h2>
+            <div className="admin-home-module-body">
+              <span className="admin-home-module-kicker">Módulo</span>
+              <h3>Pesquisas</h3>
               <p>
                 Veja as pesquisas disponíveis, acompanhe a situação das campanhas e
                 responda de forma rápida e anônima.
               </p>
             </div>
-            <span className="module-card-action">Acessar</span>
+            <span className="admin-home-module-action">Acessar</span>
           </Link>
 
-          <Link className="module-card" to="/solicitacoes">
-            <div className="module-card-icon" aria-hidden="true">
+          <Link className="admin-home-module module-slate" to="/solicitacoes">
+            <div className="admin-home-module-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6H4" />
                 <path d="M20 12H4" />
@@ -55,15 +64,15 @@ export function HomePage() {
                 <path d="M8 6v12" />
               </svg>
             </div>
-            <div className="module-card-body">
-              <span className="module-card-kicker">Módulo</span>
-              <h2>Solicitações</h2>
+            <div className="admin-home-module-body">
+              <span className="admin-home-module-kicker">Módulo</span>
+              <h3>Solicitações</h3>
               <p>
                 Acesse admissão, demissão e minhas solicitações em um único hub com o
                 fluxo padronizado do RH.
               </p>
             </div>
-            <span className="module-card-action">Acessar</span>
+            <span className="admin-home-module-action">Acessar</span>
           </Link>
         </section>
       </div>

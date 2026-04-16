@@ -187,17 +187,17 @@ function DetailField({ label, value }) {
   )
 }
 
-function HiredEmployeesSection({ hiredEmployees = [] }) {
-  if (!hiredEmployees.length) {
+function CandidatesSection({ candidates = [] }) {
+  if (!candidates.length) {
     return (
       <div className="request-modal-section">
         <div className="request-modal-section-header">
-          <h4>Candidatos cadastrados</h4>
+          <h4>Candidatos participantes</h4>
           <span>0 registros</span>
         </div>
         <div className="empty-state compact">
           <strong>Nenhum candidato registrado ainda</strong>
-          <span>Quando os candidatos forem cadastrados, o vínculo aparece aqui.</span>
+          <span>Os participantes do processo aparecerão aqui, inclusive os que não foram contratados.</span>
         </div>
       </div>
     )
@@ -206,7 +206,50 @@ function HiredEmployeesSection({ hiredEmployees = [] }) {
   return (
     <div className="request-modal-section">
       <div className="request-modal-section-header">
-        <h4>Candidatos cadastrados</h4>
+        <h4>Candidatos participantes</h4>
+        <span>{candidates.length} registro(s)</span>
+      </div>
+      <div className="candidate-status-list">
+        {candidates.map((candidate) => (
+          <article className="candidate-status-card" key={candidate.id}>
+            <div className="candidate-status-card-header">
+              <div>
+                <strong>{candidate.full_name}</strong>
+                <span>{candidate.employee_code}</span>
+              </div>
+              <span className={`status-pill ${candidate.is_hired ? 'active' : 'inactive'}`}>
+                {candidate.is_hired ? 'Contratado' : 'Participante'}
+              </span>
+            </div>
+            <small>{candidate.department_name} • {candidate.job_title_name}</small>
+            <small>{candidate.work_email ?? 'Sem email corporativo'}</small>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function HiredEmployeesSection({ hiredEmployees = [] }) {
+  if (!hiredEmployees.length) {
+    return (
+      <div className="request-modal-section">
+        <div className="request-modal-section-header">
+          <h4>Contratados vinculados</h4>
+          <span>0 registros</span>
+        </div>
+        <div className="empty-state compact">
+          <strong>Nenhum contratado registrado ainda</strong>
+          <span>Quando um candidato for marcado como contratado, o vínculo aparece aqui.</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="request-modal-section">
+      <div className="request-modal-section-header">
+        <h4>Contratados vinculados</h4>
         <span>{hiredEmployees.length} registro(s)</span>
       </div>
       <div className="hired-employees-list">
@@ -357,6 +400,10 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
                     : 'Aguardando designação do recrutador durante a aprovação final.'}
                 </p>
               </div>
+            ) : null}
+
+            {request?.request_kind === 'ADMISSION' ? (
+              <CandidatesSection candidates={fullRequest.candidates ?? []} />
             ) : null}
 
             <HiredEmployeesSection hiredEmployees={fullRequest.hired_employees ?? []} />

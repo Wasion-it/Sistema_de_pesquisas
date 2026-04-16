@@ -192,7 +192,7 @@ class HiredEmployeeResponse(BaseModel):
     job_title_name: str
 
 
-class AdmissionRequestHireRequest(BaseModel):
+class AdmissionRequestCandidateRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=150)
     employee_code: str = Field(min_length=2, max_length=50)
     work_email: str = Field(min_length=3, max_length=255)
@@ -200,6 +200,24 @@ class AdmissionRequestHireRequest(BaseModel):
     department_id: int
     job_title_id: int
     hire_date: date | None = None
+    is_hired: bool = False
+
+
+class AdmissionRequestCandidateResponse(BaseModel):
+    id: int
+    full_name: str
+    employee_code: str
+    work_email: str | None
+    personal_email: str | None
+    hire_date: date | None
+    is_hired: bool
+    employee_id: int | None
+    department_name: str
+    job_title_name: str
+
+
+class AdmissionRequestHireRequest(BaseModel):
+    candidates: list[AdmissionRequestCandidateRequest] = Field(min_length=1)
 
 
 class AdmissionRequestResponse(BaseModel):
@@ -227,6 +245,7 @@ class AdmissionRequestResponse(BaseModel):
     checklist_completed_steps: int
     hired_employee_count: int
     remaining_positions: int
+    candidates: list[AdmissionRequestCandidateResponse]
     hired_employees: list[HiredEmployeeResponse]
     submitted_at: datetime | None
     finalized_at: datetime | None
@@ -302,6 +321,7 @@ class ApprovalQueueItemResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     steps: list[ApprovalStepResponse]
+    candidates: list[AdmissionRequestCandidateResponse]
     hired_employees: list[HiredEmployeeResponse]
 
 

@@ -112,14 +112,12 @@ const REQUEST_TABS = {
       const remainingPositions = item.remaining_positions ?? Math.max(quantityPeople - hiredCount, 0)
       const isFinalized = item.status === 'FINALIZED'
       const canFinalizeAdmission = item.status === 'APPROVED' && quantityPeople > 0 && hiredCount >= quantityPeople
-      const canRegisterHire = item.status === 'APPROVED' && remainingPositions > 0
+      const canRegisterHire = item.status === 'APPROVED'
       const hireButtonLabel = isFinalized
         ? 'Finalizada'
         : item.status !== 'APPROVED'
         ? 'Aguardando aprovação'
-        : remainingPositions > 0
-          ? 'Cadastrar candidatos'
-          : 'Vagas preenchidas'
+        : 'Cadastrar candidatos'
 
       return (
         <tr key={item.id}>

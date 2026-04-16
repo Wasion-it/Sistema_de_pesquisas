@@ -1,6 +1,7 @@
 from app.models.audit_log import AuditLog
 from app.models.admission_checklist_step import AdmissionChecklistStep
 from app.models.admission_request import AdmissionRequest
+from app.models.admission_request_candidate import AdmissionRequestCandidate
 from app.models.admission_request_approval import AdmissionRequestApproval
 from app.models.approval_workflow_step import ApprovalWorkflowStep
 from app.models.approval_workflow_template import ApprovalWorkflowTemplate
@@ -45,6 +46,7 @@ __all__ = [
     "AdmissionChecklistStep",
     "AdmissionRequestApproval",
     "AdmissionRequest",
+    "AdmissionRequestCandidate",
     "AdmissionRequestStatusEnum",
     "AdmissionRequestTypeEnum",
     "ApprovalOriginGroupEnum",

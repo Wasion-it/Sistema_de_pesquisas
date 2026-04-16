@@ -19,6 +19,7 @@ function createCandidateDraft() {
     department_id: '',
     job_title_id: '',
     hire_date: buildLocalDateInputValue(),
+    is_hired: false,
   }
 }
 
@@ -35,7 +36,8 @@ function formatRequestLabel(request) {
 
   const hiredCount = request.hired_employee_count ?? 0
   const totalPeople = request.quantity_people ?? 0
-  return `${request.cargo} • ${request.setor} • ${hiredCount}/${totalPeople} candidatos cadastrados`
+  const candidateCount = request.candidates?.length ?? 0
+  return `${request.cargo} • ${request.setor} • ${hiredCount}/${totalPeople} contratados • ${candidateCount} participantes`
 }
 
 export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
@@ -98,7 +100,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
 
   const remainingPositions = request.remaining_positions ?? 0
   const candidateCount = form.candidates.length
-  const canAddMoreCandidates = candidateCount < remainingPositions
+  const hiredCount = form.candidates.filter((candidate) => candidate.is_hired).length
 
   function updateCandidate(candidateId, fieldName, value) {
     setForm((current) => ({
@@ -112,7 +114,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
   }
 
   function addCandidate() {
-    if (!canAddMoreCandidates || isSubmitting || isLoadingLookups) {
+    if (isSubmitting || isLoadingLookups) {
       return
     }
 
@@ -122,6 +124,16 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
     }))
   }
 
+
+  function toggleCandidateHired(candidateId, nextValue) {
+    if (nextValue && hiredCount >= remainingPositions) {
+      setErrorMessage('Não há vagas disponíveis para marcar mais candidatos como contratados.')
+      return
+    }
+
+    setErrorMessage('')
+    updateCandidate(candidateId, 'is_hired', nextValue)
+  }
   function removeCandidate(candidateId) {
     setForm((current) => {
       if (current.candidates.length <= 1) {
@@ -135,7 +147,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
     })
   }
 
-  function buildCandidatePayload(candidate) {
+    function buildCandidatePayload(candidate) {
     return {
       full_name: candidate.full_name.trim(),
       employee_code: candidate.employee_code.trim(),
@@ -144,6 +156,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
       department_id: Number(candidate.department_id),
       job_title_id: Number(candidate.job_title_id),
       hire_date: candidate.hire_date || null,
+      is_hired: Boolean(candidate.is_hired),
     }
   }
 
@@ -152,12 +165,9 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
       return 'Adicione pelo menos um candidato.'
     }
 
-    if (candidatePayloads.length > remainingPositions) {
-      return `Existem apenas ${remainingPositions} posição(ões) disponíveis para esta solicitação.`
-    }
-
     const seenEmployeeCodes = new Set()
     const seenWorkEmails = new Set()
+    let hiredSelectionCount = 0
 
     for (const [index, candidatePayload] of candidatePayloads.entries()) {
       if (!candidatePayload.full_name || !candidatePayload.employee_code || !candidatePayload.work_email || !candidatePayload.department_id || !candidatePayload.job_title_id) {
@@ -175,8 +185,16 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
         return `O email corporativo do candidato ${index + 1} já foi informado em outro registro.`
       }
 
+      if (candidatePayload.is_hired) {
+        hiredSelectionCount += 1
+      }
+
       seenEmployeeCodes.add(normalizedEmployeeCode)
       seenWorkEmails.add(normalizedWorkEmail)
+    }
+
+    if (hiredSelectionCount > remainingPositions) {
+      return 'Não há vagas suficientes para todos os candidatos marcados como contratados.'
     }
 
     return ''
@@ -187,6 +205,11 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
 
     if (!token) {
       setErrorMessage('Sessão inválida. Faça login novamente.')
+      return
+    }
+
+    if (form.candidates.length === 0) {
+      setErrorMessage('Adicione pelo menos um candidato.')
       return
     }
 
@@ -201,12 +224,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
     setErrorMessage('')
 
     try {
-      let latestResult = null
-
-      for (const candidatePayload of candidatePayloads) {
-        latestResult = await createAdminAdmissionHire(token, request.id, candidatePayload)
-      }
-
+      const latestResult = await createAdminAdmissionHire(token, request.id, { candidates: candidatePayloads })
       if (onSubmitted) {
         onSubmitted(latestResult)
       }
@@ -234,7 +252,9 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
 
         <div className="approval-status-banner neutral">
           <strong>Vagas disponíveis</strong>
-          <span>{remainingPositions} posição(ões) ainda podem ser usadas para cadastrar candidatos participantes do processo.</span>
+          <span>
+            {remainingPositions} posição(ões) podem ser ocupadas por candidatos marcados como contratados. Os demais podem ser registrados como participantes.
+          </span>
         </div>
 
         {isLoadingLookups ? (
@@ -249,7 +269,7 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
           <div className="request-modal-section">
             <div className="request-modal-section-header">
               <h4>Dados dos candidatos</h4>
-              <span>{candidateCount}/{remainingPositions} candidato(s)</span>
+              <span>{candidateCount} participante(s) • {hiredCount}/{request.quantity_people} contratados</span>
             </div>
 
             <div className="candidate-form-list">
@@ -260,14 +280,15 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
                       <span className="candidate-form-card-eyebrow">Candidato {index + 1}</span>
                       <strong>{request.cargo}</strong>
                     </div>
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={() => removeCandidate(candidate.id)}
-                      disabled={form.candidates.length <= 1 || isSubmitting}
-                    >
-                      Remover
-                    </button>
+                    <label className="candidate-hired-toggle">
+                      <input
+                        type="checkbox"
+                        checked={candidate.is_hired}
+                        onChange={(event) => toggleCandidateHired(candidate.id, event.target.checked)}
+                        disabled={isSubmitting || (hiredCount >= remainingPositions && !candidate.is_hired)}
+                      />
+                      <span>Contratado</span>
+                    </label>
                   </div>
 
                   <div className="request-modal-form-grid">
@@ -355,19 +376,30 @@ export function AdmissionHireModal({ request, token, onClose, onSubmitted }) {
                       />
                     </label>
                   </div>
+
+                  <div className="candidate-form-card-footer">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => removeCandidate(candidate.id)}
+                      disabled={form.candidates.length <= 1 || isSubmitting}
+                    >
+                      Remover candidato
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
 
             <div className="candidate-form-footer">
               <p className="request-modal-helper-text">
-                Cada candidato adicionado será enviado individualmente para a mesma solicitação de admissão.
+                Cadastre quantos participantes forem necessários. Apenas os marcados como contratados entram na contagem da vaga.
               </p>
               <button
                 className="secondary-button"
                 type="button"
                 onClick={addCandidate}
-                disabled={!canAddMoreCandidates || isSubmitting || isLoadingLookups}
+                disabled={isSubmitting || isLoadingLookups}
               >
                 Adicionar candidato
               </button>

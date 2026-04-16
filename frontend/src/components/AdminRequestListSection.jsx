@@ -118,7 +118,7 @@ const REQUEST_TABS = {
         : item.status !== 'APPROVED'
         ? 'Aguardando aprovação'
         : remainingPositions > 0
-          ? 'Cadastrar contratado'
+          ? 'Cadastrar candidatos'
           : 'Vagas preenchidas'
 
       return (

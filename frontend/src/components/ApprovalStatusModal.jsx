@@ -192,12 +192,12 @@ function HiredEmployeesSection({ hiredEmployees = [] }) {
     return (
       <div className="request-modal-section">
         <div className="request-modal-section-header">
-          <h4>Contratados vinculados</h4>
+          <h4>Candidatos cadastrados</h4>
           <span>0 registros</span>
         </div>
         <div className="empty-state compact">
-          <strong>Nenhum contratado registrado ainda</strong>
-          <span>Quando a solicitação virar cadastro de funcionário, o vínculo aparece aqui.</span>
+          <strong>Nenhum candidato registrado ainda</strong>
+          <span>Quando os candidatos forem cadastrados, o vínculo aparece aqui.</span>
         </div>
       </div>
     )
@@ -206,7 +206,7 @@ function HiredEmployeesSection({ hiredEmployees = [] }) {
   return (
     <div className="request-modal-section">
       <div className="request-modal-section-header">
-        <h4>Contratados vinculados</h4>
+        <h4>Candidatos cadastrados</h4>
         <span>{hiredEmployees.length} registro(s)</span>
       </div>
       <div className="hired-employees-list">

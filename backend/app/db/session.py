@@ -131,6 +131,9 @@ def _ensure_admission_request_columns() -> None:
     if "posicao_vaga" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN posicao_vaga VARCHAR(30)")
 
+    if "is_confidential" not in existing_columns:
+        statements.append("ALTER TABLE admission_requests ADD COLUMN is_confidential BOOLEAN NOT NULL DEFAULT 0")
+
     if "checklist_completed_steps" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN checklist_completed_steps INTEGER NOT NULL DEFAULT 0")
 

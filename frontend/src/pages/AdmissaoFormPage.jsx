@@ -9,6 +9,7 @@ const INITIAL_FORM = {
   nomeSubstituido: '',
   justificativa: '',
   posicaoVaga: '',
+  isConfidential: false,
   cargo: '',
   setor: '',
   recrutamento: '',
@@ -153,10 +154,10 @@ export function AdmissaoFormPage() {
   }, [formValues, isSubstituicao, isAumentoQuado])
 
   function handleFieldChange(event) {
-    const { name, value } = event.target
+    const { name, type, checked, value } = event.target
     setFormValues((current) => ({
       ...current,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }))
     if (successMessage) {
       setSuccessMessage('')
@@ -196,6 +197,7 @@ export function AdmissaoFormPage() {
       const payload = {
         request_type: REQUEST_TYPE_MAP[formValues.tipo],
         posicao_vaga: formValues.posicaoVaga,
+        is_confidential: formValues.isConfidential,
         cargo: formValues.cargo.trim(),
         setor: formValues.setor.trim(),
         recruitment_scope: RECRUITMENT_SCOPE_MAP[formValues.recrutamento],
@@ -291,6 +293,16 @@ export function AdmissaoFormPage() {
                       </option>
                     ))}
                   </select>
+                </label>
+
+                <label className="checkbox-field" style={{ marginTop: 25 }}>
+                  <input
+                    checked={formValues.isConfidential}
+                    name="isConfidential"
+                    type="checkbox"
+                    onChange={handleFieldChange}
+                  />
+                  Vaga confidencial
                 </label>
 
                 <label className="field-group">
@@ -440,6 +452,10 @@ export function AdmissaoFormPage() {
               <div className="request-summary-item">
                 <strong>Posição da vaga</strong>
                 <span>{POSITION_OPTIONS.find((option) => option.value === formValues.posicaoVaga)?.label || 'Ainda não preenchido'}</span>
+              </div>
+              <div className="request-summary-item">
+                <strong>Confidencial</strong>
+                <span>{formValues.isConfidential ? 'Sim' : 'Não'}</span>
               </div>
               <div className="request-summary-item">
                 <strong>Cargo</strong>

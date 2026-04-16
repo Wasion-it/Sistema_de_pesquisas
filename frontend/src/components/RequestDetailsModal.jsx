@@ -184,6 +184,7 @@ export function RequestDetailsModal({ request, token, onClose }) {
                 <div className="request-modal-form-grid">
                   <DetailField label="Tipo de admissão" value={fullRequest.request_type} />
                   <AdmissionPositionField value={fullRequest.posicao_vaga} />
+                  <DetailField label="Vaga confidencial" value={fullRequest.is_confidential ? 'Sim' : 'Não'} />
                   <DetailField label="Cargo" value={fullRequest.cargo} />
                   <DetailField label="Setor" value={fullRequest.setor} />
                   <DetailField label="Escopo" value={fullRequest.recruitment_scope} />

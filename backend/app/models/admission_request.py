@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import BaseModel
@@ -44,6 +44,7 @@ class AdmissionRequest(BaseModel):
         Enum(AdmissionPositionEnum, native_enum=False, length=30),
         nullable=False,
     )
+    is_confidential: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     cargo: Mapped[str] = mapped_column(String(150), nullable=False)
     setor: Mapped[str] = mapped_column(String(150), nullable=False)
     recruitment_scope: Mapped[RecruitmentScopeEnum] = mapped_column(

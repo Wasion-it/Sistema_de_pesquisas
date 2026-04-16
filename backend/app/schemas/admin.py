@@ -158,6 +158,7 @@ class AdmissionChecklistProgressUpdateRequest(BaseModel):
 class AdmissionRequestCreateRequest(BaseModel):
     request_type: AdmissionRequestTypeEnum
     posicao_vaga: AdmissionPositionEnum
+    is_confidential: bool = False
     cargo: str = Field(min_length=2, max_length=150)
     setor: str = Field(min_length=2, max_length=150)
     recruitment_scope: RecruitmentScopeEnum
@@ -195,6 +196,7 @@ class AdmissionRequestResponse(BaseModel):
     status: AdmissionRequestStatusEnum
     request_type: AdmissionRequestTypeEnum
     posicao_vaga: AdmissionPositionEnum | None
+    is_confidential: bool
     cargo: str
     setor: str
     recruitment_scope: RecruitmentScopeEnum

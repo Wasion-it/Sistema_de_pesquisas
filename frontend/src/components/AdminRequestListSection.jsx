@@ -115,11 +115,6 @@ const REQUEST_TABS = {
       const isFinalized = item.status === 'FINALIZED'
       const canFinalizeAdmission = item.status === 'APPROVED' && quantityPeople > 0 && hiredCount >= quantityPeople
       const canRegisterHire = item.status === 'APPROVED'
-      const hireButtonLabel = isFinalized
-        ? 'Finalizada'
-        : item.status !== 'APPROVED'
-        ? 'Aguardando aprovação'
-        : 'Cadastrar candidatos'
 
       return (
         <tr key={item.id}>
@@ -148,30 +143,35 @@ const REQUEST_TABS = {
           </td>
           <td>
             <div className="request-row-actions">
-              <button className="secondary-button" type="button" onClick={actions.onViewApprovalStatus}>
-                Status de aprovação
-              </button>
-              <button className="secondary-button" type="button" onClick={actions.onViewDetails}>
-                Detalhes do pedido
-              </button>
-              {actions.onViewChecklist ? (
-                <button className="secondary-button" type="button" onClick={actions.onViewChecklist}>
-                  Checklist
+              <div className="request-row-actions-info">
+                <button className="table-action-btn" type="button" onClick={actions.onViewApprovalStatus}>
+                  Aprovações
                 </button>
-              ) : null}
-              {actions.onFinalizeAdmission && canFinalizeAdmission && !isFinalized ? (
-                <button className="primary-button" type="button" onClick={actions.onFinalizeAdmission}>
-                  Finalizar vaga
+                <button className="table-action-btn" type="button" onClick={actions.onViewDetails}>
+                  Detalhes
                 </button>
-              ) : null}
-              <button
-                className="primary-button"
-                type="button"
-                onClick={actions.onRegisterHire}
-                disabled={!canRegisterHire}
-              >
-                {hireButtonLabel}
-              </button>
+                {actions.onViewChecklist ? (
+                  <button className="table-action-btn" type="button" onClick={actions.onViewChecklist}>
+                    Checklist
+                  </button>
+                ) : null}
+              </div>
+              <div className="request-row-actions-cta">
+                {actions.onFinalizeAdmission && canFinalizeAdmission && !isFinalized ? (
+                  <button className="table-action-btn success" type="button" onClick={actions.onFinalizeAdmission}>
+                    Finalizar vaga
+                  </button>
+                ) : null}
+                <button
+                  className="table-action-btn primary"
+                  type="button"
+                  onClick={actions.onRegisterHire}
+                  disabled={!canRegisterHire}
+                  title={!canRegisterHire ? 'Aguardando aprovação da solicitação' : undefined}
+                >
+                  {isFinalized ? 'Vaga finalizada' : canRegisterHire ? 'Cadastrar candidatos' : 'Aguardando aprovação'}
+                </button>
+              </div>
             </div>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
@@ -236,17 +236,23 @@ const REQUEST_TABS = {
             <span className={`status-pill ${statusMeta.className}`}>{statusMeta.label}</span>
           </td>
           <td>
-            <button className="secondary-button" type="button" onClick={actions.onViewApprovalStatus}>
-              Status de aprovação
-            </button>
-            <button className="secondary-button" type="button" onClick={actions.onViewDetails}>
-              Detalhes do pedido
-            </button>
-            {canRejectDismissal && actions.onRejectDismissal ? (
-              <button className="secondary-button" type="button" onClick={actions.onRejectDismissal}>
-                Recusar demissão
-              </button>
-            ) : null}
+            <div className="request-row-actions">
+              <div className="request-row-actions-info">
+                <button className="table-action-btn" type="button" onClick={actions.onViewApprovalStatus}>
+                  Aprovações
+                </button>
+                <button className="table-action-btn" type="button" onClick={actions.onViewDetails}>
+                  Detalhes
+                </button>
+              </div>
+              {canRejectDismissal && actions.onRejectDismissal ? (
+                <div className="request-row-actions-cta">
+                  <button className="table-action-btn danger" type="button" onClick={actions.onRejectDismissal}>
+                    Recusar demissão
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
         </tr>

@@ -140,10 +140,11 @@ function getStepDecisionSummary(step) {
   return `Em ${formatDateTime(step.decided_at)}`
 }
 
-function ApprovalStepTracker({ steps }) {
+function ApprovalStepTracker({ steps, requestStatus }) {
   const { total, approved, rejected, currentStep, progress } = getApprovalProgress(steps)
   const currentStepOrder = currentStep?.step_order ?? null
-  const progressLabel = rejected ? 'Fluxo interrompido' : currentStep ? `Etapa ${currentStep.step_order} de ${total}` : 'Fluxo concluído'
+  const isInterrupted = rejected || requestStatus === 'REJECTED'
+  const progressLabel = isInterrupted ? 'Fluxo interrompido' : currentStep ? `Etapa ${currentStep.step_order} de ${total}` : 'Fluxo concluído'
 
   return (
     <div className="approval-step-tracker approval-step-tracker-modal">
@@ -382,7 +383,7 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
               <span>{bannerMeta.description}</span>
             </div>
 
-            <ApprovalStepTracker steps={fullRequest.steps ?? []} />
+            <ApprovalStepTracker steps={fullRequest.steps ?? []} requestStatus={status} />
 
             <div className="request-modal-meta">
               <DetailField label="Tipo" value={requestKindLabel} />

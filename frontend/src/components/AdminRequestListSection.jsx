@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
@@ -11,6 +12,7 @@ import {
   getAdminAdmissionChecklist,
   getAdminAdmissionRequests,
   getAdminDismissalRequests,
+  rejectAdminDismissalRequest,
 } from '../services/admin'
 
 const ADMISSION_STATUS_META = {
@@ -214,6 +216,7 @@ const REQUEST_TABS = {
     },
     renderRow(item, actions) {
       const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
+      const canRejectDismissal = actions.canRejectDismissal && item.status === 'APPROVED'
 
       return (
         <tr key={item.id}>
@@ -236,6 +239,11 @@ const REQUEST_TABS = {
             <button className="secondary-button" type="button" onClick={actions.onViewApprovalStatus}>
               Status de aprovação
             </button>
+            {canRejectDismissal && actions.onRejectDismissal ? (
+              <button className="secondary-button" type="button" onClick={actions.onRejectDismissal}>
+                Recusar demissão
+              </button>
+            ) : null}
           </td>
           <td>{formatDateTime(item.created_at)}</td>
         </tr>
@@ -285,6 +293,10 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   const [selectedDetailsRequest, setSelectedDetailsRequest] = useState(null)
   const [selectedChecklistRequest, setSelectedChecklistRequest] = useState(null)
   const [selectedHireRequest, setSelectedHireRequest] = useState(null)
+  const [selectedDismissalRejectionRequest, setSelectedDismissalRejectionRequest] = useState(null)
+  const [dismissalRejectionComments, setDismissalRejectionComments] = useState('')
+  const [dismissalRejectionError, setDismissalRejectionError] = useState('')
+  const [isRejectingDismissal, setIsRejectingDismissal] = useState(false)
   const [admissionChecklistSteps, setAdmissionChecklistSteps] = useState([])
   const [refreshCounter, setRefreshCounter] = useState(0)
 
@@ -424,6 +436,52 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     setSelectedChecklistRequest(item)
   }
 
+  function openDismissalRejectionModal(item) {
+    setSelectedDismissalRejectionRequest(item)
+    setDismissalRejectionComments('')
+    setDismissalRejectionError('')
+  }
+
+  function closeDismissalRejectionModal() {
+    if (isRejectingDismissal) {
+      return
+    }
+
+    setSelectedDismissalRejectionRequest(null)
+    setDismissalRejectionComments('')
+    setDismissalRejectionError('')
+  }
+
+  async function confirmDismissalRejection(event) {
+    event.preventDefault()
+
+    const normalizedComments = dismissalRejectionComments.trim()
+    if (!normalizedComments) {
+      setDismissalRejectionError('Informe o impedimento para recusar a demissão.')
+      return
+    }
+
+    if (!selectedDismissalRejectionRequest) {
+      return
+    }
+
+    setIsRejectingDismissal(true)
+    setDismissalRejectionError('')
+
+    try {
+      await rejectAdminDismissalRequest(token, selectedDismissalRejectionRequest.id, {
+        comments: normalizedComments,
+      })
+      setSelectedDismissalRejectionRequest(null)
+      setDismissalRejectionComments('')
+      setRefreshCounter((currentValue) => currentValue + 1)
+    } catch (error) {
+      setDismissalRejectionError(error.message)
+    } finally {
+      setIsRejectingDismissal(false)
+    }
+  }
+
   async function finalizeAdmissionRequest(item) {
     try {
       await finalizeAdminAdmissionRequest(token, item.id)
@@ -547,6 +605,8 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                     onViewChecklist: activeTab === 'admission' ? () => openChecklistModal(item) : null,
                     onFinalizeAdmission: activeTab === 'admission' ? () => finalizeAdmissionRequest(item) : null,
                     onRegisterHire: activeTab === 'admission' ? () => openHireModal(item) : null,
+                    onRejectDismissal: activeTab === 'dismissal' ? () => openDismissalRejectionModal(item) : null,
+                    canRejectDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
                   }),
                 )}
               </tbody>
@@ -585,6 +645,80 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
         onClose={() => setSelectedHireRequest(null)}
         onSubmitted={handleHireSuccess}
       />
+
+      {selectedDismissalRejectionRequest ? createPortal(
+        <div className="request-modal-backdrop" role="presentation" onClick={closeDismissalRejectionModal}>
+          <div
+            aria-labelledby="dismissal-rejection-title"
+            aria-modal="true"
+            className="request-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <div className="request-modal-header">
+              <div>
+                <span className="approval-kind">Demissão</span>
+                <h3 id="dismissal-rejection-title">Recusar solicitação</h3>
+                <p>Informe o impedimento que justifica a recusa dessa demissão.</p>
+              </div>
+              <button className="secondary-button" type="button" onClick={closeDismissalRejectionModal} disabled={isRejectingDismissal}>
+                Fechar
+              </button>
+            </div>
+
+            <div className="request-modal-meta">
+              <div>
+                <span>Colaborador</span>
+                <strong>{selectedDismissalRejectionRequest.employee_name}</strong>
+                <small>{selectedDismissalRejectionRequest.cargo}</small>
+              </div>
+              <div>
+                <span>Solicitante</span>
+                <strong>{selectedDismissalRejectionRequest.created_by_user_name}</strong>
+                <small>{selectedDismissalRejectionRequest.created_by_user_email}</small>
+              </div>
+            </div>
+
+            {dismissalRejectionError ? <div className="form-error">{dismissalRejectionError}</div> : null}
+
+            <form onSubmit={confirmDismissalRejection}>
+              <div className="request-modal-section">
+                <div className="request-modal-section-header">
+                  <h4>Justificativa da recusa</h4>
+                  <span>Obrigatória</span>
+                </div>
+                <label className="field-group">
+                  <span>Impedimento</span>
+                  <textarea
+                    autoFocus
+                    disabled={isRejectingDismissal}
+                    minLength={3}
+                    name="comments"
+                    onChange={(event) => setDismissalRejectionComments(event.target.value)}
+                    placeholder="Ex.: colaborador ainda possui pendência contratual, documentação incompleta, entre outros."
+                    required
+                    rows="5"
+                    value={dismissalRejectionComments}
+                  />
+                </label>
+                <p className="request-modal-helper-text">
+                  A solicitação será marcada como rejeitada assim que você confirmar.
+                </p>
+              </div>
+
+              <div className="request-modal-actions">
+                <button className="primary-button" type="submit" disabled={isRejectingDismissal}>
+                  {isRejectingDismissal ? 'Recusando...' : 'Confirmar recusa'}
+                </button>
+                <button className="secondary-button" type="button" onClick={closeDismissalRejectionModal} disabled={isRejectingDismissal}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body,
+      ) : null}
     </div>
   )
 }

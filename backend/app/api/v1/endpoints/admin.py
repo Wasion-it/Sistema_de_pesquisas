@@ -946,6 +946,34 @@ def reject_admin_dismissal_request(
     if request_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
+    if request_item.status == DismissalRequestStatusEnum.APPROVED:
+        comments = payload.comments.strip() if payload.comments else None
+        if not comments:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rejection reason is required after approval")
+
+        request_item.status = DismissalRequestStatusEnum.REJECTED
+        db.add(
+            AuditLog(
+                actor_user_id=user.id,
+                action=AuditActionEnum.UPDATE,
+                entity_name="dismissal_request",
+                entity_id=str(request_item.id),
+                description="Dismissal request rejected after approval due to an operational impediment.",
+                details_json=json.dumps(
+                    {
+                        "request_id": request_item.id,
+                        "status": request_item.status.value,
+                        "comments": comments,
+                    }
+                ),
+                ip_address="127.0.0.1",
+                created_at=datetime.now(UTC),
+            )
+        )
+        db.commit()
+        db.refresh(request_item)
+        return _serialize_dismissal_approval_queue_item(request_item)
+
     current_step = _get_approval_step_for_user(user, request_item.approval_steps)
     if current_step is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
@@ -1980,6 +2008,52 @@ def read_admin_dismissal_request_approval_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
     return _serialize_dismissal_approval_queue_item(item)
+
+
+@router.post("/hr/dismissal-requests/{request_id}/reject", response_model=DismissalRequestResponse)
+def reject_admin_dismissal_request_after_approval(
+    request_id: int,
+    payload: ApprovalActionRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalRequestResponse:
+    item = db.scalar(
+        select(DismissalRequest)
+        .options(selectinload(DismissalRequest.created_by_user))
+        .where(DismissalRequest.id == request_id)
+    )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    if item.status != DismissalRequestStatusEnum.APPROVED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only approved dismissal requests can be rejected after approval")
+
+    comments = payload.comments.strip() if payload.comments else None
+    if not comments:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rejection reason is required after approval")
+
+    item.status = DismissalRequestStatusEnum.REJECTED
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="dismissal_request",
+            entity_id=str(item.id),
+            description="Dismissal request rejected after approval due to an operational impediment.",
+            details_json=json.dumps(
+                {
+                    "request_id": item.id,
+                    "status": item.status.value,
+                    "comments": comments,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(item)
+    return _serialize_dismissal_request(item)
 
 
 @router.post("/hr/dismissal-requests", response_model=DismissalRequestResponse, status_code=status.HTTP_201_CREATED)

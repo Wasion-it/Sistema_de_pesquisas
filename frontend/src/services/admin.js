@@ -359,6 +359,15 @@ export async function getAdminDismissalApprovalStatus(token, requestId) {
   return parseResponse(response)
 }
 
+export async function rejectAdminDismissalRequest(token, requestId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/hr/dismissal-requests/${requestId}/reject`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
 export async function createAdminDismissalRequest(token, payload) {
   const response = await fetch(
     `${API_URL}/admin/hr/dismissal-requests`,

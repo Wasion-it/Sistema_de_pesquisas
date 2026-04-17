@@ -274,6 +274,9 @@ class DismissalRequestResponse(BaseModel):
     has_replacement: bool
     can_be_rehired: bool
     rehire_justification: str | None
+    recruiter_user_id: int | None
+    recruiter_user_name: str | None
+    recruiter_user_email: str | None
     post_approval_rejection_reason: str | None
     post_approval_rejected_at: datetime | None
     estimated_termination_date: date

@@ -407,14 +407,10 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
               </div>
             ) : null}
 
-            {request?.request_kind === 'ADMISSION' ? (
+            {fullRequest.recruiter_user_name ? (
               <div className="request-note-box">
-                <strong>Recrutador designado pela Gerente de RH</strong>
-                <p>
-                  {fullRequest.recruiter_user_name
-                    ? `${fullRequest.recruiter_user_name}${fullRequest.recruiter_user_email ? ` • ${fullRequest.recruiter_user_email}` : ''}`
-                    : 'Aguardando designação do recrutador durante a aprovação final.'}
-                </p>
+                <strong>{request?.request_kind === 'ADMISSION' ? 'Recrutador designado pela Gerente de RH' : 'Analista de RH designado pela Gerente de RH'}</strong>
+                <p>{`${fullRequest.recruiter_user_name}${fullRequest.recruiter_user_email ? ` • ${fullRequest.recruiter_user_email}` : ''}`}</p>
               </div>
             ) : null}
 

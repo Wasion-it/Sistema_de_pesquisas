@@ -345,6 +345,9 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
         has_replacement=item.has_replacement,
         can_be_rehired=item.can_be_rehired,
         rehire_justification=item.rehire_justification,
+        recruiter_user_id=item.recruiter_user_id,
+        recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
+        recruiter_user_email=item.recruiter_user.email if item.recruiter_user else None,
         post_approval_rejection_reason=item.post_approval_rejection_reason,
         post_approval_rejected_at=item.post_approval_rejected_at,
         estimated_termination_date=item.estimated_termination_date,
@@ -415,9 +418,9 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         current_step_order=current_step.step_order if current_step else None,
         current_step_label=current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None),
         current_step_role=current_step.approver_role if current_step else None,
-        recruiter_user_id=None,
-        recruiter_user_name=None,
-        recruiter_user_email=None,
+        recruiter_user_id=item.recruiter_user_id,
+        recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
+        recruiter_user_email=item.recruiter_user.email if item.recruiter_user else None,
         post_approval_rejection_reason=item.post_approval_rejection_reason,
         post_approval_rejected_at=item.post_approval_rejected_at,
         submitted_at=item.submitted_at,
@@ -730,6 +733,7 @@ def read_admin_dismissal_approval_queue(
         select(DismissalRequest)
         .options(
             selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
             selectinload(DismissalRequest.approval_workflow_template),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
@@ -762,6 +766,7 @@ def read_my_requests(
         select(DismissalRequest)
         .options(
             selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
             selectinload(DismissalRequest.approval_workflow_template),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
@@ -898,6 +903,7 @@ def approve_admin_dismissal_request(
         select(DismissalRequest)
         .options(
             selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
             selectinload(DismissalRequest.approval_workflow_template),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
@@ -912,6 +918,24 @@ def approve_admin_dismissal_request(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
     _assert_user_can_act_on_step(user, current_step)
+
+    if current_step.approver_role == ApprovalRoleEnum.RH_MANAGER:
+        recruiter_user_id = payload.recruiter_user_id
+        if recruiter_user_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is required for RH manager approval")
+
+        recruiter_user = db.scalar(
+            select(User)
+            .where(User.id == recruiter_user_id)
+            .where(User.is_active.is_(True))
+            .where(User.role == RoleEnum.RH_ANALISTA)
+        )
+        if recruiter_user is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected recruiter is not available")
+
+        request_item.recruiter_user_id = recruiter_user.id
+    elif payload.recruiter_user_id is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is only allowed for RH manager approval")
 
     _mark_request_approval_progress(
         db,
@@ -941,6 +965,7 @@ def reject_admin_dismissal_request(
         select(DismissalRequest)
         .options(
             selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
             selectinload(DismissalRequest.approval_workflow_template),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
@@ -1969,7 +1994,7 @@ def read_admin_dismissal_requests(
 ) -> DismissalRequestListResponse:
     items = db.scalars(
         select(DismissalRequest)
-        .options(selectinload(DismissalRequest.created_by_user))
+        .options(selectinload(DismissalRequest.created_by_user), selectinload(DismissalRequest.recruiter_user))
         .order_by(DismissalRequest.submitted_at.desc().nullslast(), DismissalRequest.created_at.desc())
     ).all()
     return DismissalRequestListResponse(items=[_serialize_dismissal_request(item) for item in items])
@@ -1983,7 +2008,7 @@ def read_admin_dismissal_request_detail(
 ) -> DismissalRequestResponse:
     item = db.scalar(
         select(DismissalRequest)
-        .options(selectinload(DismissalRequest.created_by_user))
+        .options(selectinload(DismissalRequest.created_by_user), selectinload(DismissalRequest.recruiter_user))
         .where(DismissalRequest.id == request_id)
     )
     if item is None:
@@ -2002,6 +2027,7 @@ def read_admin_dismissal_request_approval_status(
         select(DismissalRequest)
         .options(
             selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
             selectinload(DismissalRequest.approval_workflow_template),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
             selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
@@ -2023,7 +2049,7 @@ def reject_admin_dismissal_request_after_approval(
 ) -> DismissalRequestResponse:
     item = db.scalar(
         select(DismissalRequest)
-        .options(selectinload(DismissalRequest.created_by_user))
+        .options(selectinload(DismissalRequest.created_by_user), selectinload(DismissalRequest.recruiter_user))
         .where(DismissalRequest.id == request_id)
     )
     if item is None:
@@ -2129,7 +2155,7 @@ def create_admin_dismissal_request(
 
     loaded_item = db.scalar(
         select(DismissalRequest)
-        .options(selectinload(DismissalRequest.created_by_user))
+        .options(selectinload(DismissalRequest.created_by_user), selectinload(DismissalRequest.recruiter_user))
         .where(DismissalRequest.id == dismissal_request.id)
     )
     if loaded_item is None:

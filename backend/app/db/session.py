@@ -287,6 +287,10 @@ def _ensure_approval_workflow_columns() -> None:
             statements.append(
                 "ALTER TABLE dismissal_requests ADD COLUMN approval_workflow_template_id INTEGER REFERENCES approval_workflow_templates(id)"
             )
+        if "recruiter_user_id" not in existing_columns:
+            statements.append(
+                "ALTER TABLE dismissal_requests ADD COLUMN recruiter_user_id INTEGER REFERENCES users(id)"
+            )
         if "can_be_rehired" not in existing_columns:
             statements.append(
                 "ALTER TABLE dismissal_requests ADD COLUMN can_be_rehired BOOLEAN NOT NULL DEFAULT 1"

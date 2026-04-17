@@ -325,7 +325,11 @@ export function AdminApprovalsPage() {
 
   function requiresRecruiterSelection(item) {
     const actionableStep = getActionableStep(item)
-    return user?.role === 'RH_ADMIN' && normalizeRequestKind(item.request_kind) === 'admission' && actionableStep?.approver_role === 'RH_MANAGER'
+    return (
+      user?.role === 'RH_ADMIN' &&
+      actionableStep?.approver_role === 'RH_MANAGER' &&
+      ['admission', 'dismissal'].includes(normalizeRequestKind(item.request_kind))
+    )
   }
 
   function openApprovalConfirmation(item) {

@@ -43,6 +43,7 @@ class DismissalRequest(BaseModel):
     has_replacement: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     can_be_rehired: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     rehire_justification: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recruiter_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     post_approval_rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     post_approval_rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     estimated_termination_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -59,6 +60,7 @@ class DismissalRequest(BaseModel):
     )
 
     created_by_user = relationship("User", back_populates="dismissal_requests")
+    recruiter_user = relationship("User", foreign_keys=[recruiter_user_id])
     approval_workflow_template = relationship("ApprovalWorkflowTemplate", back_populates="dismissal_requests")
     approval_steps = relationship(
         "DismissalRequestApproval",

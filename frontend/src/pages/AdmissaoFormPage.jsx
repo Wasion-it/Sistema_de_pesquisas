@@ -412,8 +412,12 @@ export function AdmissaoFormPage() {
               <div className="request-note-box">
                 <strong>Lembrete</strong>
                 <p>
-                  Caso seja substituição de funcionário, informe ao gestor que ele deve
+                  Caso seja substituição de funcionário, é necessario
                   solicitar a demissão do substituído.
+                </p>
+                <p>
+                  Caso se trate de movimentação de pessoal, abrir o formulário de
+                  movimentação.
                 </p>
               </div>
 

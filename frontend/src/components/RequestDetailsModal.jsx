@@ -463,27 +463,29 @@ export function RequestDetailsModal({ request, token, onClose }) {
               {/* ── Demissão ────────────────────────── */}
               {isDismissal && (
                 <>
-                  <SectionDivider title="Dados do colaborador" icon="👤" />
+                  <SectionDivider title="Colaborador e vínculo" icon="👤" />
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>
-                    <InfoChip label="Colaborador"      value={fullRequest.employee_name} accent="#0284c7" />
-                    <InfoChip label="Cargo"            value={fullRequest.cargo} />
-                    <InfoChip label="Departamento"     value={fullRequest.departamento} />
+                    <InfoChip label="Nome do colaborador" value={fullRequest.employee_name} accent="#b45309" />
+                    <InfoChip label="Cargo" value={fullRequest.cargo} accent="#0284c7" />
+                    <InfoChip label="Departamento" value={fullRequest.departamento} />
+                    <InfoChip
+                      label="Regime de contratação"
+                      value={CONTRACT_REGIME_LABELS[fullRequest.contract_regime] ?? fullRequest.contract_regime}
+                    />
+                  </div>
+
+                  <SectionDivider title="Motivo e continuidade" icon="📋" />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>
                     <InfoChip
                       label="Tipo de demissão"
                       value={DISMISSAL_TYPE_LABELS[fullRequest.dismissal_type] ?? fullRequest.dismissal_type}
                       accent="#dc2626"
                     />
                     <InfoChip
-                      label="Regime de contrato"
-                      value={CONTRACT_REGIME_LABELS[fullRequest.contract_regime] ?? fullRequest.contract_regime}
+                      label="Data estimada do desligamento"
+                      value={fullRequest.estimated_termination_date ? formatDateOnly(fullRequest.estimated_termination_date) : 'Não informada'}
+                      accent="#d97706"
                     />
-                    {fullRequest.estimated_termination_date && (
-                      <InfoChip
-                        label="Data estimada do desligamento"
-                        value={formatDateOnly(fullRequest.estimated_termination_date)}
-                        accent="#d97706"
-                      />
-                    )}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>
@@ -497,7 +499,7 @@ export function RequestDetailsModal({ request, token, onClose }) {
 
                   {!fullRequest.can_be_rehired && fullRequest.rehire_justification && (
                     <>
-                      <SectionDivider title="Impedimento de recontratação" icon="🚫" />
+                      <SectionDivider title="Restrição de recontratação" icon="🚫" />
                       <div style={{
                         padding: '14px 16px', borderRadius: 12,
                         background: '#fef2f2', border: '1px solid #fecaca',
@@ -515,6 +517,28 @@ export function RequestDetailsModal({ request, token, onClose }) {
                       </div>
                     </>
                   )}
+
+                  <div style={{
+                    display: 'flex',
+                    gap: 12,
+                    padding: '14px 16px',
+                    borderRadius: 12,
+                    border: '1px solid #fde68a',
+                    background: '#fffbeb',
+                  }}>
+                    <span style={{ fontSize: 16, lineHeight: 1, marginTop: 1 }}>⚠️</span>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>
+                        Lembrete operacional
+                      </strong>
+                      <p style={{ margin: '0 0 4px', fontSize: 13, color: '#78350f', lineHeight: 1.6 }}>
+                        Se houver reposição da posição, a nova vaga deve seguir o fluxo específico de admissão.
+                      </p>
+                      <p style={{ margin: 0, fontSize: 13, color: '#78350f', lineHeight: 1.6 }}>
+                        Revise o tipo e a data estimada do desligamento antes de avançar a solicitação no fluxo.
+                      </p>
+                    </div>
+                  </div>
 
                   {fullRequest.manager_reminder && (
                     <>

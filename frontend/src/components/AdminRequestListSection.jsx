@@ -239,6 +239,9 @@ const REQUEST_TABS = {
             <button className="secondary-button" type="button" onClick={actions.onViewApprovalStatus}>
               Status de aprovação
             </button>
+            <button className="secondary-button" type="button" onClick={actions.onViewDetails}>
+              Detalhes do pedido
+            </button>
             {canRejectDismissal && actions.onRejectDismissal ? (
               <button className="secondary-button" type="button" onClick={actions.onRejectDismissal}>
                 Recusar demissão

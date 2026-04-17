@@ -55,7 +55,7 @@ export function AdminLayout() {
             Dashboard
           </NavLink>
           {canAccessAdmissions ? (
-            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/admission-requests">
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/requests">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
                 <rect height="18" rx="2" width="18" x="3" y="3" />
                 <path d="M8 7h8" />

@@ -115,6 +115,47 @@ function computePositionMetrics(requests, positionKey) {
   }
 }
 
+function computeAnalystMetrics(requests) {
+  const metricsByAnalyst = new Map()
+
+  requests.forEach((request) => {
+    const analystId = request.recruiter_user_id ?? 'unassigned'
+    const analystName = request.recruiter_user_name ?? 'Não atribuído'
+    const analystEmail = request.recruiter_user_email ?? ''
+
+    if (!metricsByAnalyst.has(analystId)) {
+      metricsByAnalyst.set(analystId, {
+        analystId,
+        analystName,
+        analystEmail,
+        totalCount: 0,
+        finalizedCount: 0,
+        inProgressCount: 0,
+      })
+    }
+
+    const metric = metricsByAnalyst.get(analystId)
+    metric.totalCount += 1
+
+    if (request.status === 'FINALIZED') {
+      metric.finalizedCount += 1
+    } else {
+      metric.inProgressCount += 1
+    }
+  })
+
+  return Array.from(metricsByAnalyst.values()).sort((left, right) => {
+    if (left.analystId === 'unassigned') return 1
+    if (right.analystId === 'unassigned') return -1
+
+    if (right.totalCount !== left.totalCount) {
+      return right.totalCount - left.totalCount
+    }
+
+    return left.analystName.localeCompare(right.analystName, 'pt-BR')
+  })
+}
+
 function SummaryCard({ label, value, sub }) {
   return (
     <article className="stat-card">
@@ -155,6 +196,25 @@ function PositionCard({ metric }) {
         </p>
       </div>
       <span className="admin-home-module-action">{rateLabel}</span>
+    </article>
+  )
+}
+
+function AnalystCard({ metric }) {
+  const completionRate = metric.totalCount > 0 ? (metric.finalizedCount / metric.totalCount) * 100 : 0
+
+  return (
+    <article className="mini-metric-card" style={{ display: 'grid', gap: 8 }}>
+      <div>
+        <strong>{metric.totalCount}</strong>
+        <span>{metric.analystName}</span>
+      </div>
+      {metric.analystEmail ? (
+        <span style={{ fontSize: 12, color: 'var(--slate-400)', marginTop: -2 }}>{metric.analystEmail}</span>
+      ) : null}
+      <span style={{ fontSize: 12, color: 'var(--slate-500)' }}>
+        {metric.finalizedCount} finalizadas · {metric.inProgressCount} em andamento · {formatNumber(completionRate, 0)}% concluídas
+      </span>
     </article>
   )
 }
@@ -210,6 +270,7 @@ export function AdminDashboardAdmissaoPage() {
     () => Object.keys(POSITION_META).map((positionKey) => computePositionMetrics(visibleRequests, positionKey)),
     [visibleRequests],
   )
+  const analystMetrics = useMemo(() => computeAnalystMetrics(visibleRequests), [visibleRequests])
 
   const greeting = useMemo(() => getGreeting(), [])
 
@@ -252,6 +313,29 @@ export function AdminDashboardAdmissaoPage() {
             {positionMetrics.map((metric) => (
               <PositionCard key={metric.label} metric={metric} />
             ))}
+          </section>
+
+          <section className="admin-panel-card">
+            <div className="panel-header-row">
+              <div>
+                <h3>Solicitações por analista designado</h3>
+                <p>Ranking com a quantidade de solicitações atribuídas a cada responsável visível no período.</p>
+              </div>
+              <span className="admin-home-module-action">{analystMetrics.reduce((sum, metric) => sum + metric.totalCount, 0)} no total</span>
+            </div>
+
+            {analystMetrics.length > 0 ? (
+              <div className="mini-metrics-grid">
+                {analystMetrics.map((metric) => (
+                  <AnalystCard key={String(metric.analystId)} metric={metric} />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state" style={{ minHeight: 120 }}>
+                <strong>Nenhuma solicitação atribuída</strong>
+                <span>As solicitações visíveis ainda não estão distribuídas para um analista.</span>
+              </div>
+            )}
           </section>
 
           <section className="admin-panel-card">

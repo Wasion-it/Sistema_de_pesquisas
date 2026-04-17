@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthProvider'
 const REQUEST_MODULES = [
   {
     title: 'Admissão',
-    description: 'Acesse a fila de solicitações de admissão e o checklist do fluxo.',
+    description: 'Abra a fila de solicitações de admissão.',
     to: '/admin/admission-requests',
     accent: 'amber',
     icon: (
@@ -18,7 +18,7 @@ const REQUEST_MODULES = [
   },
   {
     title: 'Checklist de admissão',
-    description: 'Organize e revise as etapas do checklist usado no fluxo de admissão.',
+    description: 'Revise as etapas do checklist usado no fluxo de admissão.',
     to: '/admin/admission-checklist',
     accent: 'green',
     icon: (
@@ -35,7 +35,7 @@ const REQUEST_MODULES = [
   },
   {
     title: 'Demissão',
-    description: 'Acesse a fila de solicitações de demissão e acompanhe os desligamentos.',
+    description: 'Abra a fila de solicitações de demissão.',
     to: '/admin/dismissal-requests',
     accent: 'slate',
     icon: (
@@ -46,26 +46,14 @@ const REQUEST_MODULES = [
     ),
   },
   {
-    title: 'Aprovações',
-    description: 'Acompanhe a trilha de aprovação de admissões e demissões.',
-    to: '/admin/approvals',
-    accent: 'green',
+    title: 'KPIs de admissão',
+    description: 'Consulte os indicadores de fechamento e leitura operacional.',
+    to: '/admin/dashboard/admissao',
+    accent: 'blue',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 12l4 4L19 6" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Cargos',
-    description: 'Gerencie os cargos disponíveis para apoiar os fluxos de RH.',
-    to: '/admin/job-titles',
-    accent: 'amber',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 7h16" />
-        <path d="M4 12h16" />
-        <path d="M4 17h10" />
+        <path d="M12 6v6l4 2" />
+        <circle cx="12" cy="12" r="9" />
       </svg>
     ),
   },
@@ -83,14 +71,14 @@ export function AdminRequestsPage() {
       <section className="admin-home-hero">
         <div>
           <span className="eyebrow">Solicitações RH</span>
-          <h2>{getFirstName(user?.full_name)}, escolha o acesso</h2>
+          <h2>{getFirstName(user?.full_name)}, sua página padrão de solicitações</h2>
           <p>
-            Esta é a página de entrada para os principais atalhos do painel administrativo. Use os cards abaixo para abrir solicitações, aprovações ou cadastros de apoio.
+            Use os cards abaixo para abrir as telas de admissão, demissão e indicadores relacionados.
           </p>
         </div>
         <div className="admin-home-hero-badge">
-          <span>Ponto de acesso</span>
-          <strong>Atalhos do RH</strong>
+          <span>Entrada padrão</span>
+          <strong>Atalhos de RH</strong>
         </div>
       </section>
 

@@ -152,32 +152,24 @@ const REQUEST_TABS = {
               <button className="secondary-button" type="button" onClick={actions.onViewDetails}>
                 Detalhes do pedido
               </button>
-              {!actions.isReadOnly ? (
-                <>
-                  {actions.onViewChecklist ? (
-                    <button className="secondary-button" type="button" onClick={actions.onViewChecklist}>
-                      Checklist
-                    </button>
-                  ) : null}
-                  {actions.onFinalizeAdmission && canFinalizeAdmission && !isFinalized ? (
-                    <button
-                      className="primary-button"
-                      type="button"
-                      onClick={actions.onFinalizeAdmission}
-                    >
-                      Finalizar vaga
-                    </button>
-                  ) : null}
-                  <button
-                    className="primary-button"
-                    type="button"
-                    onClick={actions.onRegisterHire}
-                    disabled={!canRegisterHire}
-                  >
-                    {hireButtonLabel}
-                  </button>
-                </>
+              {actions.onViewChecklist ? (
+                <button className="secondary-button" type="button" onClick={actions.onViewChecklist}>
+                  Checklist
+                </button>
               ) : null}
+              {actions.onFinalizeAdmission && canFinalizeAdmission && !isFinalized ? (
+                <button className="primary-button" type="button" onClick={actions.onFinalizeAdmission}>
+                  Finalizar vaga
+                </button>
+              ) : null}
+              <button
+                className="primary-button"
+                type="button"
+                onClick={actions.onRegisterHire}
+                disabled={!canRegisterHire}
+              >
+                {hireButtonLabel}
+              </button>
             </div>
           </td>
           <td>{formatDateTime(item.created_at)}</td>
@@ -363,7 +355,6 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
   const activeConfig = REQUEST_TABS[activeTab]
   const activeRequests = requestsByTab[activeTab]
-  const isRecruiterReadOnly = user?.role === 'RH_ANALISTA' && activeTab === 'admission'
   const visibleRequests = useMemo(() => {
     if (activeTab !== 'admission') {
       return activeRequests
@@ -553,10 +544,9 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                   activeConfig.renderRow(item, {
                     onViewApprovalStatus: () => openApprovalStatus(item),
                     onViewDetails: () => openDetailsModal(item),
-                    onViewChecklist: activeTab === 'admission' && !isRecruiterReadOnly ? () => openChecklistModal(item) : null,
-                    onFinalizeAdmission: activeTab === 'admission' && !isRecruiterReadOnly ? () => finalizeAdmissionRequest(item) : null,
-                    onRegisterHire: !isRecruiterReadOnly ? () => openHireModal(item) : null,
-                    isReadOnly: isRecruiterReadOnly,
+                    onViewChecklist: activeTab === 'admission' ? () => openChecklistModal(item) : null,
+                    onFinalizeAdmission: activeTab === 'admission' ? () => finalizeAdmissionRequest(item) : null,
+                    onRegisterHire: activeTab === 'admission' ? () => openHireModal(item) : null,
                   }),
                 )}
               </tbody>

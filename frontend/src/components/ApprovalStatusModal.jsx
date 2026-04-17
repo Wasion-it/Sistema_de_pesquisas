@@ -399,6 +399,14 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
               </div>
             </div>
 
+            {request?.request_kind === 'DISMISSAL' && status === 'REJECTED' && fullRequest.post_approval_rejection_reason ? (
+              <div className="request-note-box">
+                <strong>Recusa após aprovação</strong>
+                <p>{fullRequest.post_approval_rejection_reason}</p>
+                <small>Registrada em {formatDateTime(fullRequest.post_approval_rejected_at)}</small>
+              </div>
+            ) : null}
+
             {request?.request_kind === 'ADMISSION' ? (
               <div className="request-note-box">
                 <strong>Recrutador designado pela Gerente de RH</strong>

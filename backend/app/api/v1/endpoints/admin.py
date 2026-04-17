@@ -345,6 +345,8 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
         has_replacement=item.has_replacement,
         can_be_rehired=item.can_be_rehired,
         rehire_justification=item.rehire_justification,
+        post_approval_rejection_reason=item.post_approval_rejection_reason,
+        post_approval_rejected_at=item.post_approval_rejected_at,
         estimated_termination_date=item.estimated_termination_date,
         contract_regime=item.contract_regime,
         manager_reminder=item.manager_reminder,
@@ -416,6 +418,8 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         recruiter_user_id=None,
         recruiter_user_name=None,
         recruiter_user_email=None,
+        post_approval_rejection_reason=item.post_approval_rejection_reason,
+        post_approval_rejected_at=item.post_approval_rejected_at,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -2033,6 +2037,8 @@ def reject_admin_dismissal_request_after_approval(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rejection reason is required after approval")
 
     item.status = DismissalRequestStatusEnum.REJECTED
+    item.post_approval_rejection_reason = comments
+    item.post_approval_rejected_at = datetime.now(UTC)
     db.add(
         AuditLog(
             actor_user_id=user.id,
@@ -2045,6 +2051,7 @@ def reject_admin_dismissal_request_after_approval(
                     "request_id": item.id,
                     "status": item.status.value,
                     "comments": comments,
+                        "rejected_at": item.post_approval_rejected_at.isoformat(),
                 }
             ),
             ip_address="127.0.0.1",

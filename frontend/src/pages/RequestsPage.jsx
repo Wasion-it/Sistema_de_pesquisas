@@ -48,7 +48,7 @@ export function RequestsPage() {
             <span className="module-card-action">Abrir painel</span>
           </Link>
 
-          <Link className="module-card" aria-label="Solicitação de admissão" to="/solicitacoes/admissao">
+          <Link className="module-card" aria-label="Requisição de vaga" to="/solicitacoes/admissao">
             <div className="module-card-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -59,10 +59,10 @@ export function RequestsPage() {
             </div>
             <div className="module-card-body">
               <span className="module-card-kicker">Solicitação</span>
-              <h2>Admissão</h2>
+              <h2>Requisição de vaga</h2>
               <p>
                 Cadastro de novas contratações, alinhamento de documentos e preparação
-                do fluxo de entrada.
+                do fluxo da requisição.
               </p>
             </div>
             <span className="module-card-action">Abrir formulário</span>

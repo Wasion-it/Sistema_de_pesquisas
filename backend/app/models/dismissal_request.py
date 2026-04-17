@@ -59,7 +59,7 @@ class DismissalRequest(BaseModel):
         nullable=True,
     )
 
-    created_by_user = relationship("User", back_populates="dismissal_requests")
+    created_by_user = relationship("User", back_populates="dismissal_requests", foreign_keys=[created_by_user_id])
     recruiter_user = relationship("User", foreign_keys=[recruiter_user_id])
     approval_workflow_template = relationship("ApprovalWorkflowTemplate", back_populates="dismissal_requests")
     approval_steps = relationship(

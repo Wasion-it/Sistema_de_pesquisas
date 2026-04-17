@@ -213,7 +213,7 @@ export function AdmissaoFormPage() {
       }
 
       await createAdminAdmissionRequest(token, payload)
-      setSuccessMessage('Solicitação de admissão salva com sucesso.')
+      setSuccessMessage('Requisição de vaga salva com sucesso.')
       setFormValues(INITIAL_FORM)
     } catch (error) {
       setErrorMessage(error.message)
@@ -244,11 +244,11 @@ export function AdmissaoFormPage() {
 
       <div className="collab-content">
         <section className="module-hero-card compact">
-          <span className="eyebrow">Solicitação de admissão</span>
-          <h1>Formulário de admissão</h1>
+          <span className="eyebrow">Requisição de vaga</span>
+          <h1>Formulário de requisição de vaga</h1>
           <p>
-            Preencha os dados do novo pedido para organizar abertura de vaga, tipo de
-            contratação e contexto da solicitação.
+            Preencha os dados do novo pedido para organizar a abertura da vaga, o tipo
+            de contratação e o contexto da requisição.
           </p>
         </section>
 
@@ -265,7 +265,7 @@ export function AdmissaoFormPage() {
         <section className="request-editor-layout admin-panel-card">
           <aside className="request-form-pane">
             <div className="question-form-pane-header">
-              <strong>Dados da solicitação</strong>
+              <strong>Dados da requisição</strong>
               <span className="field-hint">Preenchimento inicial</span>
             </div>
 
@@ -419,13 +419,13 @@ export function AdmissaoFormPage() {
 
               {!isLoadingJobTitles && activeJobTitles.length === 0 ? (
                 <div className="form-error">
-                  Nenhum cargo ativo foi cadastrado pelo RH. Ative um cargo antes de enviar a solicitação.
+                  Nenhum cargo ativo foi cadastrado pelo RH. Ative um cargo antes de enviar a requisição.
                 </div>
               ) : null}
 
               <div className="form-actions-row">
                 <button className="primary-button" disabled={isSubmitDisabled || isSubmitting || !isAuthenticated || activeJobTitles.length === 0} type="submit">
-                  {isSubmitting ? 'Salvando...' : 'Salvar solicitação'}
+                  {isSubmitting ? 'Salvando...' : 'Salvar requisição'}
                 </button>
                 <button className="secondary-button" type="button" onClick={handleReset}>
                   Limpar campos
@@ -437,7 +437,7 @@ export function AdmissaoFormPage() {
           <aside className="request-summary-pane">
             <div>
               <span className="eyebrow">Resumo</span>
-              <h2>Fluxo de admissão</h2>
+              <h2>Fluxo da requisição de vaga</h2>
               <p>
                 Esta tela organiza o pedido antes de seguir para as próximas etapas do
                 RH e do gestor.

@@ -368,8 +368,12 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   const activeConfig = REQUEST_TABS[activeTab]
   const activeRequests = requestsByTab[activeTab]
   const visibleRequests = useMemo(() => {
-    if (activeTab !== 'admission') {
-      return activeRequests
+    if (activeTab === 'dismissal') {
+      if (user?.role !== 'RH_ANALISTA') {
+        return []
+      }
+
+      return activeRequests.filter((item) => item.recruiter_user_id === user?.id)
     }
 
     if (user?.role === 'RH_ADMIN') {

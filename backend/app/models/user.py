@@ -40,4 +40,8 @@ class User(BaseModel):
         back_populates="created_by_user",
         foreign_keys="AdmissionRequest.created_by_user_id",
     )
-    dismissal_requests = relationship("DismissalRequest", back_populates="created_by_user")
+    dismissal_requests = relationship(
+        "DismissalRequest",
+        back_populates="created_by_user",
+        foreign_keys="DismissalRequest.created_by_user_id",
+    )

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, false, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_admin_user
@@ -436,6 +436,10 @@ def _can_user_view_admission_request(user: User, request_item: AdmissionRequest)
     if user.role == RoleEnum.RH_ADMIN:
         return True
 
+    return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
+
+
+def _can_user_view_dismissal_request(user: User, request_item: DismissalRequest) -> bool:
     return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
 
 
@@ -1989,21 +1993,27 @@ def read_admin_admission_request_approval_status(
 
 @router.get("/hr/dismissal-requests", response_model=DismissalRequestListResponse)
 def read_admin_dismissal_requests(
-    _: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> DismissalRequestListResponse:
-    items = db.scalars(
+    statement = (
         select(DismissalRequest)
         .options(selectinload(DismissalRequest.created_by_user), selectinload(DismissalRequest.recruiter_user))
         .order_by(DismissalRequest.submitted_at.desc().nullslast(), DismissalRequest.created_at.desc())
-    ).all()
+    )
+    if user.role == RoleEnum.RH_ANALISTA:
+        statement = statement.where(DismissalRequest.recruiter_user_id == user.id)
+    else:
+        statement = statement.where(false())
+
+    items = db.scalars(statement).all()
     return DismissalRequestListResponse(items=[_serialize_dismissal_request(item) for item in items])
 
 
 @router.get("/hr/dismissal-requests/{request_id}", response_model=DismissalRequestResponse)
 def read_admin_dismissal_request_detail(
     request_id: int,
-    _: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> DismissalRequestResponse:
     item = db.scalar(
@@ -2013,6 +2023,8 @@ def read_admin_dismissal_request_detail(
     )
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+    if not _can_user_view_dismissal_request(user, item):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
     return _serialize_dismissal_request(item)
 
@@ -2020,7 +2032,7 @@ def read_admin_dismissal_request_detail(
 @router.get("/hr/dismissal-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)
 def read_admin_dismissal_request_approval_status(
     request_id: int,
-    _: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_admin_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ApprovalQueueItemResponse:
     item = db.scalar(
@@ -2035,6 +2047,8 @@ def read_admin_dismissal_request_approval_status(
         .where(DismissalRequest.id == request_id)
     )
     if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+    if not _can_user_view_dismissal_request(user, item):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
     return _serialize_dismissal_approval_queue_item(item)
@@ -2053,6 +2067,8 @@ def reject_admin_dismissal_request_after_approval(
         .where(DismissalRequest.id == request_id)
     )
     if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+    if not _can_user_view_dismissal_request(user, item):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
     if item.status != DismissalRequestStatusEnum.APPROVED:

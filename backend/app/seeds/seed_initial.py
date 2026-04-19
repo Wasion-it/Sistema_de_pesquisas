@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import random
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
@@ -14,6 +15,8 @@ from app.models import (
     ApprovalRoleEnum,
     ApprovalWorkflowStep,
     ApprovalWorkflowTemplate,
+    AdmissionRequest,
+    AdmissionRequestApproval,
     AuditActionEnum,
     AuditLog,
     Campaign,
@@ -36,7 +39,15 @@ from app.models import (
     SurveyVersionStatusEnum,
     User,
 )
-from app.models.enums import QuestionTypeEnum
+from app.models.enums import (
+    ApprovalStepStatusEnum,
+    AdmissionPositionEnum,
+    AdmissionRequestStatusEnum,
+    AdmissionRequestTypeEnum,
+    ContractRegimeEnum,
+    QuestionTypeEnum,
+    RecruitmentScopeEnum,
+)
 
 DEV_PASSWORDS = {
     "rh_admin": "AdminRH123!",
@@ -603,6 +614,129 @@ def seed_campaign(
     return campaign
 
 
+def _seed_admission_approval_steps(session: Session, admission_request: AdmissionRequest, workflow: ApprovalWorkflowTemplate) -> None:
+    for step in workflow.steps:
+        session.add(
+            AdmissionRequestApproval(
+                admission_request_id=admission_request.id,
+                workflow_step_id=step.id,
+                step_order=step.step_order,
+                approver_role=step.approver_role,
+                status=ApprovalStepStatusEnum.PENDING,
+            )
+        )
+
+
+def seed_admission_requests(
+    session: Session,
+    users: dict[str, User],
+    employees: dict[str, Employee],
+    workflows: dict[str, ApprovalWorkflowTemplate],
+) -> list[AdmissionRequest]:
+    randomizer = random.Random(20260418)
+    workflow = workflows["HR_STANDARD_APPROVAL"]
+
+    request_types = [AdmissionRequestTypeEnum.GROWTH, AdmissionRequestTypeEnum.REPLACEMENT]
+    positions = list(AdmissionPositionEnum)
+    scopes = list(RecruitmentScopeEnum)
+    regimes = list(ContractRegimeEnum)
+    statuses = [
+        AdmissionRequestStatusEnum.PENDING,
+        AdmissionRequestStatusEnum.APPROVED,
+        AdmissionRequestStatusEnum.FINALIZED,
+        AdmissionRequestStatusEnum.REJECTED,
+    ]
+    creator_pool = [users["rh_admin"], users["rh_analyst"], users["manager"], users["it_support"]]
+    recruiter_pool = [users["rh_admin"], users["rh_analyst"], users["manager"], None]
+    employee_pool = list(employees.values())
+    cargo_pool = [
+        "Analista de Dados",
+        "Assistente Administrativo",
+        "Coordenador de Projetos",
+        "Desenvolvedor Backend",
+        "Especialista de Suporte",
+        "Técnico de Operações",
+        "Analista de RH",
+        "Líder de Squad",
+    ]
+    setor_pool = ["RH", "Tecnologia", "Operações", "Financeiro", "Comercial", "Suporte"]
+    turno_pool = ["Comercial", "Integral", "12x36", "Noturno", "Diurno"]
+
+    existing_count = session.scalar(
+        select(func.count())
+        .select_from(AdmissionRequest)
+        .where(AdmissionRequest.manager_reminder.like("Solicitação gerada para validação %"))
+    )
+    if existing_count is None:
+        existing_count = 0
+
+    if existing_count >= 20:
+        return session.scalars(
+            select(AdmissionRequest)
+            .where(AdmissionRequest.manager_reminder.like("Solicitação gerada para validação %"))
+            .order_by(AdmissionRequest.id.desc())
+            .limit(20)
+        ).all()
+
+    created_requests: list[AdmissionRequest] = []
+    base_now = datetime.now(UTC)
+
+    for index in range(existing_count + 1, 21):
+        request_type = randomizer.choice(request_types)
+        posicao_vaga = randomizer.choice(positions)
+        recruitment_scope = randomizer.choice(scopes)
+        contract_regime = randomizer.choice(regimes)
+        created_by = randomizer.choice(creator_pool)
+        recruiter_user = randomizer.choice(recruiter_pool)
+        status = randomizer.choice(statuses)
+        cargo = randomizer.choice(cargo_pool)
+        setor = randomizer.choice(setor_pool)
+        turno = randomizer.choice(turno_pool)
+        quantity_people = randomizer.randint(1, 4)
+        submitted_at = base_now - timedelta(days=index * 2) + timedelta(hours=2)
+        finalized_at = submitted_at + timedelta(days=3) if status == AdmissionRequestStatusEnum.FINALIZED else None
+        substituted_employee = None
+        justification = None
+
+        if request_type == AdmissionRequestTypeEnum.REPLACEMENT:
+            substituted_employee = randomizer.choice(employee_pool).full_name
+        else:
+            justification = (
+                f"Reposição de demanda para {setor.lower()} e expansão do time."
+                if index % 2 == 0
+                else f"Abertura de nova vaga para reforço do setor {setor}."
+            )
+
+        admission_request = AdmissionRequest(
+            status=status,
+            request_type=request_type,
+            posicao_vaga=posicao_vaga,
+            is_confidential=index % 4 == 0,
+            recruiter_user_id=recruiter_user.id if recruiter_user else None,
+            cargo=cargo,
+            setor=setor,
+            recruitment_scope=recruitment_scope,
+            quantity_people=quantity_people,
+            turno=turno,
+            contract_regime=contract_regime,
+            substituted_employee_name=substituted_employee,
+            justification=justification,
+            manager_reminder=f"Solicitação gerada para validação #{index}.",
+            submitted_at=submitted_at,
+            finalized_at=finalized_at,
+            checklist_completed_steps=randomizer.randint(0, 5),
+            created_by_user_id=created_by.id,
+            approval_workflow_template_id=workflow.id,
+        )
+        session.add(admission_request)
+        session.flush()
+        _seed_admission_approval_steps(session, admission_request, workflow)
+
+        created_requests.append(admission_request)
+
+    return created_requests
+
+
 def run_seed() -> None:
     create_tables()
 
@@ -610,9 +744,10 @@ def run_seed() -> None:
         departments = seed_departments(session)
         job_titles = seed_job_titles(session)
         users, employees = seed_users_and_employees(session, departments, job_titles)
-        seed_approval_workflows(session)
+        workflows = seed_approval_workflows(session)
         _, version, _, questions = seed_survey(session, users["rh_admin"])
         seed_campaign(session, users, employees, version, questions)
+        seed_admission_requests(session, users, employees, workflows)
         session.commit()
 
     print("Initial seed executed successfully.")

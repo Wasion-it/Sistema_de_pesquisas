@@ -180,6 +180,17 @@ def _ensure_admission_request_columns() -> None:
     existing_columns = {column["name"] for column in inspector.get_columns("admission_requests")}
     statements: list[str] = []
 
+    if "posicao_vaga" not in existing_columns:
+        statements.append(
+            "ALTER TABLE admission_requests ADD COLUMN posicao_vaga VARCHAR(30) NOT NULL DEFAULT 'PUBLIC_ADMINISTRATIVE'"
+        )
+
+    if "is_confidential" not in existing_columns:
+        statements.append("ALTER TABLE admission_requests ADD COLUMN is_confidential BOOLEAN NOT NULL DEFAULT 0")
+
+    if "recruiter_user_id" not in existing_columns:
+        statements.append("ALTER TABLE admission_requests ADD COLUMN recruiter_user_id INTEGER REFERENCES users(id)")
+
     if "checklist_completed_steps" not in existing_columns:
         statements.append("ALTER TABLE admission_requests ADD COLUMN checklist_completed_steps INTEGER NOT NULL DEFAULT 0")
 
@@ -192,6 +203,19 @@ def _ensure_admission_request_columns() -> None:
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))
+
+        if "posicao_vaga" not in existing_columns:
+            connection.execute(
+                text(
+                    "UPDATE admission_requests SET posicao_vaga = 'PUBLIC_ADMINISTRATIVE' "
+                    "WHERE posicao_vaga IS NULL"
+                )
+            )
+
+        if "is_confidential" not in existing_columns:
+            connection.execute(
+                text("UPDATE admission_requests SET is_confidential = 0 WHERE is_confidential IS NULL")
+            )
 
         if "finalized_at" not in existing_columns:
             connection.execute(

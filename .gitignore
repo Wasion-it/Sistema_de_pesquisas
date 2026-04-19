@@ -1,11 +1,14 @@
 # Python
 backend/.venv/
-backend/**/__pycache__/
-backend/**/*.pyc
-backend/.pytest_cache/
-backend/.mypy_cache/
+**/__pycache__/
+**/*.py[cod]
+**/*.pyd
+**/*.pyo
 backend/.env
 backend/*.db
+.coverage
+.pytest_cache/
+.mypy_cache/
 
 # Node
 frontend/node_modules/
@@ -15,8 +18,5 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 .vscode/
-.pyc
 .idea/
 *.log
-.pytest_cache/
-.mypy_cache/

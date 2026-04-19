@@ -18,9 +18,9 @@ const INITIAL_FORM = {
 }
 
 const VERSION_STATUS_META = {
-  DRAFT: { label: 'Rascunho', variant: 'inactive' },
-  PUBLISHED: { label: 'Publicada', variant: 'active' },
-  ARCHIVED: { label: 'Arquivada', variant: 'inactive' },
+  DRAFT: { label: 'Rascunho', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
+  PUBLISHED: { label: 'Publicada', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+  ARCHIVED: { label: 'Arquivada', color: '#94a3b8', bg: '#f1f5f9', border: '#e2e8f0' },
 }
 
 const WIZARD_STEPS = [
@@ -28,22 +28,22 @@ const WIZARD_STEPS = [
   { n: 2, label: 'Estrutura' },
 ]
 
-const ACCENT_PALETTE = [
-  { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe', icon: '#2563eb' },
-  { bg: '#ede9fe', text: '#4c1d95', border: '#ddd6fe', icon: '#7c3aed' },
-  { bg: '#dcfce7', text: '#14532d', border: '#bbf7d0', icon: '#16a34a' },
-  { bg: '#fef3c7', text: '#78350f', border: '#fde68a', icon: '#d97706' },
-  { bg: '#fce7f3', text: '#831843', border: '#fbcfe8', icon: '#db2777' },
-  { bg: '#e0f2fe', text: '#0c4a6e', border: '#bae6fd', icon: '#0284c7' },
-  { bg: '#f0fdf4', text: '#052e16', border: '#a7f3d0', icon: '#059669' },
-  { bg: '#fff7ed', text: '#7c2d12', border: '#fed7aa', icon: '#ea580c' },
+const CATEGORY_COLORS = [
+  { bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe', dot: '#3b82f6' },
+  { bg: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe', dot: '#8b5cf6' },
+  { bg: '#f0fdf4', text: '#14532d', border: '#bbf7d0', dot: '#22c55e' },
+  { bg: '#fff7ed', text: '#7c2d12', border: '#fed7aa', dot: '#f97316' },
+  { bg: '#fdf4ff', text: '#6b21a8', border: '#f0abfc', dot: '#d946ef' },
+  { bg: '#f0fdfa', text: '#064e3b', border: '#99f6e4', dot: '#14b8a6' },
+  { bg: '#fff1f2', text: '#881337', border: '#fecdd3', dot: '#f43f5e' },
+  { bg: '#fefce8', text: '#713f12', border: '#fef08a', dot: '#eab308' },
 ]
 
-function getAccent(str) {
-  if (!str) return ACCENT_PALETTE[0]
+function getColorForStr(str) {
+  if (!str) return CATEGORY_COLORS[0]
   let hash = 0
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return ACCENT_PALETTE[Math.abs(hash) % ACCENT_PALETTE.length]
+  return CATEGORY_COLORS[Math.abs(hash) % CATEGORY_COLORS.length]
 }
 
 function getInitials(name) {
@@ -55,7 +55,7 @@ function getInitials(name) {
 
 function WizardSteps({ currentStep, step1Valid, onGoTo }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 28 }}>
       {WIZARD_STEPS.map((step, idx) => {
         const isCompleted = currentStep > step.n
         const isActive = currentStep === step.n
@@ -67,39 +67,38 @@ function WizardSteps({ currentStep, step1Valid, onGoTo }) {
               type="button"
               onClick={() => canClick && onGoTo(step.n)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
+                display: 'flex', alignItems: 'center', gap: 10,
                 background: 'none', border: 'none', padding: 0,
                 cursor: canClick ? 'pointer' : 'default',
-                opacity: !canClick && !isActive ? 0.5 : 1,
+                opacity: !canClick && !isActive ? 0.45 : 1,
               }}
             >
               <span style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
-                background: isCompleted || isActive ? 'var(--blue-600)' : 'var(--slate-200)',
-                color: isCompleted || isActive ? '#fff' : 'var(--slate-500)',
-                fontSize: 12, fontWeight: 700,
-                transition: 'all 160ms ease',
+                width: 32, height: 32, borderRadius: '50%',
+                background: isCompleted || isActive ? '#0f172a' : '#e2e8f0',
+                color: isCompleted || isActive ? '#fff' : '#94a3b8',
+                fontSize: 13, fontWeight: 700,
+                flexShrink: 0,
+                transition: 'all 200ms',
               }}>
                 {isCompleted ? (
-                  <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24" width="12">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 ) : step.n}
               </span>
               <span style={{
                 fontSize: 13, fontWeight: 600,
-                color: isActive || isCompleted ? 'var(--slate-800)' : 'var(--slate-400)',
-                transition: 'color 160ms ease',
+                color: isActive || isCompleted ? '#0f172a' : '#94a3b8',
               }}>
                 {step.label}
               </span>
             </button>
             {idx < WIZARD_STEPS.length - 1 && (
               <div style={{
-                flex: 1, height: 2, margin: '0 14px',
-                background: isCompleted ? 'var(--blue-600)' : 'var(--slate-200)',
-                transition: 'background 160ms ease',
+                flex: 1, height: 1.5, margin: '0 16px',
+                background: isCompleted ? '#0f172a' : '#e2e8f0',
               }} />
             )}
           </div>
@@ -109,52 +108,330 @@ function WizardSteps({ currentStep, step1Valid, onGoTo }) {
   )
 }
 
-function SurveyAvatar({ name, code, size = 44, radius = 12 }) {
-  const accent = getAccent(code)
+function SurveyCard({ survey, onDelete, confirmDeleteId, setConfirmDeleteId, deletingSurveyId, isDeleting }) {
+  const color = getColorForStr(survey.code)
+  const versionMeta = VERSION_STATUS_META[survey.current_version_status] ?? VERSION_STATUS_META.DRAFT
+  const isConfirmingDelete = confirmDeleteId === survey.id
+  const isThisDeleting = deletingSurveyId === survey.id
+
+  return (
+    <article style={{
+      borderRadius: 18,
+      background: '#fff',
+      border: '1.5px solid #e2e8f0',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      transition: 'border-color 160ms, box-shadow 160ms',
+      boxShadow: '0 1px 4px rgba(15,23,42,.04)',
+      position: 'relative',
+    }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = '#cbd5e1'
+        e.currentTarget.style.boxShadow = '0 4px 16px rgba(15,23,42,.08)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = '#e2e8f0'
+        e.currentTarget.style.boxShadow = '0 1px 4px rgba(15,23,42,.04)'
+      }}
+    >
+      {/* Color accent top bar */}
+      <div style={{ height: 3, background: color.dot }} />
+
+      <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{
+            flexShrink: 0,
+            width: 46, height: 46,
+            borderRadius: 13,
+            background: color.bg,
+            border: `1.5px solid ${color.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 15, fontWeight: 800,
+            color: color.text,
+            letterSpacing: '-.01em',
+          }}>
+            {getInitials(survey.name)}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+              <span style={{
+                fontFamily: 'Courier New, monospace',
+                fontSize: 11, fontWeight: 700,
+                color: color.text,
+                background: color.bg,
+                padding: '3px 8px', borderRadius: 5,
+                letterSpacing: '.03em',
+                border: `1px solid ${color.border}`,
+              }}>
+                {survey.code}
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 600,
+                color: '#64748b',
+                background: '#f1f5f9',
+                padding: '3px 8px', borderRadius: 5,
+              }}>
+                {survey.category}
+              </span>
+              {!survey.is_active && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: '#94a3b8',
+                  background: '#f8fafc',
+                  padding: '3px 8px', borderRadius: 5,
+                  border: '1px solid #e2e8f0',
+                }}>
+                  Inativa
+                </span>
+              )}
+            </div>
+            <h3 style={{
+              margin: 0,
+              fontSize: '0.98rem',
+              fontWeight: 700,
+              color: survey.is_active ? '#0f172a' : '#94a3b8',
+              lineHeight: 1.3,
+              letterSpacing: '-.01em',
+            }}>
+              {survey.name}
+            </h3>
+          </div>
+        </div>
+
+        {/* Metrics row */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 8,
+        }}>
+          <MetricChip
+            label="Perguntas"
+            value={survey.total_questions}
+            icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            }
+          />
+          <MetricChip
+            label="Versão"
+            value={survey.current_version ?? '—'}
+            statusColor={versionMeta.color}
+            statusBg={versionMeta.bg}
+            icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+              </svg>
+            }
+          />
+          <MetricChip
+            label="Campanhas"
+            value={survey.active_campaigns > 0 ? `${survey.active_campaigns} ativas` : 'Nenhuma'}
+            highlight={survey.active_campaigns > 0}
+            icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
+              </svg>
+            }
+          />
+        </div>
+
+        {/* Campaign links */}
+        {survey.latest_campaign_id ? (
+          <div style={{
+            display: 'flex', gap: 8,
+            padding: '10px 14px',
+            background: '#f8fafc',
+            borderRadius: 10,
+            border: '1px solid #f1f5f9',
+          }}>
+            <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, marginRight: 4 }}>Última:</span>
+            <Link
+              to={`/admin/campaigns/${survey.latest_campaign_id}/responses`}
+              style={{
+                fontSize: 12, fontWeight: 600, color: '#2563eb',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              </svg>
+              Respostas
+            </Link>
+            <span style={{ color: '#e2e8f0' }}>·</span>
+            <Link
+              to={`/admin/campaigns/${survey.latest_campaign_id}/kpis`}
+              style={{
+                fontSize: 12, fontWeight: 600, color: '#7c3aed',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 13l4-4 4 4 6-6 4 4"/>
+              </svg>
+              KPIs
+            </Link>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Footer actions */}
+      <div style={{
+        padding: '14px 22px',
+        borderTop: '1px solid #f1f5f9',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        background: '#fafafa',
+      }}>
+        <Link
+          to={`/admin/surveys/${survey.id}`}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '8px 14px',
+            borderRadius: 9,
+            background: '#0f172a',
+            color: '#fff',
+            fontSize: 12, fontWeight: 700,
+            textDecoration: 'none',
+            transition: 'background 160ms',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#1e293b' }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#0f172a' }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Gerenciar
+        </Link>
+
+        {!isConfirmingDelete ? (
+          <button
+            type="button"
+            onClick={() => setConfirmDeleteId(survey.id)}
+            disabled={isThisDeleting}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '7px 12px',
+              borderRadius: 9,
+              background: 'transparent',
+              border: '1.5px solid #e2e8f0',
+              color: '#94a3b8',
+              fontSize: 12, fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 160ms',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#fef2f2'
+              e.currentTarget.style.borderColor = '#fecaca'
+              e.currentTarget.style.color = '#dc2626'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.borderColor = '#e2e8f0'
+              e.currentTarget.style.color = '#94a3b8'
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+            Excluir
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>Confirmar?</span>
+            <button
+              type="button"
+              onClick={() => onDelete(survey)}
+              disabled={isThisDeleting}
+              style={{
+                padding: '6px 11px', borderRadius: 8,
+                background: '#fef2f2', border: '1.5px solid #fecaca',
+                color: '#dc2626', fontSize: 12, fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {isThisDeleting ? '...' : 'Sim'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDeleteId(null)}
+              style={{
+                padding: '6px 11px', borderRadius: 8,
+                background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                color: '#64748b', fontSize: 12, fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Não
+            </button>
+          </div>
+        )}
+      </div>
+    </article>
+  )
+}
+
+function MetricChip({ label, value, icon, highlight, statusColor, statusBg }) {
   return (
     <div style={{
-      width: size, height: size, borderRadius: radius,
-      background: accent.bg, border: `1.5px solid ${accent.border}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size > 40 ? 15 : 13, fontWeight: 800,
-      color: accent.text, letterSpacing: '-.01em', flexShrink: 0,
+      padding: '9px 11px',
+      borderRadius: 9,
+      background: highlight ? '#eff6ff' : statusBg ?? '#f8fafc',
+      border: `1px solid ${highlight ? '#bfdbfe' : '#f1f5f9'}`,
+      display: 'flex', flexDirection: 'column', gap: 4,
     }}>
-      {getInitials(name)}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: highlight ? '#2563eb' : statusColor ?? '#94a3b8' }}>
+        {icon}
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+          {label}
+        </span>
+      </div>
+      <strong style={{
+        fontSize: 13, fontWeight: 700,
+        color: highlight ? '#1e40af' : statusColor ?? '#334155',
+        lineHeight: 1,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>
+        {value}
+      </strong>
     </div>
   )
 }
 
-function StatusBadge({ status }) {
-  const meta = VERSION_STATUS_META[status] ?? VERSION_STATUS_META.DRAFT
-  return <span className={`status-pill ${meta.variant}`}>{meta.label}</span>
-}
-
-function DeleteConfirmRow({ survey, onConfirm, onCancel, isDeleting }) {
+function StatCard({ label, value, color, sub }) {
   return (
     <div style={{
-      padding: '12px 20px',
-      background: 'var(--red-50)',
-      borderTop: '1px solid var(--red-100)',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-      animation: 'fadeUp .15s ease both',
+      padding: '20px 22px',
+      borderRadius: 16,
+      background: '#fff',
+      border: '1.5px solid #e2e8f0',
+      position: 'relative', overflow: 'hidden',
     }}>
-      <span style={{ fontSize: 13, color: 'var(--red-700)', fontWeight: 500 }}>
-        Excluir <strong>"{survey.name}"</strong>? Esta ação remove versões, perguntas, campanhas e respostas vinculadas e não pode ser desfeita.
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 2.5,
+        background: color,
+      }} />
+      <span style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: '.08em',
+        textTransform: 'uppercase', color: '#94a3b8',
+        display: 'block', marginBottom: 10,
+      }}>
+        {label}
       </span>
-      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <button className="secondary-button" style={{ fontSize: 12, padding: '7px 14px' }} type="button" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button
-          className="danger-button"
-          style={{ fontSize: 12, padding: '7px 14px' }}
-          disabled={isDeleting}
-          type="button"
-          onClick={onConfirm}
-        >
-          {isDeleting ? 'Excluindo…' : 'Sim, excluir'}
-        </button>
-      </div>
+      <strong style={{
+        fontSize: '2rem', fontWeight: 900, color: '#0f172a',
+        lineHeight: 1, letterSpacing: '-.03em', display: 'block',
+      }}>
+        {value}
+      </strong>
+      {sub && (
+        <span style={{ fontSize: 12, color: '#94a3b8', marginTop: 6, display: 'block' }}>
+          {sub}
+        </span>
+      )}
     </div>
   )
 }
@@ -169,14 +446,10 @@ export function AdminSurveysPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
-
-  // Form
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formValues, setFormValues] = useState(INITIAL_FORM)
   const [formStep, setFormStep] = useState(1)
-
-  // Delete
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deletingSurveyId, setDeletingSurveyId] = useState(null)
 
@@ -209,7 +482,6 @@ export function AdminSurveysPage() {
     totalQuestions: surveys.reduce((sum, s) => sum + (s.total_questions ?? 0), 0),
   }), [surveys])
 
-  // Form handlers
   function handleFieldChange(e) {
     const { name, type, checked, value } = e.target
     setFormValues((cur) => ({ ...cur, [name]: type === 'checkbox' ? checked : value }))
@@ -271,31 +543,53 @@ export function AdminSurveysPage() {
 
   const dimensionTags = formValues.dimensions.split('\n').map((s) => s.trim()).filter(Boolean)
 
+  const filterOptions = [
+    { key: 'all', label: 'Todas', count: surveys.length },
+    { key: 'active', label: 'Ativas', count: stats.active },
+    { key: 'inactive', label: 'Inativas', count: surveys.length - stats.active },
+    { key: 'campaign', label: 'Com campanha', count: stats.withCampaign },
+  ]
+
   return (
     <div className="admin-view">
 
-      {/* ── Header ── */}
-      <div className="admin-view-header">
+      {/* ── Page header ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
           <span className="eyebrow">Gestão de Pesquisas</span>
-          <h2>Pesquisas cadastradas</h2>
-          <p>Crie, configure e publique pesquisas para os colaboradores do RH.</p>
+          <h2 style={{ margin: '4px 0 8px', fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)' }}>
+            Pesquisas
+          </h2>
+          <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>
+            Crie, configure e publique pesquisas para os colaboradores.
+          </p>
         </div>
         <button
-          className={isFormOpen ? 'secondary-button' : 'primary-button'}
           type="button"
           onClick={() => isFormOpen ? handleCloseForm() : setIsFormOpen(true)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '11px 20px',
+            borderRadius: 12,
+            background: isFormOpen ? '#f8fafc' : '#0f172a',
+            border: isFormOpen ? '1.5px solid #e2e8f0' : '1.5px solid #0f172a',
+            color: isFormOpen ? '#64748b' : '#fff',
+            fontSize: 14, fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 160ms',
+            flexShrink: 0,
+          }}
         >
           {isFormOpen ? (
             <>
-              <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" />
               </svg>
               Cancelar
             </>
           ) : (
             <>
-              <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" />
               </svg>
               Nova pesquisa
@@ -306,38 +600,36 @@ export function AdminSurveysPage() {
 
       {/* ── Stats ── */}
       {!isLoading && (
-        <div className="dashboard-stats-grid">
-          <article className="stat-card">
-            <span>Total de pesquisas</span>
-            <strong>{stats.total}</strong>
-          </article>
-          <article className="stat-card">
-            <span>Ativas</span>
-            <strong style={{ color: 'var(--green-600)' }}>{stats.active}</strong>
-          </article>
-          <article className="stat-card">
-            <span>Com campanha aberta</span>
-            <strong style={{ color: 'var(--blue-600)' }}>{stats.withCampaign}</strong>
-          </article>
-          <article className="stat-card">
-            <span>Total de perguntas</span>
-            <strong>{stats.totalQuestions}</strong>
-          </article>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+          <StatCard label="Total de pesquisas" value={stats.total} color="linear-gradient(90deg, #64748b, #94a3b8)" />
+          <StatCard label="Ativas" value={stats.active} color="linear-gradient(90deg, #22c55e, #4ade80)" sub={`${surveys.length - stats.active} inativas`} />
+          <StatCard label="Com campanha aberta" value={stats.withCampaign} color="linear-gradient(90deg, #3b82f6, #60a5fa)" />
+          <StatCard label="Total de perguntas" value={stats.totalQuestions} color="linear-gradient(90deg, #8b5cf6, #a78bfa)" />
         </div>
       )}
 
       {/* ── Feedback ── */}
       {successMessage && (
-        <div className="form-success" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" width="16" style={{ flexShrink: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 16px', borderRadius: 10,
+          background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d',
+          fontSize: 14, fontWeight: 500,
+        }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
             <polyline points="20 6 9 17 4 12" />
           </svg>
           {successMessage}
         </div>
       )}
       {errorMessage && (
-        <div className="form-error">
-          <svg fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="15" style={{ flexShrink: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '12px 16px', borderRadius: 10,
+          background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c',
+          fontSize: 14, fontWeight: 500,
+        }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           {errorMessage}
@@ -346,490 +638,341 @@ export function AdminSurveysPage() {
 
       {/* ── New survey form (wizard) ── */}
       {isFormOpen && (
-        <section
-          className="admin-panel-card"
-          style={{ borderTop: '3px solid var(--blue-600)', animation: 'fadeUp .25s ease both' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div style={{
+          borderRadius: 20,
+          background: '#fff',
+          border: '1.5px solid #e2e8f0',
+          overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(15,23,42,.08)',
+          animation: 'fadeUp .2s ease both',
+        }}>
+          {/* Form header */}
+          <div style={{
+            padding: '24px 28px 20px',
+            background: '#fafafa',
+            borderBottom: '1px solid #f1f5f9',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Nova pesquisa</h3>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--slate-500)' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontFamily: 'var(--font-display)', color: '#0f172a' }}>
+                Nova pesquisa
+              </h3>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
                 Preencha os dados em dois passos para criar a pesquisa.
               </p>
             </div>
-            <button
-              className="secondary-button"
-              style={{ padding: '8px 12px', fontSize: 13, flexShrink: 0 }}
-              type="button"
-              onClick={handleCloseForm}
-            >
-              Cancelar
+            <button type="button" onClick={handleCloseForm} style={{
+              width: 32, height: 32, borderRadius: 8,
+              border: '1.5px solid #e2e8f0', background: '#fff',
+              color: '#94a3b8', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
             </button>
           </div>
 
-          <WizardSteps currentStep={formStep} step1Valid={step1Valid} onGoTo={setFormStep} />
+          <div style={{ padding: '28px' }}>
+            <WizardSteps currentStep={formStep} step1Valid={step1Valid} onGoTo={setFormStep} />
 
-          <form onSubmit={formStep === 2 ? handleCreateSurvey : (e) => { e.preventDefault(); setFormStep(2) }}>
+            <form onSubmit={formStep === 2 ? handleCreateSurvey : (e) => { e.preventDefault(); setFormStep(2) }}>
 
-            {/* Step 1 */}
-            {formStep === 1 && (
-              <div style={{ display: 'grid', gap: 18 }}>
-                <div style={{ marginBottom: 4 }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--slate-700)' }}>
-                    Identificação da pesquisa
-                  </p>
-                  <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--slate-500)' }}>
-                    Defina o nome, código único e a primeira versão.
-                  </p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
-                  <label className="field-group">
-                    <span>
-                      Código único
-                      <span className="field-optional"> · ex: CLIMA-2026-Q1</span>
-                    </span>
-                    <input
-                      name="code"
-                      minLength={3}
-                      placeholder="CLIMA-2026-Q1"
-                      required
-                      value={formValues.code}
-                      onChange={handleFieldChange}
-                      style={{ fontFamily: 'Courier New, monospace', fontWeight: 600, textTransform: 'uppercase' }}
-                      autoFocus
-                    />
-                  </label>
-                  <label className="field-group">
-                    <span>Tipo de pesquisa</span>
-                    <input
-                      name="category"
-                      minLength={2}
-                      placeholder="Great Place to Work, Clima, Onboarding…"
-                      required
-                      value={formValues.category}
-                      onChange={handleFieldChange}
-                    />
-                  </label>
-                </div>
-
-                <label className="field-group">
-                  <span>Nome da pesquisa</span>
-                  <input
-                    name="name"
-                    minLength={3}
-                    placeholder="Ex: Pesquisa de Clima Organizacional 2026"
-                    required
-                    value={formValues.name}
-                    onChange={handleFieldChange}
-                  />
-                </label>
-
-                <label className="field-group">
-                  <span>
-                    Descrição
-                    <span className="field-optional"> · opcional</span>
-                  </span>
-                  <textarea
-                    name="description"
-                    placeholder="Descreva o objetivo desta pesquisa"
-                    rows={3}
-                    value={formValues.description}
-                    onChange={handleFieldChange}
-                    style={{ resize: 'vertical' }}
-                  />
-                </label>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, alignItems: 'end' }}>
-                  <label className="field-group">
-                    <span>Título da versão inicial</span>
-                    <input
-                      name="versionTitle"
-                      required
-                      value={formValues.versionTitle}
-                      onChange={handleFieldChange}
-                    />
-                  </label>
-                  <label className="checkbox-field" style={{ marginBottom: 2 }}>
-                    <input
-                      checked={formValues.isActive}
-                      name="isActive"
-                      type="checkbox"
-                      onChange={handleFieldChange}
-                    />
-                    <span>Pesquisa ativa ao criar</span>
-                  </label>
-                </div>
-
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4, borderTop: '1px solid var(--slate-100)' }}>
-                  <button className="secondary-button" type="button" onClick={handleCloseForm}>
-                    Cancelar
-                  </button>
-                  <button className="primary-button" disabled={!step1Valid} type="submit">
-                    Continuar
-                    <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
-                      <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2 */}
-            {formStep === 2 && (
-              <div style={{ display: 'grid', gap: 18 }}>
-                <div style={{ marginBottom: 4 }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--slate-700)' }}>
-                    Estrutura da pesquisa
-                  </p>
-                  <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--slate-500)' }}>
-                    Adicione dimensões temáticas para organizar as perguntas depois.
-                  </p>
-                </div>
-
-                <label className="field-group">
-                  <span>
-                    Descrição da versão
-                    <span className="field-optional"> · opcional</span>
-                  </span>
-                  <textarea
-                    name="versionDescription"
-                    placeholder="Observações sobre esta versão"
-                    rows={2}
-                    value={formValues.versionDescription}
-                    onChange={handleFieldChange}
-                    style={{ resize: 'vertical' }}
-                  />
-                </label>
-
-                <label className="field-group">
-                  <span>
-                    Dimensões
-                    <span className="field-optional"> · uma por linha</span>
-                  </span>
-                  <textarea
-                    name="dimensions"
-                    placeholder={'Confiança\nLiderança\nPride\nRespeito'}
-                    rows={5}
-                    value={formValues.dimensions}
-                    onChange={handleFieldChange}
-                    style={{ resize: 'vertical' }}
-                  />
-                  <span className="field-hint">
-                    Dimensões agrupam perguntas por tema. Você pode adicionar ou editar depois também.
-                  </span>
-                </label>
-
-                {dimensionTags.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {dimensionTags.map((d, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          padding: '4px 12px',
-                          borderRadius: 999,
-                          background: 'var(--blue-100)',
-                          color: 'var(--blue-800)',
-                          fontSize: 12, fontWeight: 600,
-                        }}
-                      >
-                        {d}
-                      </span>
-                    ))}
+              {/* Step 1 */}
+              {formStep === 1 && (
+                <div style={{ display: 'grid', gap: 18 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
+                    <label className="field-group">
+                      <span>Código único <span className="field-optional">· ex: CLIMA-2026</span></span>
+                      <input
+                        name="code"
+                        minLength={3}
+                        placeholder="CLIMA-2026"
+                        required
+                        value={formValues.code}
+                        onChange={handleFieldChange}
+                        style={{ fontFamily: 'Courier New, monospace', fontWeight: 700, textTransform: 'uppercase' }}
+                        autoFocus
+                      />
+                    </label>
+                    <label className="field-group">
+                      <span>Tipo de pesquisa</span>
+                      <input name="category" minLength={2} placeholder="Great Place to Work, Clima, Onboarding…" required value={formValues.category} onChange={handleFieldChange} />
+                    </label>
                   </div>
-                )}
-
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4, borderTop: '1px solid var(--slate-100)' }}>
-                  <button className="secondary-button" type="button" onClick={() => setFormStep(1)}>
-                    ← Voltar
-                  </button>
-                  <button className="secondary-button" type="button" onClick={handleCloseForm}>
-                    Cancelar
-                  </button>
-                  <button className="primary-button" disabled={isSubmitting} type="submit" style={{ minWidth: 160 }}>
-                    {isSubmitting ? (
-                      <>
-                        <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" style={{ animation: 'spin .7s linear infinite' }} viewBox="0 0 24 24" width="14">
-                          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                        </svg>
-                        Criando…
-                      </>
-                    ) : 'Criar pesquisa'}
-                  </button>
+                  <label className="field-group">
+                    <span>Nome da pesquisa</span>
+                    <input name="name" minLength={3} placeholder="Ex: Pesquisa de Clima Organizacional 2026" required value={formValues.name} onChange={handleFieldChange} />
+                  </label>
+                  <label className="field-group">
+                    <span>Descrição <span className="field-optional">· opcional</span></span>
+                    <textarea name="description" placeholder="Descreva o objetivo desta pesquisa" rows={3} value={formValues.description} onChange={handleFieldChange} style={{ resize: 'vertical' }} />
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, alignItems: 'end' }}>
+                    <label className="field-group">
+                      <span>Título da versão inicial</span>
+                      <input name="versionTitle" required value={formValues.versionTitle} onChange={handleFieldChange} />
+                    </label>
+                    <label className="flag-toggle" style={{ marginBottom: 2 }}>
+                      <input checked={formValues.isActive} name="isActive" type="checkbox" onChange={handleFieldChange} />
+                      <span>Pesquisa ativa ao criar</span>
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+                    <button className="secondary-button" type="button" onClick={handleCloseForm}>Cancelar</button>
+                    <button
+                      type="submit"
+                      disabled={!step1Valid}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        padding: '11px 20px', borderRadius: 10,
+                        background: step1Valid ? '#0f172a' : '#e2e8f0',
+                        border: 'none',
+                        color: step1Valid ? '#fff' : '#94a3b8',
+                        fontSize: 14, fontWeight: 700,
+                        cursor: step1Valid ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      Continuar
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </form>
-        </section>
+              )}
+
+              {/* Step 2 */}
+              {formStep === 2 && (
+                <div style={{ display: 'grid', gap: 18 }}>
+                  <label className="field-group">
+                    <span>Descrição da versão <span className="field-optional">· opcional</span></span>
+                    <textarea name="versionDescription" placeholder="Observações sobre esta versão" rows={2} value={formValues.versionDescription} onChange={handleFieldChange} style={{ resize: 'vertical' }} />
+                  </label>
+                  <label className="field-group">
+                    <span>Dimensões <span className="field-optional">· uma por linha</span></span>
+                    <textarea name="dimensions" placeholder={'Confiança\nLiderança\nPride\nRespeito'} rows={5} value={formValues.dimensions} onChange={handleFieldChange} style={{ resize: 'vertical' }} />
+                    <span className="field-hint">Dimensões agrupam perguntas por tema. Você pode adicionar ou editar depois também.</span>
+                  </label>
+                  {dimensionTags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {dimensionTags.map((d, i) => (
+                        <span key={i} style={{
+                          padding: '4px 12px', borderRadius: 999,
+                          background: '#f0f4ff', color: '#3730a3',
+                          fontSize: 12, fontWeight: 600, border: '1px solid #c7d2fe',
+                        }}>{d}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+                    <button className="secondary-button" type="button" onClick={() => setFormStep(1)}>← Voltar</button>
+                    <button className="secondary-button" type="button" onClick={handleCloseForm}>Cancelar</button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        padding: '11px 22px', borderRadius: 10,
+                        background: '#0f172a', border: 'none',
+                        color: '#fff', fontSize: 14, fontWeight: 700,
+                        cursor: isSubmitting ? 'wait' : 'pointer',
+                        opacity: isSubmitting ? 0.7 : 1,
+                      }}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg width="14" height="14" style={{ animation: 'spin .7s linear infinite' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                          </svg>
+                          Criando…
+                        </>
+                      ) : (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                          Criar pesquisa
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </form>
+          </div>
+        </div>
       )}
 
-      {/* ── Search + filters ── */}
-      <section className="admin-toolbar-card" style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
-        <label className="field-group" style={{ flex: 1, minWidth: 220, margin: 0 }}>
-          <span>Buscar pesquisa</span>
-          <div style={{ position: 'relative' }}>
-            <svg
-              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', pointerEvents: 'none' }}
-              fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="15"
-            >
-              <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
-            </svg>
-            <input
-              placeholder="Nome, código ou categoria…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              style={{ paddingLeft: 36, paddingRight: query ? 36 : 14 }}
-            />
-            {query && (
-              <button
-                onClick={() => setQuery('')}
-                style={{
-                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                  background: 'var(--slate-200)', border: 'none', borderRadius: '50%',
-                  width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--slate-500)',
-                }}
-                type="button"
-              >
-                <svg fill="none" height="11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" width="11">
-                  <line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" />
-                </svg>
-              </button>
-            )}
-          </div>
-        </label>
-
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {[
-            { key: 'all', label: 'Todas' },
-            { key: 'active', label: 'Ativas' },
-            { key: 'inactive', label: 'Inativas' },
-            { key: 'campaign', label: 'Com campanha' },
-          ].map(({ key, label }) => (
+      {/* ── Search + Filters ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        padding: '16px 20px',
+        borderRadius: 14,
+        background: '#fff',
+        border: '1.5px solid #e2e8f0',
+      }}>
+        {/* Search */}
+        <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+          <svg
+            style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}
+            width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
+          </svg>
+          <input
+            placeholder="Buscar por nome, código ou categoria…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 36px',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: 10,
+              background: '#f8fafc',
+              fontSize: 14, color: '#0f172a',
+              outline: 'none',
+              transition: 'border-color 160ms',
+            }}
+            onFocus={(e) => { e.target.style.borderColor = '#94a3b8'; e.target.style.background = '#fff' }}
+            onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc' }}
+          />
+          {query && (
             <button
-              key={key}
-              type="button"
-              onClick={() => setFilterStatus(key)}
+              onClick={() => setQuery('')}
               style={{
-                padding: '8px 14px',
-                borderRadius: 'var(--r-md)',
-                border: filterStatus === key ? '1.5px solid var(--blue-400)' : '1.5px solid var(--slate-200)',
-                background: filterStatus === key ? 'var(--blue-50)' : 'var(--color-surface)',
-                color: filterStatus === key ? 'var(--blue-700)' : 'var(--slate-600)',
-                fontWeight: 600, fontSize: 13, cursor: 'pointer',
-                transition: 'all 160ms ease',
+                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                background: '#e2e8f0', border: 'none', borderRadius: '50%',
+                width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#64748b',
               }}
             >
-              {label}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" />
+              </svg>
             </button>
-          ))}
+          )}
         </div>
-      </section>
 
-      {/* ── Survey list ── */}
-      <section className="admin-panel-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {isLoading ? (
-          <div className="empty-state" style={{ padding: '64px 24px' }}>
-            <div style={{
-              width: 24, height: 24,
-              border: '2.5px solid var(--blue-100)',
-              borderTopColor: 'var(--blue-600)',
-              borderRadius: '50%',
-              animation: 'spin .7s linear infinite',
-              marginBottom: 4,
-            }} />
-            <strong>Carregando pesquisas…</strong>
-          </div>
-        ) : filteredSurveys.length === 0 ? (
-          <div className="empty-state" style={{ padding: '64px 24px' }}>
-            <svg fill="none" height="36" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="36" style={{ color: 'var(--slate-300)', marginBottom: 4 }}>
+        {/* Filter pills */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {filterOptions.map(({ key, label, count }) => {
+            const isActive = filterStatus === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilterStatus(key)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  padding: '8px 13px',
+                  borderRadius: 9,
+                  border: `1.5px solid ${isActive ? '#0f172a' : '#e2e8f0'}`,
+                  background: isActive ? '#0f172a' : '#fff',
+                  color: isActive ? '#fff' : '#64748b',
+                  fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 160ms',
+                }}
+              >
+                {label}
+                <span style={{
+                  minWidth: 20, height: 20, padding: '0 6px',
+                  borderRadius: 6,
+                  background: isActive ? 'rgba(255,255,255,.2)' : '#f1f5f9',
+                  color: isActive ? '#fff' : '#64748b',
+                  fontSize: 11, fontWeight: 700,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Survey grid ── */}
+      {isLoading ? (
+        <div style={{
+          padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+          background: '#fff', borderRadius: 16, border: '1.5px solid #e2e8f0',
+        }}>
+          <div style={{
+            width: 32, height: 32,
+            border: '3px solid #e2e8f0', borderTopColor: '#0f172a',
+            borderRadius: '50%', animation: 'spin .7s linear infinite',
+          }} />
+          <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>Carregando pesquisas…</span>
+        </div>
+      ) : filteredSurveys.length === 0 ? (
+        <div style={{
+          padding: '80px 32px', textAlign: 'center',
+          background: '#fff', borderRadius: 16, border: '1.5px solid #e2e8f0',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{
+            width: 60, height: 60, borderRadius: 18,
+            background: '#f1f5f9',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 4,
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16v16H4z" /><path d="M8 8h8" /><path d="M8 12h8" /><path d="M8 16h5" />
             </svg>
-            <strong>{query || filterStatus !== 'all' ? 'Nenhuma pesquisa encontrada' : 'Nenhuma pesquisa cadastrada'}</strong>
-            <span>
-              {query || filterStatus !== 'all'
-                ? 'Tente ajustar os filtros de busca.'
-                : 'Clique em "Nova pesquisa" para começar.'}
-            </span>
-            {(query || filterStatus !== 'all') && (
-              <button
-                className="secondary-button"
-                style={{ marginTop: 8 }}
-                type="button"
-                onClick={() => { setQuery(''); setFilterStatus('all') }}
-              >
-                Limpar filtros
-              </button>
-            )}
           </div>
-        ) : (
-          <>
-            {/* Table header */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '56px 1fr 120px 80px 100px 100px auto',
-              gap: 14,
-              padding: '12px 20px',
-              borderBottom: '1px solid var(--slate-100)',
-              background: 'var(--slate-50)',
-              alignItems: 'center',
-            }}>
-              {['', 'Pesquisa', 'Versão', 'Perguntas', 'Campanhas', 'Status', 'Ações'].map((h, i) => (
-                <span key={i} style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                  {h}
-                </span>
-              ))}
-            </div>
+          <strong style={{ fontSize: 16, color: '#334155', fontWeight: 700 }}>
+            {query || filterStatus !== 'all' ? 'Nenhuma pesquisa encontrada' : 'Nenhuma pesquisa cadastrada'}
+          </strong>
+          <span style={{ fontSize: 14, color: '#94a3b8', maxWidth: 300, lineHeight: 1.65 }}>
+            {query || filterStatus !== 'all'
+              ? 'Tente ajustar os filtros de busca.'
+              : 'Clique em "Nova pesquisa" para começar.'}
+          </span>
+          {(query || filterStatus !== 'all') && (
+            <button
+              className="secondary-button"
+              style={{ marginTop: 8 }}
+              type="button"
+              onClick={() => { setQuery(''); setFilterStatus('all') }}
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Count line */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600 }}>
+              {filteredSurveys.length} de {surveys.length} pesquisa{surveys.length !== 1 ? 's' : ''}
+              {(query || filterStatus !== 'all') ? ' · filtradas' : ''}
+            </span>
+            <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600 }}>
+              {stats.totalQuestions} pergunta{stats.totalQuestions !== 1 ? 's' : ''} no total
+            </span>
+          </div>
 
-            {/* Rows */}
-            {filteredSurveys.map((survey) => {
-              const accent = getAccent(survey.code)
-              const versionMeta = VERSION_STATUS_META[survey.current_version_status] ?? VERSION_STATUS_META.DRAFT
-              const isConfirmingDelete = confirmDeleteId === survey.id
-              const isThisDeleting = deletingSurveyId === survey.id
-
-              return (
-                <div key={survey.id} style={{ borderBottom: '1px solid var(--slate-100)' }}>
-                  {/* Main row */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '56px 1fr 120px 80px 100px 100px auto',
-                    gap: 14,
-                    padding: '14px 20px',
-                    alignItems: 'center',
-                    background: isConfirmingDelete ? 'var(--red-50)' : survey.is_active ? 'transparent' : 'var(--slate-50)',
-                    opacity: survey.is_active ? 1 : 0.7,
-                    transition: 'background 160ms ease',
-                  }}>
-
-                    {/* Avatar */}
-                    <SurveyAvatar name={survey.name} code={survey.code} />
-
-                    {/* Name + code + category */}
-                    <div style={{ minWidth: 0 }}>
-                      <strong style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--slate-900)', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {survey.name}
-                      </strong>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{
-                          fontFamily: 'Courier New, monospace', fontSize: 11, fontWeight: 700,
-                          color: accent.text, background: accent.bg, padding: '2px 7px', borderRadius: 4,
-                        }}>
-                          {survey.code}
-                        </span>
-                        <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>·</span>
-                        <span style={{ fontSize: 12, color: 'var(--slate-500)' }}>{survey.category}</span>
-                      </div>
-                    </div>
-
-                    {/* Version */}
-                    <div>
-                      <strong style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--slate-700)', marginBottom: 4 }}>
-                        {survey.current_version ?? '—'}
-                      </strong>
-                      <span className={`status-pill ${versionMeta.variant}`} style={{ fontSize: 11, padding: '3px 9px' }}>
-                        {versionMeta.label}
-                      </span>
-                    </div>
-
-                    {/* Questions count */}
-                    <div style={{ textAlign: 'center' }}>
-                      <strong style={{ display: 'block', fontSize: 18, fontWeight: 800, color: 'var(--slate-800)', lineHeight: 1, fontFamily: 'var(--font-display)' }}>
-                        {survey.total_questions}
-                      </strong>
-                      <span style={{ fontSize: 11, color: 'var(--slate-400)', fontWeight: 600 }}>questões</span>
-                    </div>
-
-                    {/* Campaigns */}
-                    <div>
-                      {survey.latest_campaign_id ? (
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <Link
-                            className="inline-link"
-                            style={{ fontSize: 11 }}
-                            to={`/admin/campaigns/${survey.latest_campaign_id}/responses`}
-                          >
-                            Respostas →
-                          </Link>
-                          <Link
-                            className="inline-link"
-                            style={{ fontSize: 11 }}
-                            to={`/admin/campaigns/${survey.latest_campaign_id}/kpis`}
-                          >
-                            KPIs →
-                          </Link>
-                        </div>
-                      ) : (
-                        <span style={{ fontSize: 12, color: 'var(--slate-400)', fontStyle: 'italic' }}>Sem campanha</span>
-                      )}
-                    </div>
-
-                    {/* Active status */}
-                    <span className={`status-pill ${survey.is_active ? 'active' : 'inactive'}`}>
-                      {survey.is_active ? 'Ativa' : 'Inativa'}
-                    </span>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <Link
-                        className="secondary-link-button"
-                        style={{ padding: '7px 12px', fontSize: 12, whiteSpace: 'nowrap' }}
-                        to={`/admin/surveys/${survey.id}`}
-                      >
-                        <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="13">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Gerenciar
-                      </Link>
-                      <button
-                        className="danger-button"
-                        style={{ padding: '7px 12px', fontSize: 12 }}
-                        disabled={isThisDeleting}
-                        type="button"
-                        onClick={() => setConfirmDeleteId(isConfirmingDelete ? null : survey.id)}
-                      >
-                        <svg fill="none" height="13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="13">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6" /><path d="M14 11v6" />
-                          <path d="M9 6V4h6v2" />
-                        </svg>
-                        {isThisDeleting ? 'Excluindo…' : 'Excluir'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Inline delete confirmation */}
-                  {isConfirmingDelete && (
-                    <DeleteConfirmRow
-                      survey={survey}
-                      isDeleting={isThisDeleting}
-                      onConfirm={() => handleDeleteConfirm(survey)}
-                      onCancel={() => setConfirmDeleteId(null)}
-                    />
-                  )}
-                </div>
-              )
-            })}
-
-            {/* Footer */}
-            <div style={{
-              padding: '12px 20px',
-              background: 'var(--slate-50)',
-              borderTop: '1px solid var(--slate-100)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{ fontSize: 12, color: 'var(--slate-400)', fontWeight: 600 }}>
-                Exibindo {filteredSurveys.length} de {surveys.length} pesquisa{surveys.length !== 1 ? 's' : ''}
-              </span>
-              <span style={{ fontSize: 12, color: 'var(--slate-400)', fontWeight: 600 }}>
-                {stats.totalQuestions} pergunta{stats.totalQuestions !== 1 ? 's' : ''} no total
-              </span>
-            </div>
-          </>
-        )}
-      </section>
+          {/* Cards grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: 16,
+          }}>
+            {filteredSurveys.map((survey) => (
+              <SurveyCard
+                key={survey.id}
+                survey={survey}
+                onDelete={handleDeleteConfirm}
+                confirmDeleteId={confirmDeleteId}
+                setConfirmDeleteId={setConfirmDeleteId}
+                deletingSurveyId={deletingSurveyId}
+                isDeleting={deletingSurveyId === survey.id}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

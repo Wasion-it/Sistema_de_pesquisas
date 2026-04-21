@@ -12,11 +12,13 @@ from sqlalchemy.orm import Session, selectinload
 from app.api.deps import get_current_admin_user
 from app.db.session import get_db
 from app.services.admission_checklist import DEFAULT_ADMISSION_CHECKLIST_STEPS
+from app.services.dismissal_checklist import DEFAULT_DISMISSAL_CHECKLIST_STEPS
 from app.models import (
     AdmissionRequestApproval,
     AdmissionRequest,
     AdmissionRequestCandidate,
     AdmissionChecklistStep,
+    DismissalChecklistStep,
     AdmissionRequestStatusEnum,
     ApprovalOriginGroupEnum,
     AdmissionRequestTypeEnum,
@@ -63,6 +65,11 @@ from app.schemas.admin import (
     AdmissionChecklistStepListResponse,
     AdmissionChecklistStepResponse,
     AdmissionChecklistStepUpdateRequest,
+    DismissalChecklistReorderRequest,
+    DismissalChecklistStepCreateRequest,
+    DismissalChecklistStepListResponse,
+    DismissalChecklistStepResponse,
+    DismissalChecklistStepUpdateRequest,
     AdmissionRequestCreateRequest,
     AdmissionRequestCandidateResponse,
     AdmissionRequestHireRequest,
@@ -694,6 +701,190 @@ def reset_admin_admission_checklist_steps(
     return AdmissionChecklistStepListResponse(items=[_serialize_admission_checklist_step(step) for step in seeded_steps])
 
 
+@router.get("/dismissal-checklist", response_model=DismissalChecklistStepListResponse)
+def read_admin_dismissal_checklist_steps(
+    _: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalChecklistStepListResponse:
+    steps = _list_dismissal_checklist_steps(db)
+    return DismissalChecklistStepListResponse(items=[_serialize_dismissal_checklist_step(step) for step in steps])
+
+
+@router.post("/dismissal-checklist", response_model=DismissalChecklistStepResponse, status_code=status.HTTP_201_CREATED)
+def create_admin_dismissal_checklist_step(
+    payload: DismissalChecklistStepCreateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalChecklistStepResponse:
+    checklist_step = DismissalChecklistStep(
+        step_order=payload.step_order,
+        title=payload.title.strip(),
+        description=payload.description.strip() if payload.description else None,
+    )
+    db.add(checklist_step)
+    db.flush()
+
+    _normalize_dismissal_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.CREATE,
+            entity_name="dismissal_checklist_step",
+            entity_id=str(checklist_step.id),
+            description="Dismissal checklist step created from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "step_id": checklist_step.id,
+                    "title": checklist_step.title,
+                    "step_order": checklist_step.step_order,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(checklist_step)
+    return _serialize_dismissal_checklist_step(checklist_step)
+
+
+@router.put("/dismissal-checklist/{step_id}", response_model=DismissalChecklistStepResponse)
+def update_admin_dismissal_checklist_step(
+    step_id: int,
+    payload: DismissalChecklistStepUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalChecklistStepResponse:
+    checklist_step = db.scalar(select(DismissalChecklistStep).where(DismissalChecklistStep.id == step_id))
+    if checklist_step is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal checklist step not found")
+
+    checklist_step.step_order = payload.step_order
+    checklist_step.title = payload.title.strip()
+    checklist_step.description = payload.description.strip() if payload.description else None
+
+    db.flush()
+    _normalize_dismissal_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="dismissal_checklist_step",
+            entity_id=str(checklist_step.id),
+            description="Dismissal checklist step updated from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "step_id": checklist_step.id,
+                    "title": checklist_step.title,
+                    "step_order": checklist_step.step_order,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    db.refresh(checklist_step)
+    return _serialize_dismissal_checklist_step(checklist_step)
+
+
+@router.delete("/dismissal-checklist/{step_id}", response_model=AdminActionResponse)
+def delete_admin_dismissal_checklist_step(
+    step_id: int,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AdminActionResponse:
+    checklist_step = db.scalar(select(DismissalChecklistStep).where(DismissalChecklistStep.id == step_id))
+    if checklist_step is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal checklist step not found")
+
+    db.delete(checklist_step)
+    db.flush()
+    _normalize_dismissal_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.DELETE,
+            entity_name="dismissal_checklist_step",
+            entity_id=str(step_id),
+            description="Dismissal checklist step deleted from administrative portal.",
+            details_json=json.dumps({"step_id": step_id}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    return AdminActionResponse(message="Checklist step deleted successfully")
+
+
+@router.post("/dismissal-checklist/reorder", response_model=DismissalChecklistStepListResponse)
+def reorder_admin_dismissal_checklist_steps(
+    payload: DismissalChecklistReorderRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalChecklistStepListResponse:
+    existing_steps = db.scalars(select(DismissalChecklistStep)).all()
+    steps_by_id = {step.id: step for step in existing_steps}
+    ordered_ids = payload.ordered_step_ids
+
+    if len(ordered_ids) != len(existing_steps):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Checklist order must include every step")
+
+    if len(set(ordered_ids)) != len(ordered_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Checklist order cannot contain repeated steps")
+
+    if set(ordered_ids) != set(steps_by_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Checklist order contains unknown steps")
+
+    for index, step_id in enumerate(ordered_ids, start=1):
+        steps_by_id[step_id].step_order = index
+
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="dismissal_checklist_step",
+            entity_id="bulk-reorder",
+            description="Dismissal checklist reordered from administrative portal.",
+            details_json=json.dumps({"ordered_step_ids": ordered_ids}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    steps = _list_dismissal_checklist_steps(db)
+    return DismissalChecklistStepListResponse(items=[_serialize_dismissal_checklist_step(step) for step in steps])
+
+
+@router.post("/dismissal-checklist/reset-default", response_model=DismissalChecklistStepListResponse)
+def reset_admin_dismissal_checklist_steps(
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalChecklistStepListResponse:
+    steps = db.scalars(select(DismissalChecklistStep)).all()
+    for step in steps:
+        db.delete(step)
+
+    db.flush()
+    seeded_steps = _seed_default_dismissal_checklist_steps(db)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="dismissal_checklist_step",
+            entity_id="reset-default",
+            description="Dismissal checklist restored to default items from administrative portal.",
+            details_json=json.dumps({"step_count": len(seeded_steps)}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    return DismissalChecklistStepListResponse(items=[_serialize_dismissal_checklist_step(step) for step in seeded_steps])
+
+
 @router.get("/hr/approvals/admission", response_model=ApprovalQueueListResponse)
 def read_admin_admission_approval_queue(
     _: Annotated[User, Depends(get_current_admin_user)],
@@ -1165,6 +1356,41 @@ def _seed_dismissal_approval_steps(db: Session, dismissal_request: DismissalRequ
                 status=ApprovalStepStatusEnum.PENDING,
             )
         )
+
+
+def _list_dismissal_checklist_steps(db: Session) -> list[DismissalChecklistStep]:
+    return list(
+        db.scalars(select(DismissalChecklistStep).order_by(DismissalChecklistStep.step_order, DismissalChecklistStep.id))
+    )
+
+
+def _normalize_dismissal_checklist_steps(db: Session) -> None:
+    steps = _list_dismissal_checklist_steps(db)
+    for index, step in enumerate(steps, start=1):
+        step.step_order = index
+
+
+def _seed_default_dismissal_checklist_steps(db: Session) -> list[DismissalChecklistStep]:
+    seeded_steps: list[DismissalChecklistStep] = []
+    for step_order, title, description in DEFAULT_DISMISSAL_CHECKLIST_STEPS:
+        checklist_step = DismissalChecklistStep(step_order=step_order, title=title, description=description)
+        db.add(checklist_step)
+        seeded_steps.append(checklist_step)
+
+    db.flush()
+    _normalize_dismissal_checklist_steps(db)
+    return seeded_steps
+
+
+def _serialize_dismissal_checklist_step(step: DismissalChecklistStep) -> DismissalChecklistStepResponse:
+    return DismissalChecklistStepResponse(
+        id=step.id,
+        step_order=step.step_order,
+        title=step.title,
+        description=step.description,
+        created_at=step.created_at,
+        updated_at=step.updated_at,
+    )
 
 
 def _build_department_progress(

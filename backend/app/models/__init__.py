@@ -32,6 +32,7 @@ from app.models.enums import (
 )
 from app.models.dismissal_request_approval import DismissalRequestApproval
 from app.models.dismissal_request import DismissalRequest
+from app.models.dismissal_checklist_step import DismissalChecklistStep
 from app.models.job_title import JobTitle
 from app.models.question_option import QuestionOption
 from app.models.response import Response
@@ -63,6 +64,7 @@ __all__ = [
     "CampaignStatusEnum",
     "ContractRegimeEnum",
     "Department",
+    "DismissalChecklistStep",
     "DismissalRequest",
     "DismissalRequestApproval",
     "DismissalRequestStatusEnum",

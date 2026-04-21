@@ -327,6 +327,59 @@ export async function resetAdminAdmissionChecklistSteps(token) {
   return parseResponse(response)
 }
 
+export async function getAdminDismissalChecklist(token) {
+  const response = await fetch(`${API_URL}/admin/dismissal-checklist`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function createAdminDismissalChecklistStep(token, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/dismissal-checklist`,
+    buildJsonOptions(token, 'POST', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function updateAdminDismissalChecklistStep(token, stepId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/dismissal-checklist/${stepId}`,
+    buildJsonOptions(token, 'PUT', payload),
+  )
+
+  return parseResponse(response)
+}
+
+export async function deleteAdminDismissalChecklistStep(token, stepId) {
+  const response = await fetch(`${API_URL}/admin/dismissal-checklist/${stepId}`, {
+    method: 'DELETE',
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function reorderAdminDismissalChecklistSteps(token, orderedStepIds) {
+  const response = await fetch(
+    `${API_URL}/admin/dismissal-checklist/reorder`,
+    buildJsonOptions(token, 'POST', { ordered_step_ids: orderedStepIds }),
+  )
+
+  return parseResponse(response)
+}
+
+export async function resetAdminDismissalChecklistSteps(token) {
+  const response = await fetch(
+    `${API_URL}/admin/dismissal-checklist/reset-default`,
+    buildJsonOptions(token, 'POST', {}),
+  )
+
+  return parseResponse(response)
+}
+
 export async function getAdminAdmissionRequest(token, requestId) {
   const response = await fetch(`${API_URL}/admin/hr/admission-requests/${requestId}`, {
     headers: buildHeaders(token),

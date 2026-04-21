@@ -166,6 +166,35 @@ class AdmissionChecklistProgressUpdateRequest(BaseModel):
     completed_steps: int = Field(ge=0, le=1000)
 
 
+class DismissalChecklistStepResponse(BaseModel):
+    id: int
+    step_order: int
+    title: str
+    description: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DismissalChecklistStepListResponse(BaseModel):
+    items: list[DismissalChecklistStepResponse]
+
+
+class DismissalChecklistStepCreateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=180)
+    description: str | None = Field(default=None, max_length=5000)
+    step_order: int = Field(default=1, ge=1, le=1000)
+
+
+class DismissalChecklistStepUpdateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=180)
+    description: str | None = Field(default=None, max_length=5000)
+    step_order: int = Field(default=1, ge=1, le=1000)
+
+
+class DismissalChecklistReorderRequest(BaseModel):
+    ordered_step_ids: list[int] = Field(min_length=1)
+
+
 class AdmissionRequestCreateRequest(BaseModel):
     request_type: AdmissionRequestTypeEnum
     posicao_vaga: AdmissionPositionEnum

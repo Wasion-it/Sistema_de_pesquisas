@@ -14,6 +14,7 @@ import { AdminLoginPage } from './pages/AdminLoginPage'
 import { AdminJobTitlesPage } from './pages/AdminJobTitlesPage'
 import { AdminAdmissionRequestsPage } from './pages/AdminAdmissionRequestsPage'
 import { AdminAdmissionChecklistPage } from './pages/AdminAdmissionChecklistPage'
+import { AdminDismissalChecklistPage } from './pages/AdminDismissalChecklistPage'
 import { AdminDismissalRequestsPage } from './pages/AdminDismissalRequestsPage'
 import { MyRequestsPage } from './pages/MyRequestsPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="admission-requests" element={<AdminAdmissionRequestsPage />} />
             <Route path="admission-checklist" element={<AdminAdmissionChecklistPage />} />
             <Route path="dismissal-requests" element={<AdminDismissalRequestsPage />} />
+            <Route path="dismissal-checklist" element={<AdminDismissalChecklistPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />
             <Route path="campaigns/:campaignId/kpis" element={<AdminCampaignKpisPage />} />
             <Route path="campaigns/:campaignId/responses" element={<AdminCampaignResponsesPage />} />

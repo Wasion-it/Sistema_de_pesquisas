@@ -17,19 +17,21 @@ export const ACCESS_MODULE_META = {
 }
 
 const FULL_PORTAL_ROLES = new Set(['RH_ADMIN'])
+const SURVEYS_ONLY_ROLES = new Set(['RH_PESQUISAS'])
 const RH_ANALYST_MODULES = new Set(['ADMISSION', 'DISMISSAL'])
 const APPROVAL_ONLY_ROLES = new Set(['GESTOR', 'DIRETOR_RAVI'])
 
 export function hasPortalAccess(user) {
   if (!user) return false
   if (user.role === 'COLABORADOR') return false
-  if (FULL_PORTAL_ROLES.has(user.role) || APPROVAL_ONLY_ROLES.has(user.role) || user.role === 'RH_ANALISTA') return true
+  if (FULL_PORTAL_ROLES.has(user.role) || SURVEYS_ONLY_ROLES.has(user.role) || APPROVAL_ONLY_ROLES.has(user.role) || user.role === 'RH_ANALISTA') return true
   return Boolean(user.access_grants?.some((grant) => grant.is_active !== false))
 }
 
 export function hasModuleAccess(user, moduleName) {
   if (!user) return false
   if (FULL_PORTAL_ROLES.has(user.role)) return true
+  if (SURVEYS_ONLY_ROLES.has(user.role)) return moduleName === 'SURVEYS'
   if (user.role === 'RH_ANALISTA') return RH_ANALYST_MODULES.has(moduleName)
   if (APPROVAL_ONLY_ROLES.has(user.role)) return moduleName === 'APPROVALS'
   return Boolean(user.access_grants?.some((grant) => grant.is_active !== false && grant.module === moduleName))
@@ -38,6 +40,7 @@ export function hasModuleAccess(user, moduleName) {
 export function hasAdminSectionAccess(user, sectionName) {
   if (!user) return false
   if (FULL_PORTAL_ROLES.has(user.role)) return true
+  if (SURVEYS_ONLY_ROLES.has(user.role)) return sectionName === 'HOME'
   if (user.role === 'RH_ANALISTA') {
     return new Set(['HOME', 'REQUESTS', 'DEPARTMENTS', 'JOB_TITLES', 'ADMISSION', 'DISMISSAL']).has(sectionName)
   }

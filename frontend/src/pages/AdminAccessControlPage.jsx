@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { getAdminAccessControlUsers, updateAdminAccessControlUser } from '../services/admin'
@@ -61,6 +62,22 @@ const ROLE_OPTIONS = [
     ),
   },
   {
+    value: 'RH_PESQUISAS',
+    label: 'RH Pesquisas',
+    description: 'Gestão de pesquisas, campanhas e respostas',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16v16H4z" />
+        <path d="M8 8h8" />
+        <path d="M8 12h8" />
+        <path d="M8 16h5" />
+      </svg>
+    ),
+  },
+  {
     value: 'RH_ADMIN',
     label: 'RH Admin',
     description: 'Acesso completo ao portal administrativo',
@@ -105,7 +122,8 @@ function formatSource(source) {
 }
 
 export function AdminAccessControlPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
+
   const [users, setUsers] = useState([])
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [selectedRole, setSelectedRole] = useState('COLABORADOR')
@@ -161,6 +179,7 @@ export function AdminAccessControlPage() {
   }, [users])
 
   const hasChanged = selectedUser && selectedRole !== selectedUser.role
+  const isForbidden = user && user.role !== 'RH_ADMIN'
 
   async function handleSave() {
     if (!selectedUser) return
@@ -183,6 +202,10 @@ export function AdminAccessControlPage() {
 
   const selectedRoleMeta = ROLE_META[selectedRole]
   const currentRoleMeta = selectedUser ? ROLE_META[selectedUser.role] : null
+
+  if (isForbidden) {
+    return <Navigate replace to="/admin" />
+  }
 
   return (
     <div className="admin-view" style={{ gap: 20 }}>
@@ -623,11 +646,11 @@ export function AdminAccessControlPage() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     {[
-                      { label: 'Portal collab.', allowed: ['COLABORADOR', 'GESTOR', 'DIRETOR_RAVI', 'RH_ANALISTA', 'RH_ADMIN'].includes(selectedRole) },
+                      { label: 'Portal collab.', allowed: ['COLABORADOR', 'GESTOR', 'DIRETOR_RAVI', 'RH_ANALISTA', 'RH_PESQUISAS', 'RH_ADMIN'].includes(selectedRole) },
                       { label: 'Aprovações', allowed: ['GESTOR', 'DIRETOR_RAVI', 'RH_ADMIN'].includes(selectedRole) },
                       { label: 'Admissão', allowed: ['RH_ANALISTA', 'RH_ADMIN'].includes(selectedRole) },
                       { label: 'Demissão', allowed: ['RH_ANALISTA', 'RH_ADMIN'].includes(selectedRole) },
-                      { label: 'Pesquisas', allowed: ['RH_ADMIN'].includes(selectedRole) },
+                      { label: 'Pesquisas', allowed: ['RH_PESQUISAS', 'RH_ADMIN'].includes(selectedRole) },
                       { label: 'Controle de acesso', allowed: ['RH_ADMIN'].includes(selectedRole) },
                     ].map(p => (
                       <div key={p.label} style={{

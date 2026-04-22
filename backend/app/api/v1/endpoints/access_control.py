@@ -10,7 +10,7 @@ from app.api.deps import get_current_portal_user
 from app.core.config import settings
 from app.db.session import get_db
 from app.models import RoleEnum, User
-from app.models.enums import AccessModuleEnum, AuthenticationSourceEnum
+from app.models.enums import AuthenticationSourceEnum
 from app.schemas.admin import (
     AccessControlUpdateRequest,
     AccessControlUserListResponse,
@@ -40,7 +40,7 @@ def list_access_control_users(
     user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AccessControlUserListResponse:
-    if user.role != RoleEnum.RH_ADMIN and not has_module_access(db, user, AccessModuleEnum.ACCESS_CONTROL):
+    if user.role != RoleEnum.RH_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     if settings.ldap_enabled and settings.ldap_user_base_dn:
@@ -64,7 +64,7 @@ def update_access_control_user(
     user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AccessControlUserResponse:
-    if user.role != RoleEnum.RH_ADMIN and not has_module_access(db, user, AccessModuleEnum.ACCESS_CONTROL):
+    if user.role != RoleEnum.RH_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     target_user = db.scalar(select(User).where(User.id == user_id))

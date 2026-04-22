@@ -94,7 +94,7 @@ const ADMIN_MODULES = [
   {
     title: 'Dashboard',
     description: 'Abra a página principal do admin com acesso aos indicadores de pesquisas.',
-    to: '/admin/dashboard',
+    to: '/admin/dashboard/pesquisas',
     accent: 'green',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -127,6 +127,18 @@ export function AdminHomePage() {
   const visibleModules = isApprovalOnlyRole
     ? ADMIN_MODULES.filter((module) => module.title === 'Aprovações')
     : ADMIN_MODULES.filter((module) => {
+        if (module.to.startsWith('/admin/dashboard/pesquisas')) {
+          return hasModuleAccess(user, 'SURVEYS')
+        }
+
+        if (module.to.startsWith('/admin/dashboard/admissao')) {
+          return hasModuleAccess(user, 'DASHBOARD')
+        }
+
+        if (module.to.startsWith('/admin/dashboard')) {
+          return hasModuleAccess(user, 'DASHBOARD')
+        }
+
         if (module.to.startsWith('/admin/departments')) {
           return hasAdminSectionAccess(user, 'DEPARTMENTS')
         }
@@ -147,7 +159,11 @@ export function AdminHomePage() {
           return hasModuleAccess(user, 'APPROVALS')
         }
 
-        return true
+        if (module.to.startsWith('/admin/surveys') || module.to.startsWith('/admin/campaigns')) {
+          return hasModuleAccess(user, 'SURVEYS')
+        }
+
+        return false
       })
 
   return (

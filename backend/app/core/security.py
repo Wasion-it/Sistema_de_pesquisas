@@ -18,6 +18,7 @@ PBKDF2_ITERATIONS: Final[int] = 390000
 ADMIN_PORTAL_ROLES: Final[set[RoleEnum]] = {
     RoleEnum.RH_ADMIN,
     RoleEnum.RH_ANALISTA,
+    RoleEnum.RH_PESQUISAS,
     RoleEnum.GESTOR,
     RoleEnum.DIRETOR_RAVI,
 }

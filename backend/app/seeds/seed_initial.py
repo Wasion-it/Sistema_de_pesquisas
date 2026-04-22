@@ -53,6 +53,7 @@ from app.models.enums import (
 DEV_PASSWORDS = {
     "rh_admin": "AdminRH123!",
     "rh_analyst": "AnalistaRH123!",
+    "rh_pesquisas": "PesquisasRH123!",
     "manager": "Gestor123!",
     "director_ravi": "Ravi123!",
     "employee": "Colaborador123!",
@@ -169,6 +170,17 @@ def seed_users_and_employees(
             "department": departments["HR"],
             "job_title": job_titles["HR_ANALYST"],
             "work_email": "bruno.lima@example.com",
+        },
+        {
+            "key": "rh_pesquisas",
+            "email": "rh.pesquisas@example.com",
+            "full_name": "Camila Rocha",
+            "password_hash": hash_password(DEV_PASSWORDS["rh_pesquisas"]),
+            "role": RoleEnum.RH_PESQUISAS,
+            "employee_code": "EMP-1003",
+            "department": departments["HR"],
+            "job_title": job_titles["HR_ANALYST"],
+            "work_email": "camila.rocha@example.com",
         },
         {
             "key": "manager",

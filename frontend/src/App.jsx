@@ -111,7 +111,7 @@ export default function App() {
           >
             <Route index element={<AdminHomePage />} />
             <Route path="dashboard" element={<AdminModuleRoute moduleName="DASHBOARD"><AdminDashboardPage /></AdminModuleRoute>} />
-            <Route path="dashboard/pesquisas" element={<AdminModuleRoute moduleName="DASHBOARD"><AdminDashboardPesquisasPage /></AdminModuleRoute>} />
+            <Route path="dashboard/pesquisas" element={<AdminModuleRoute moduleName="SURVEYS"><AdminDashboardPesquisasPage /></AdminModuleRoute>} />
             <Route path="dashboard/admissao" element={<AdminModuleRoute moduleName="DASHBOARD"><AdminDashboardAdmissaoPage /></AdminModuleRoute>} />
             <Route path="requests" element={<AdminModuleRoute moduleName="ADMISSION"><AdminRequestsPage /></AdminModuleRoute>} />
             <Route path="approvals" element={<AdminModuleRoute moduleName="APPROVALS"><AdminApprovalsPage /></AdminModuleRoute>} />
@@ -125,7 +125,7 @@ export default function App() {
             <Route path="campaigns/:campaignId/kpis" element={<AdminModuleRoute moduleName="SURVEYS"><AdminCampaignKpisPage /></AdminModuleRoute>} />
             <Route path="campaigns/:campaignId/responses" element={<AdminModuleRoute moduleName="SURVEYS"><AdminCampaignResponsesPage /></AdminModuleRoute>} />
             <Route path="surveys/:surveyId" element={<AdminModuleRoute moduleName="SURVEYS"><AdminSurveyDetailPage /></AdminModuleRoute>} />
-            <Route path="access-control" element={<AdminModuleRoute moduleName="ACCESS_CONTROL" adminOnly={false}><AdminAccessControlPage /></AdminModuleRoute>} />
+            <Route path="access-control" element={<AdminSectionRoute sectionName="ACCESS_CONTROL"><AdminAccessControlPage /></AdminSectionRoute>} />
           </Route>
         </Routes>
       </AuthProvider>

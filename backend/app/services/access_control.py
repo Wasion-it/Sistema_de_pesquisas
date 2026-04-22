@@ -35,12 +35,18 @@ def has_portal_access(session: Session, user: User) -> bool:
     if user.role in ADMIN_PORTAL_ROLES:
         return True
 
+    if user.role == RoleEnum.RH_PESQUISAS:
+        return True
+
     return bool(get_active_access_grants(session, user.id))
 
 
 def has_module_access(session: Session, user: User, module: AccessModuleEnum) -> bool:
     if user.role in ADMIN_PORTAL_ROLES:
         return True
+
+    if user.role == RoleEnum.RH_PESQUISAS:
+        return module == AccessModuleEnum.SURVEYS
 
     return any(grant.module == module for grant in get_active_access_grants(session, user.id))
 

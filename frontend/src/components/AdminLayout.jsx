@@ -18,7 +18,8 @@ export function AdminLayout() {
   const isApprovalOnlyRole = isApprovalOnlyUser(user)
   const canAccessAdmissions = hasModuleAccess(user, 'ADMISSION')
   const canAccessApprovals = hasModuleAccess(user, 'APPROVALS')
-  const canAccessAccessControl = user?.role === 'RH_ADMIN' || hasModuleAccess(user, 'ACCESS_CONTROL')
+  const canAccessSurveys = hasModuleAccess(user, 'SURVEYS')
+  const canAccessAccessControl = user?.role === 'RH_ADMIN'
 
   function handleSignOut() {
     signOut('/')
@@ -44,14 +45,6 @@ export function AdminLayout() {
         ) : null}
 
         <nav className="admin-nav">
-          {canAccessApprovals || isApprovalOnlyRole ? (
-            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/approvals">
-              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M5 12l4 4L19 6" />
-              </svg>
-              Aprovações
-            </NavLink>
-          ) : null}
           {!isApprovalOnlyRole ? (
             <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} end to="/admin">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
@@ -61,6 +54,25 @@ export function AdminLayout() {
                 <rect height="9" rx="1.5" width="9" x="14" y="14" />
               </svg>
               Início
+            </NavLink>
+          ) : null}
+          {canAccessApprovals || isApprovalOnlyRole ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/approvals">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M5 12l4 4L19 6" />
+              </svg>
+              Aprovações
+            </NavLink>
+          ) : null}
+          {canAccessSurveys ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 8h8" />
+                <path d="M8 12h8" />
+                <path d="M8 16h5" />
+              </svg>
+              Pesquisas
             </NavLink>
           ) : null}
           {!isApprovalOnlyRole && canAccessAdmissions ? (

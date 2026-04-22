@@ -10,6 +10,25 @@ class RoleEnum(str, Enum):
     TI_SUPORTE = "TI_SUPORTE"
 
 
+class AuthenticationSourceEnum(str, Enum):
+    LOCAL = "LOCAL"
+    LDAP = "LDAP"
+
+
+class AccessModuleEnum(str, Enum):
+    DASHBOARD = "DASHBOARD"
+    ADMISSION = "ADMISSION"
+    DISMISSAL = "DISMISSAL"
+    SURVEYS = "SURVEYS"
+    APPROVALS = "APPROVALS"
+    ACCESS_CONTROL = "ACCESS_CONTROL"
+
+
+class AccessLevelEnum(str, Enum):
+    READ = "READ"
+    MANAGE = "MANAGE"
+
+
 class EmployeeStatusEnum(str, Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"

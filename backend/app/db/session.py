@@ -94,6 +94,28 @@ def _ensure_job_title_columns() -> None:
             connection.execute(text(statement))
 
 
+def _ensure_user_columns() -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    statements: list[str] = []
+
+    if "auth_source" not in existing_columns:
+        statements.append("ALTER TABLE users ADD COLUMN auth_source VARCHAR(20) NOT NULL DEFAULT 'LOCAL'")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+        if "auth_source" not in existing_columns:
+            connection.execute(text("UPDATE users SET auth_source = 'LOCAL' WHERE auth_source IS NULL"))
+
+
 def _ensure_employee_columns() -> None:
     inspector = inspect(engine)
     if "employees" not in inspector.get_table_names():
@@ -510,6 +532,7 @@ def _backfill_request_approval_steps() -> None:
 def create_tables() -> None:
     import_all_models()
     Base.metadata.create_all(bind=engine)
+    _ensure_user_columns()
     _ensure_survey_question_columns()
     _ensure_department_columns()
     _ensure_job_title_columns()

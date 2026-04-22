@@ -40,6 +40,7 @@ from app.models import (
     User,
 )
 from app.models.enums import (
+    AuthenticationSourceEnum,
     ApprovalStepStatusEnum,
     AdmissionPositionEnum,
     AdmissionRequestStatusEnum,
@@ -223,6 +224,7 @@ def seed_users_and_employees(
                 "password_hash": item["password_hash"],
                 "role": item["role"],
                 "full_name": item["full_name"],
+                "auth_source": AuthenticationSourceEnum.LOCAL,
                 "is_active": True,
             },
             email=item["email"],
@@ -230,6 +232,7 @@ def seed_users_and_employees(
         user.full_name = item["full_name"]
         user.password_hash = item["password_hash"]
         user.role = item["role"]
+        user.auth_source = AuthenticationSourceEnum.LOCAL
         users[item["key"]] = user
 
         employee, _ = get_or_create(

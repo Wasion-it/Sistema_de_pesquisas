@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { hasModuleAccess, isApprovalOnlyUser } from '../utils/accessControl'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -118,10 +119,36 @@ const ADMIN_MODULES = [
 
 export function AdminHomePage() {
   const { user } = useAuth()
-  const isApprovalOnlyRole = user?.role === 'GESTOR' || user?.role === 'DIRETOR_RAVI'
+  const isApprovalOnlyRole = isApprovalOnlyUser(user)
   const visibleModules = isApprovalOnlyRole
     ? ADMIN_MODULES.filter((module) => module.title === 'Aprovações')
-    : ADMIN_MODULES
+    : ADMIN_MODULES.filter((module) => {
+        if (module.to.startsWith('/admin/departments') || module.to.startsWith('/admin/job-titles')) {
+          return user?.role === 'RH_ADMIN'
+        }
+
+        if (module.to.startsWith('/admin/dashboard')) {
+          return hasModuleAccess(user, 'DASHBOARD')
+        }
+
+        if (module.to.startsWith('/admin/requests') || module.to.startsWith('/admin/admission-requests') || module.to.startsWith('/admin/admission-checklist')) {
+          return hasModuleAccess(user, 'ADMISSION')
+        }
+
+        if (module.to.startsWith('/admin/dismissal-requests') || module.to.startsWith('/admin/dismissal-checklist')) {
+          return hasModuleAccess(user, 'DISMISSAL')
+        }
+
+        if (module.to.startsWith('/admin/surveys') || module.to.startsWith('/admin/campaigns')) {
+          return hasModuleAccess(user, 'SURVEYS')
+        }
+
+        if (module.to.startsWith('/admin/approvals')) {
+          return hasModuleAccess(user, 'APPROVALS')
+        }
+
+        return true
+      })
 
   return (
     <div className="admin-view admin-home-view">

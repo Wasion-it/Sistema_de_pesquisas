@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
+import { hasModuleAccess, isApprovalOnlyUser } from '../utils/accessControl'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -14,8 +15,11 @@ function getInitials(name) {
 
 export function AdminLayout() {
   const { signOut, user } = useAuth()
-  const canAccessAdmissions = user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN'
-  const isApprovalOnlyRole = user?.role === 'GESTOR' || user?.role === 'DIRETOR_RAVI'
+  const isApprovalOnlyRole = isApprovalOnlyUser(user)
+  const canAccessAdmissions = hasModuleAccess(user, 'ADMISSION')
+  const canAccessSurveys = hasModuleAccess(user, 'SURVEYS')
+  const canAccessApprovals = hasModuleAccess(user, 'APPROVALS')
+  const canAccessAccessControl = user?.role === 'RH_ADMIN' || hasModuleAccess(user, 'ACCESS_CONTROL')
 
   function handleSignOut() {
     signOut('/')
@@ -39,7 +43,7 @@ export function AdminLayout() {
         </Link>
 
         <nav className="admin-nav">
-          {isApprovalOnlyRole ? (
+          {canAccessApprovals || isApprovalOnlyRole ? (
             <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/approvals">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M5 12l4 4L19 6" />
@@ -56,7 +60,7 @@ export function AdminLayout() {
             </svg>
             Início
           </NavLink>
-          {!isApprovalOnlyRole ? (
+          {!isApprovalOnlyRole && hasModuleAccess(user, 'DASHBOARD') ? (
             <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dashboard">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M3 13l4-4 4 4 6-6 4 4" />
@@ -76,7 +80,7 @@ export function AdminLayout() {
               Solicitações
             </NavLink>
           ) : null}
-          {!isApprovalOnlyRole ? (
+          {!isApprovalOnlyRole && canAccessSurveys ? (
             <>
               <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
                 <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
@@ -98,6 +102,16 @@ export function AdminLayout() {
                 Departamentos
               </NavLink>
             </>
+          ) : null}
+          {canAccessAccessControl ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/access-control">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 7h16" />
+                <path d="M6 12h12" />
+                <path d="M8 17h8" />
+              </svg>
+              Delegação de acesso
+            </NavLink>
           ) : null}
         </nav>
 

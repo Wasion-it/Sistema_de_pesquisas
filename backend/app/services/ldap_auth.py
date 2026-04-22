@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import ssl
 from dataclasses import dataclass
+import secrets
 
 from ldap3 import ALL, ANONYMOUS, SIMPLE, SUBTREE, Connection, Server, Tls
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.conv import escape_filter_chars
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models import RoleEnum, User
+from app.models.enums import AuthenticationSourceEnum
 
 
 class LdapConfigurationError(RuntimeError):
@@ -21,6 +26,14 @@ class LdapAuthenticationError(RuntimeError):
 @dataclass(slots=True)
 class LdapAuthenticatedUser:
     user_dn: str
+
+
+@dataclass(slots=True)
+class LdapDirectoryUser:
+    dn: str
+    email: str
+    full_name: str
+    username: str
 
 
 def _build_tls() -> Tls:
@@ -93,6 +106,108 @@ def _build_user_dn(username: str) -> str:
             return str(connection.entries[0].entry_dn)
     except LDAPException as exc:
         raise LdapAuthenticationError("LDAP user lookup failed") from exc
+
+
+def _build_directory_search_filter() -> str:
+    return "(&(objectCategory=person)(objectClass=user))"
+
+
+def _normalize_directory_user(entry) -> LdapDirectoryUser | None:
+    attributes = entry.entry_attributes_as_dict
+    mail = attributes.get("mail")
+    user_principal_name = attributes.get("userPrincipalName")
+    sam_account_name = attributes.get("sAMAccountName")
+    display_name = attributes.get("displayName") or attributes.get("cn")
+
+    email = None
+    if isinstance(mail, list):
+        email = mail[0] if mail else None
+    elif isinstance(mail, str):
+        email = mail
+
+    if not email and isinstance(user_principal_name, list):
+        email = user_principal_name[0] if user_principal_name else None
+    elif not email and isinstance(user_principal_name, str):
+        email = user_principal_name
+
+    username = None
+    if isinstance(sam_account_name, list):
+        username = sam_account_name[0] if sam_account_name else None
+    elif isinstance(sam_account_name, str):
+        username = sam_account_name
+
+    if not username and email:
+        username = email.split("@", maxsplit=1)[0]
+
+    if not email or not username:
+        return None
+
+    if isinstance(display_name, list):
+        full_name = display_name[0] if display_name else username
+    elif isinstance(display_name, str):
+        full_name = display_name
+    else:
+        full_name = username
+
+    return LdapDirectoryUser(
+        dn=str(entry.entry_dn),
+        email=str(email).strip().lower(),
+        full_name=str(full_name).strip() or username,
+        username=str(username).strip(),
+    )
+
+
+def list_directory_users_from_ou() -> list[LdapDirectoryUser]:
+    if not settings.ldap_enabled:
+        raise LdapConfigurationError("LDAP authentication is disabled")
+
+    if not settings.ldap_user_base_dn:
+        raise LdapConfigurationError("LDAP user base DN is not configured")
+
+    with _open_connection(settings.ldap_bind_dn, settings.ldap_bind_password) as connection:
+        found = connection.search(
+            search_base=settings.ldap_user_base_dn,
+            search_filter=_build_directory_search_filter(),
+            search_scope=SUBTREE,
+            attributes=["displayName", "cn", "mail", "userPrincipalName", "sAMAccountName"],
+        )
+        if not found:
+            return []
+
+        users: list[LdapDirectoryUser] = []
+        for entry in connection.entries:
+            normalized_user = _normalize_directory_user(entry)
+            if normalized_user is not None:
+                users.append(normalized_user)
+
+        return users
+
+
+def sync_directory_users_from_ou(session: Session) -> list[User]:
+    directory_users = list_directory_users_from_ou()
+    synced_users: list[User] = []
+
+    for directory_user in directory_users:
+        user = session.scalar(select(User).where(User.email == directory_user.email))
+        if user is None:
+            user = User(
+                email=directory_user.email,
+                full_name=directory_user.full_name,
+                password_hash=secrets.token_urlsafe(32),
+                role=RoleEnum.COLABORADOR,
+                auth_source=AuthenticationSourceEnum.LDAP,
+                is_active=True,
+            )
+            session.add(user)
+        else:
+            user.full_name = directory_user.full_name
+            user.auth_source = AuthenticationSourceEnum.LDAP
+            user.is_active = True
+
+        synced_users.append(user)
+
+    session.flush()
+    return synced_users
 
 
 def authenticate_ldap_user(username: str, password: str) -> LdapAuthenticatedUser:

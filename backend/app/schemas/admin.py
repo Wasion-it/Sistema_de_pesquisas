@@ -3,6 +3,9 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field
 
 from app.models.enums import (
+    AccessLevelEnum,
+    AccessModuleEnum,
+    AuthenticationSourceEnum,
     ApprovalRequestKindEnum,
     ApprovalRoleEnum,
     ApprovalStepStatusEnum,
@@ -15,6 +18,7 @@ from app.models.enums import (
     DismissalRequestTypeEnum,
     QuestionTypeEnum,
     RecruitmentScopeEnum,
+    RoleEnum,
     SurveyVersionStatusEnum,
 )
 
@@ -131,6 +135,41 @@ class RecruiterOptionResponse(BaseModel):
 
 class RecruiterOptionListResponse(BaseModel):
     items: list[RecruiterOptionResponse]
+
+
+class AccessGrantResponse(BaseModel):
+    module: AccessModuleEnum
+    access_level: AccessLevelEnum
+    granted_at: datetime
+    expires_at: datetime | None
+    is_active: bool
+    note: str | None
+
+
+class AccessControlUserResponse(BaseModel):
+    id: int
+    email: str
+    full_name: str
+    role: RoleEnum
+    auth_source: AuthenticationSourceEnum
+    is_active: bool
+    last_login_at: datetime | None
+    access_grants: list[AccessGrantResponse]
+
+
+class AccessControlUserListResponse(BaseModel):
+    items: list[AccessControlUserResponse]
+
+
+class AccessControlGrantInput(BaseModel):
+    module: AccessModuleEnum
+    access_level: AccessLevelEnum = AccessLevelEnum.READ
+    expires_at: datetime | None = None
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class AccessControlUpdateRequest(BaseModel):
+    grants: list[AccessControlGrantInput] = Field(default_factory=list)
 
 
 class AdmissionChecklistStepResponse(BaseModel):
@@ -582,3 +621,10 @@ class PublishSurveyRequest(BaseModel):
     end_at: datetime
     is_anonymous: bool = True
     allows_draft: bool = False
+
+
+AccessGrantResponse.model_rebuild()
+AccessControlUserResponse.model_rebuild()
+AccessControlUserListResponse.model_rebuild()
+AccessControlGrantInput.model_rebuild()
+AccessControlUpdateRequest.model_rebuild()

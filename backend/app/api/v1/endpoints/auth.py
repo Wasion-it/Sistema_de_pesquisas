@@ -9,12 +9,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_admin_user
+from app.api.deps import get_current_portal_user
 from app.core.config import settings
-from app.core.security import ADMIN_PORTAL_ROLES, create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models import AuditActionEnum, AuditLog, RoleEnum, User
+from app.models.enums import AuthenticationSourceEnum
+from app.schemas.admin import AccessGrantResponse
 from app.schemas.auth import AdminSessionResponse, AuthUserResponse, LoginRequest, LoginResponse
+from app.services.access_control import get_active_access_grants, has_portal_access
 from app.services.ldap_auth import LdapAuthenticationError, LdapConfigurationError, authenticate_ldap_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -73,7 +76,8 @@ def _ensure_ldap_admin_user(db: Session, identifier: str) -> User:
             email=_build_ldap_user_email(identifier),
             full_name=identifier.strip(),
             password_hash=hash_password(secrets.token_urlsafe(24)),
-            role=RoleEnum.RH_ANALISTA,
+            role=RoleEnum.COLABORADOR,
+            auth_source=AuthenticationSourceEnum.LDAP,
             is_active=True,
             last_login_at=None,
         )
@@ -84,20 +88,32 @@ def _ensure_ldap_admin_user(db: Session, identifier: str) -> User:
     user.email = _build_ldap_user_email(identifier)
     user.full_name = user.full_name or identifier.strip()
     user.is_active = True
-
-    if user.role not in ADMIN_PORTAL_ROLES:
-        user.role = RoleEnum.RH_ANALISTA
+    user.auth_source = AuthenticationSourceEnum.LDAP
 
     return user
 
 
 def _serialize_user(user: User) -> AuthUserResponse:
+    access_grants = [
+        AccessGrantResponse(
+            module=grant.module,
+            access_level=grant.access_level,
+            granted_at=grant.granted_at,
+            expires_at=grant.expires_at,
+            is_active=grant.is_active,
+            note=grant.note,
+        )
+        for grant in user.access_grants
+    ]
+
     return AuthUserResponse(
         id=user.id,
         email=user.email,
         full_name=user.full_name,
         role=user.role,
+        auth_source=user.auth_source,
         last_login_at=user.last_login_at,
+        access_grants=access_grants,
     )
 
 
@@ -108,11 +124,13 @@ def login_admin(
 ) -> LoginResponse:
     identifier = payload.identifier
     user = None
+    ldap_authenticated = False
 
     if settings.ldap_enabled:
         try:
             authenticate_ldap_user(identifier, payload.password)
             user = _ensure_ldap_admin_user(db, identifier)
+            ldap_authenticated = True
         except LdapConfigurationError as exc:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -132,7 +150,11 @@ def login_admin(
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
 
-    if user.role not in ADMIN_PORTAL_ROLES:
+    if not has_portal_access(db, user):
+        if ldap_authenticated:
+            db.commit()
+        else:
+            db.rollback()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrative access required")
 
     if user is None:
@@ -162,6 +184,8 @@ def login_admin(
 
 @router.get("/me", response_model=AdminSessionResponse)
 def read_admin_session(
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> AdminSessionResponse:
+    user.access_grants = get_active_access_grants(db, user.id)
     return AdminSessionResponse(user=_serialize_user(user))

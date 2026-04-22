@@ -230,6 +230,23 @@ export async function getAdminRecruiters(token) {
   return parseResponse(response)
 }
 
+export async function getAdminAccessControlUsers(token) {
+  const response = await fetch(`${API_URL}/admin/access-control/users`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
+export async function updateAdminAccessControlUser(token, userId, payload) {
+  const response = await fetch(
+    `${API_URL}/admin/access-control/users/${userId}`,
+    buildJsonOptions(token, 'PUT', payload),
+  )
+
+  return parseResponse(response)
+}
+
 export async function createAdminAdmissionRequest(token, payload) {
   const response = await fetch(
     `${API_URL}/admin/hr/admission-requests`,

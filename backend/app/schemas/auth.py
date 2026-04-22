@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
-from app.models.enums import RoleEnum
+from app.models.enums import AuthenticationSourceEnum, RoleEnum
+from app.schemas.admin import AccessGrantResponse
 
 
 class LoginRequest(BaseModel):
@@ -26,7 +27,9 @@ class AuthUserResponse(BaseModel):
     email: str
     full_name: str
     role: RoleEnum
+    auth_source: AuthenticationSourceEnum
     last_login_at: datetime | None
+    access_grants: list[AccessGrantResponse] = Field(default_factory=list)
 
 
 class LoginResponse(BaseModel):

@@ -16,6 +16,7 @@ import { AdminAdmissionRequestsPage } from './pages/AdminAdmissionRequestsPage'
 import { AdminAdmissionChecklistPage } from './pages/AdminAdmissionChecklistPage'
 import { AdminDismissalChecklistPage } from './pages/AdminDismissalChecklistPage'
 import { AdminDismissalRequestsPage } from './pages/AdminDismissalRequestsPage'
+import { AdminAccessControlPage } from './pages/AdminAccessControlPage'
 import { MyRequestsPage } from './pages/MyRequestsPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
@@ -28,13 +29,14 @@ import { DemissaoFormPage } from './pages/DemissaoFormPage'
 import { SurveysPage } from './pages/SurveysPage'
 import { PublicCampaignPage } from './pages/PublicCampaignPage'
 import { PublicCampaignThankYouPage } from './pages/PublicCampaignThankYouPage'
+import { hasModuleAccess } from './utils/accessControl'
 
-function AdminRestrictedRoute({ children }) {
+function AdminModuleRoute({ children, moduleName, adminOnly = false }) {
   const { user } = useAuth()
-  const isApprovalOnlyRole = user?.role === 'GESTOR' || user?.role === 'DIRETOR_RAVI'
+  const canAccess = adminOnly ? user?.role === 'RH_ADMIN' : hasModuleAccess(user, moduleName)
 
-  if (isApprovalOnlyRole) {
-    return <Navigate replace to="/admin/approvals" />
+  if (!canAccess) {
+    return <Navigate replace to="/admin" />
   }
 
   return children
@@ -97,21 +99,22 @@ export default function App() {
             }
           >
             <Route index element={<AdminHomePage />} />
-            <Route path="dashboard" element={<AdminRestrictedRoute><AdminDashboardPage /></AdminRestrictedRoute>} />
-            <Route path="dashboard/pesquisas" element={<AdminRestrictedRoute><AdminDashboardPesquisasPage /></AdminRestrictedRoute>} />
-            <Route path="dashboard/admissao" element={<AdminRestrictedRoute><AdminDashboardAdmissaoPage /></AdminRestrictedRoute>} />
-            <Route path="requests" element={<AdminRestrictedRoute><AdminRequestsPage /></AdminRestrictedRoute>} />
-            <Route path="approvals" element={<AdminApprovalsPage />} />
-            <Route path="departments" element={<AdminRestrictedRoute><AdminDepartmentsPage /></AdminRestrictedRoute>} />
-            <Route path="job-titles" element={<AdminRestrictedRoute><AdminJobTitlesPage /></AdminRestrictedRoute>} />
-            <Route path="admission-requests" element={<AdminRestrictedRoute><AdminAdmissionRequestsPage /></AdminRestrictedRoute>} />
-            <Route path="admission-checklist" element={<AdminRestrictedRoute><AdminAdmissionChecklistPage /></AdminRestrictedRoute>} />
-            <Route path="dismissal-requests" element={<AdminRestrictedRoute><AdminDismissalRequestsPage /></AdminRestrictedRoute>} />
-            <Route path="dismissal-checklist" element={<AdminRestrictedRoute><AdminDismissalChecklistPage /></AdminRestrictedRoute>} />
-            <Route path="surveys" element={<AdminRestrictedRoute><AdminSurveysPage /></AdminRestrictedRoute>} />
-            <Route path="campaigns/:campaignId/kpis" element={<AdminRestrictedRoute><AdminCampaignKpisPage /></AdminRestrictedRoute>} />
-            <Route path="campaigns/:campaignId/responses" element={<AdminRestrictedRoute><AdminCampaignResponsesPage /></AdminRestrictedRoute>} />
-            <Route path="surveys/:surveyId" element={<AdminRestrictedRoute><AdminSurveyDetailPage /></AdminRestrictedRoute>} />
+            <Route path="dashboard" element={<AdminModuleRoute moduleName="DASHBOARD"><AdminDashboardPage /></AdminModuleRoute>} />
+            <Route path="dashboard/pesquisas" element={<AdminModuleRoute moduleName="DASHBOARD"><AdminDashboardPesquisasPage /></AdminModuleRoute>} />
+            <Route path="dashboard/admissao" element={<AdminModuleRoute moduleName="DASHBOARD"><AdminDashboardAdmissaoPage /></AdminModuleRoute>} />
+            <Route path="requests" element={<AdminModuleRoute moduleName="ADMISSION"><AdminRequestsPage /></AdminModuleRoute>} />
+            <Route path="approvals" element={<AdminModuleRoute moduleName="APPROVALS"><AdminApprovalsPage /></AdminModuleRoute>} />
+            <Route path="departments" element={<AdminModuleRoute adminOnly><AdminDepartmentsPage /></AdminModuleRoute>} />
+            <Route path="job-titles" element={<AdminModuleRoute adminOnly><AdminJobTitlesPage /></AdminModuleRoute>} />
+            <Route path="admission-requests" element={<AdminModuleRoute moduleName="ADMISSION"><AdminAdmissionRequestsPage /></AdminModuleRoute>} />
+            <Route path="admission-checklist" element={<AdminModuleRoute moduleName="ADMISSION"><AdminAdmissionChecklistPage /></AdminModuleRoute>} />
+            <Route path="dismissal-requests" element={<AdminModuleRoute moduleName="DISMISSAL"><AdminDismissalRequestsPage /></AdminModuleRoute>} />
+            <Route path="dismissal-checklist" element={<AdminModuleRoute moduleName="DISMISSAL"><AdminDismissalChecklistPage /></AdminModuleRoute>} />
+            <Route path="surveys" element={<AdminModuleRoute moduleName="SURVEYS"><AdminSurveysPage /></AdminModuleRoute>} />
+            <Route path="campaigns/:campaignId/kpis" element={<AdminModuleRoute moduleName="SURVEYS"><AdminCampaignKpisPage /></AdminModuleRoute>} />
+            <Route path="campaigns/:campaignId/responses" element={<AdminModuleRoute moduleName="SURVEYS"><AdminCampaignResponsesPage /></AdminModuleRoute>} />
+            <Route path="surveys/:surveyId" element={<AdminModuleRoute moduleName="SURVEYS"><AdminSurveyDetailPage /></AdminModuleRoute>} />
+            <Route path="access-control" element={<AdminModuleRoute moduleName="ACCESS_CONTROL" adminOnly={false}><AdminAccessControlPage /></AdminModuleRoute>} />
           </Route>
         </Routes>
       </AuthProvider>

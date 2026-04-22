@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, DateTime, Enum, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import BaseModel
-from app.models.enums import RoleEnum
+from app.models.enums import AuthenticationSourceEnum, RoleEnum
 
 if TYPE_CHECKING:
     from app.models.audit_log import AuditLog
@@ -29,6 +29,11 @@ class User(BaseModel):
         Enum(RoleEnum, native_enum=False, length=30),
         nullable=False,
     )
+    auth_source: Mapped[AuthenticationSourceEnum] = mapped_column(
+        Enum(AuthenticationSourceEnum, native_enum=False, length=20),
+        nullable=False,
+        default=AuthenticationSourceEnum.LOCAL,
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -44,4 +49,10 @@ class User(BaseModel):
         "DismissalRequest",
         back_populates="created_by_user",
         foreign_keys="DismissalRequest.created_by_user_id",
+    )
+    access_grants = relationship(
+        "UserModuleAccess",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="UserModuleAccess.user_id",
     )

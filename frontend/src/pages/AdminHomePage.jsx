@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { hasModuleAccess, isApprovalOnlyUser } from '../utils/accessControl'
+import { hasAdminSectionAccess, hasModuleAccess, isApprovalOnlyUser } from '../utils/accessControl'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -123,12 +123,12 @@ export function AdminHomePage() {
   const visibleModules = isApprovalOnlyRole
     ? ADMIN_MODULES.filter((module) => module.title === 'Aprovações')
     : ADMIN_MODULES.filter((module) => {
-        if (module.to.startsWith('/admin/departments') || module.to.startsWith('/admin/job-titles')) {
-          return user?.role === 'RH_ADMIN'
+        if (module.to.startsWith('/admin/departments')) {
+          return hasAdminSectionAccess(user, 'DEPARTMENTS')
         }
 
-        if (module.to.startsWith('/admin/dashboard')) {
-          return hasModuleAccess(user, 'DASHBOARD')
+        if (module.to.startsWith('/admin/job-titles')) {
+          return hasAdminSectionAccess(user, 'JOB_TITLES')
         }
 
         if (module.to.startsWith('/admin/requests') || module.to.startsWith('/admin/admission-requests') || module.to.startsWith('/admin/admission-checklist')) {
@@ -137,10 +137,6 @@ export function AdminHomePage() {
 
         if (module.to.startsWith('/admin/dismissal-requests') || module.to.startsWith('/admin/dismissal-checklist')) {
           return hasModuleAccess(user, 'DISMISSAL')
-        }
-
-        if (module.to.startsWith('/admin/surveys') || module.to.startsWith('/admin/campaigns')) {
-          return hasModuleAccess(user, 'SURVEYS')
         }
 
         if (module.to.startsWith('/admin/approvals')) {

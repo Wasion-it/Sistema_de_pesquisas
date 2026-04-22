@@ -2,23 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '../auth/AuthProvider'
 import { getAdminAccessControlUsers, updateAdminAccessControlUser } from '../services/admin'
-import { ACCESS_MODULE_META, ACCESS_MODULES } from '../utils/accessControl'
 
-const ACCESS_LEVEL_OPTIONS = [
-  { value: 'READ', label: 'Leitura' },
-  { value: 'MANAGE', label: 'Gestão' },
+const ROLE_OPTIONS = [
+  { value: 'COLABORADOR', label: 'Colaborador' },
+  { value: 'GESTOR', label: 'Gestor' },
+  { value: 'DIRETOR_RAVI', label: 'Diretor Ravi' },
+  { value: 'RH_ANALISTA', label: 'RH Analista' },
+  { value: 'RH_ADMIN', label: 'RH Admin' },
+  { value: 'TI_SUPORTE', label: 'TI Suporte' },
 ]
-
-function buildDraftFromUser(user) {
-  return ACCESS_MODULES.map((moduleName) => {
-    const grant = user?.access_grants?.find((item) => item.module === moduleName && item.is_active !== false)
-    return {
-      module: moduleName,
-      enabled: Boolean(grant),
-      accessLevel: grant?.access_level ?? 'READ',
-    }
-  })
-}
 
 function getInitials(name) {
   if (!name) return '?'
@@ -38,7 +30,7 @@ export function AdminAccessControlPage() {
   const { token } = useAuth()
   const [users, setUsers] = useState([])
   const [selectedUserId, setSelectedUserId] = useState(null)
-  const [draft, setDraft] = useState([])
+  const [selectedRole, setSelectedRole] = useState('COLABORADOR')
   const [query, setQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -88,26 +80,17 @@ export function AdminAccessControlPage() {
 
   useEffect(() => {
     if (!selectedUser) {
-      setDraft([])
+      setSelectedRole('COLABORADOR')
       return
     }
 
-    setDraft(buildDraftFromUser(selectedUser))
+    setSelectedRole(selectedUser.role ?? 'COLABORADOR')
   }, [selectedUser])
 
   const stats = useMemo(() => ({
     totalUsers: users.length,
     ldapUsers: users.filter((item) => item.auth_source === 'LDAP').length,
-    usersWithAccess: users.filter((item) => (item.access_grants ?? []).some((grant) => grant.is_active !== false)).length,
   }), [users])
-
-  function handleToggleModule(moduleName, enabled) {
-    setDraft((current) => current.map((item) => (item.module === moduleName ? { ...item, enabled } : item)))
-  }
-
-  function handleChangeAccessLevel(moduleName, accessLevel) {
-    setDraft((current) => current.map((item) => (item.module === moduleName ? { ...item, accessLevel } : item)))
-  }
 
   async function handleSave() {
     if (!selectedUser) return
@@ -117,12 +100,7 @@ export function AdminAccessControlPage() {
     setSuccessMessage('')
 
     const payload = {
-      grants: draft
-        .filter((item) => item.enabled)
-        .map((item) => ({
-          module: item.module,
-          access_level: item.accessLevel,
-        })),
+      role: selectedRole,
     }
 
     try {
@@ -136,23 +114,19 @@ export function AdminAccessControlPage() {
     }
   }
 
-  const selectedActiveModules = draft.filter((item) => item.enabled).length
-
   return (
     <div className="admin-view">
       <div className="admin-view-header">
         <div>
           <span className="eyebrow">Segurança e acesso</span>
           <h2>Delegação de acesso</h2>
-          <p>Selecione um usuário sincronizado do AD e conceda acesso por módulo dentro da aplicação.</p>
+          <p>Selecione um usuário sincronizado do AD e defina apenas a role que ele terá no portal.</p>
         </div>
       </div>
 
       <div className="dashboard-stats-grid" style={{ marginBottom: 24 }}>
         <article className="stat-card"><span>Usuários</span><strong>{stats.totalUsers}</strong></article>
         <article className="stat-card"><span>AD sincronizados</span><strong>{stats.ldapUsers}</strong></article>
-        <article className="stat-card"><span>Com acesso ativo</span><strong>{stats.usersWithAccess}</strong></article>
-        <article className="stat-card"><span>Módulos do portal</span><strong>{ACCESS_MODULES.length}</strong></article>
       </div>
 
       {errorMessage ? <div className="form-error" style={{ marginBottom: 16 }}>{errorMessage}</div> : null}
@@ -200,7 +174,6 @@ export function AdminAccessControlPage() {
                       <span className="status-pill">{formatSource(item.auth_source)}</span>
                     </div>
                     <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{item.email}</div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{(item.access_grants ?? []).length} acesso(s) ativo(s)</div>
                   </div>
                 </button>
               )
@@ -221,51 +194,30 @@ export function AdminAccessControlPage() {
                   <h3 style={{ marginBottom: 8 }}>{selectedUser.full_name}</h3>
                   <p style={{ marginBottom: 0, color: '#64748b' }}>{selectedUser.email} • {selectedUser.role} • {formatSource(selectedUser.auth_source)}</p>
                 </div>
-                <div className="status-pill" style={{ alignSelf: 'flex-start' }}>{selectedActiveModules} módulo(s) ativo(s)</div>
               </div>
 
               <div style={{ display: 'grid', gap: 12 }}>
-                {draft.map((item) => {
-                  const meta = ACCESS_MODULE_META[item.module]
-                  return (
-                    <div key={item.module} style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer', flex: 1 }}>
-                          <input
-                            checked={item.enabled}
-                            onChange={(event) => handleToggleModule(item.module, event.target.checked)}
-                            type="checkbox"
-                            style={{ marginTop: 4 }}
-                          />
-                          <div>
-                            <strong style={{ display: 'block', marginBottom: 4 }}>{meta.label}</strong>
-                            <span style={{ color: '#64748b', fontSize: 13 }}>{meta.description}</span>
-                          </div>
-                        </label>
-
-                        <div style={{ minWidth: 160 }}>
-                          <label className="field-label" htmlFor={`access-level-${item.module}`} style={{ marginBottom: 6 }}>Nível</label>
-                          <select
-                            id={`access-level-${item.module}`}
-                            className="text-input"
-                            disabled={!item.enabled}
-                            value={item.accessLevel}
-                            onChange={(event) => handleChangeAccessLevel(item.module, event.target.value)}
-                          >
-                            {ACCESS_LEVEL_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' }}>
+                  <label className="field-label" htmlFor="access-control-role" style={{ marginBottom: 6 }}>Role da aplicação</label>
+                  <select
+                    id="access-control-role"
+                    className="text-input"
+                    value={selectedRole}
+                    onChange={(event) => setSelectedRole(event.target.value)}
+                  >
+                    {ROLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <p style={{ marginTop: 8, marginBottom: 0, color: '#64748b', fontSize: 13 }}>
+                    A role define o que o usuário pode ver no portal.
+                  </p>
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 24 }}>
                 <div style={{ color: '#64748b', fontSize: 13 }}>
-                  O salvamento substitui os grants ativos do usuário selecionado.
+                  O salvamento atualiza apenas a role do usuário selecionado.
                 </div>
                 <button className="primary-button" type="button" onClick={handleSave} disabled={isSaving}>
                   {isSaving ? 'Salvando...' : 'Salvar acesso'}

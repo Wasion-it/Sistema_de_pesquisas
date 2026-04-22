@@ -29,11 +29,22 @@ import { DemissaoFormPage } from './pages/DemissaoFormPage'
 import { SurveysPage } from './pages/SurveysPage'
 import { PublicCampaignPage } from './pages/PublicCampaignPage'
 import { PublicCampaignThankYouPage } from './pages/PublicCampaignThankYouPage'
-import { hasModuleAccess } from './utils/accessControl'
+import { hasAdminSectionAccess, hasModuleAccess } from './utils/accessControl'
 
-function AdminModuleRoute({ children, moduleName, adminOnly = false }) {
+function AdminModuleRoute({ children, moduleName }) {
   const { user } = useAuth()
-  const canAccess = adminOnly ? user?.role === 'RH_ADMIN' : hasModuleAccess(user, moduleName)
+  const canAccess = hasModuleAccess(user, moduleName)
+
+  if (!canAccess) {
+    return <Navigate replace to="/admin" />
+  }
+
+  return children
+}
+
+function AdminSectionRoute({ children, sectionName }) {
+  const { user } = useAuth()
+  const canAccess = hasAdminSectionAccess(user, sectionName)
 
   if (!canAccess) {
     return <Navigate replace to="/admin" />
@@ -104,8 +115,8 @@ export default function App() {
             <Route path="dashboard/admissao" element={<AdminModuleRoute moduleName="DASHBOARD"><AdminDashboardAdmissaoPage /></AdminModuleRoute>} />
             <Route path="requests" element={<AdminModuleRoute moduleName="ADMISSION"><AdminRequestsPage /></AdminModuleRoute>} />
             <Route path="approvals" element={<AdminModuleRoute moduleName="APPROVALS"><AdminApprovalsPage /></AdminModuleRoute>} />
-            <Route path="departments" element={<AdminModuleRoute adminOnly><AdminDepartmentsPage /></AdminModuleRoute>} />
-            <Route path="job-titles" element={<AdminModuleRoute adminOnly><AdminJobTitlesPage /></AdminModuleRoute>} />
+            <Route path="departments" element={<AdminSectionRoute sectionName="DEPARTMENTS"><AdminDepartmentsPage /></AdminSectionRoute>} />
+            <Route path="job-titles" element={<AdminSectionRoute sectionName="JOB_TITLES"><AdminJobTitlesPage /></AdminSectionRoute>} />
             <Route path="admission-requests" element={<AdminModuleRoute moduleName="ADMISSION"><AdminAdmissionRequestsPage /></AdminModuleRoute>} />
             <Route path="admission-checklist" element={<AdminModuleRoute moduleName="ADMISSION"><AdminAdmissionChecklistPage /></AdminModuleRoute>} />
             <Route path="dismissal-requests" element={<AdminModuleRoute moduleName="DISMISSAL"><AdminDismissalRequestsPage /></AdminModuleRoute>} />

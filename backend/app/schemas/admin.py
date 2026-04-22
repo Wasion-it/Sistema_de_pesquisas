@@ -169,7 +169,7 @@ class AccessControlGrantInput(BaseModel):
 
 
 class AccessControlUpdateRequest(BaseModel):
-    grants: list[AccessControlGrantInput] = Field(default_factory=list)
+    role: RoleEnum | None = None
 
 
 class AdmissionChecklistStepResponse(BaseModel):

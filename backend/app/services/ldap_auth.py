@@ -86,10 +86,19 @@ def _build_user_dn(username: str) -> str:
     if not settings.ldap_user_base_dn:
         raise LdapConfigurationError("LDAP user base DN is not configured")
 
-    search_filter = settings.ldap_user_filter.format(
-        username=escape_filter_chars(username),
-        email=escape_filter_chars(username),
-    )
+    normalized_identifier = username.strip().lower()
+    escaped_identifier = escape_filter_chars(normalized_identifier)
+
+    if "@" in normalized_identifier:
+        search_filter = "(|(mail={identifier})(userPrincipalName={identifier})(sAMAccountName={local_part}))".format(
+            identifier=escaped_identifier,
+            local_part=escape_filter_chars(normalized_identifier.split("@", maxsplit=1)[0]),
+        )
+    else:
+        search_filter = settings.ldap_user_filter.format(
+            username=escape_filter_chars(username),
+            email=escape_filter_chars(username),
+        )
 
     try:
         with _open_connection(settings.ldap_bind_dn, settings.ldap_bind_password) as connection:
@@ -199,10 +208,12 @@ def sync_directory_users_from_ou(session: Session) -> list[User]:
                 is_active=True,
             )
             session.add(user)
-        else:
+        elif user.is_active:
             user.full_name = directory_user.full_name
             user.auth_source = AuthenticationSourceEnum.LDAP
             user.is_active = True
+        else:
+            continue
 
         synced_users.append(user)
 
@@ -216,6 +227,12 @@ def authenticate_ldap_user(username: str, password: str) -> LdapAuthenticatedUse
 
     if not password:
         raise LdapAuthenticationError("Empty password is not allowed")
+
+    try:
+        with _open_connection(username, password):
+            return LdapAuthenticatedUser(user_dn=username)
+    except LDAPException:
+        pass
 
     user_dn = _build_user_dn(username)
 

@@ -15,16 +15,14 @@ from app.schemas.admin import (
     AccessControlUpdateRequest,
     AccessControlUserListResponse,
     AccessControlUserResponse,
-    AccessGrantResponse,
 )
-from app.services.access_control import get_active_access_grants, has_module_access, upsert_access_grants
+from app.services.access_control import has_module_access
 from app.services.ldap_auth import sync_directory_users_from_ou
 
 router = APIRouter(prefix="/admin/access-control", tags=["access-control"])
 
 
 def _serialize_user(user: User, session: Session) -> AccessControlUserResponse:
-    grants = get_active_access_grants(session, user.id)
     return AccessControlUserResponse(
         id=user.id,
         email=user.email,
@@ -33,17 +31,7 @@ def _serialize_user(user: User, session: Session) -> AccessControlUserResponse:
         auth_source=user.auth_source,
         is_active=user.is_active,
         last_login_at=user.last_login_at,
-        access_grants=[
-            AccessGrantResponse(
-                module=grant.module,
-                access_level=grant.access_level,
-                granted_at=grant.granted_at,
-                expires_at=grant.expires_at,
-                is_active=grant.is_active,
-                note=grant.note,
-            )
-            for grant in grants
-        ],
+        access_grants=[],
     )
 
 
@@ -62,6 +50,7 @@ def list_access_control_users(
     users = db.scalars(
         select(User)
         .where(User.auth_source == AuthenticationSourceEnum.LDAP)
+        .where(User.is_active.is_(True))
         .order_by(User.full_name.asc(), User.email.asc())
     ).all()
 
@@ -82,17 +71,8 @@ def update_access_control_user(
     if target_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    grants_payload = [
-        (
-            grant.module,
-            grant.access_level,
-            grant.expires_at,
-            grant.note,
-        )
-        for grant in payload.grants
-    ]
-
-    upsert_access_grants(db, user=target_user, grants_payload=grants_payload, granted_by_user=user)
+    if payload.role is not None:
+        target_user.role = payload.role
     db.commit()
     db.refresh(target_user)
     return _serialize_user(target_user, db)

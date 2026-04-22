@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_portal_user
@@ -24,20 +24,32 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _find_user_for_login(db: Session, identifier: str) -> User | None:
-    normalized_identifier = identifier.strip()
+    normalized_identifier = identifier.strip().lower()
     if not normalized_identifier:
         return None
 
-    return db.scalar(
+    if "@" in normalized_identifier:
+        return db.scalar(
+            select(User)
+            .where(func.lower(User.email) == normalized_identifier)
+            .order_by(User.id.asc())
+        )
+
+    users = db.scalars(
         select(User)
         .where(
             or_(
-                User.email == normalized_identifier,
-                User.email.like(f"{normalized_identifier}@%"),
+                func.lower(User.email) == normalized_identifier,
+                func.lower(User.email).like(f"{normalized_identifier}@%"),
             )
         )
         .order_by(User.id.asc())
-    )
+    ).all()
+
+    if len(users) == 1:
+        return users[0]
+
+    return None
 
 
 def _get_default_ldap_email_domain() -> str | None:

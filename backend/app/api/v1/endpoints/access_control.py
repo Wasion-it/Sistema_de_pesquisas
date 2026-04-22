@@ -17,7 +17,7 @@ from app.schemas.admin import (
     AccessControlUserResponse,
 )
 from app.services.access_control import has_module_access
-from app.services.ldap_auth import sync_directory_users_from_ou
+from app.services.ldap_auth import LdapAuthenticationError, LdapConfigurationError, sync_directory_users_from_ou
 
 router = APIRouter(prefix="/admin/access-control", tags=["access-control"])
 
@@ -44,7 +44,13 @@ def list_access_control_users(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     if settings.ldap_enabled and settings.ldap_user_base_dn:
-        sync_directory_users_from_ou(db)
+        try:
+            sync_directory_users_from_ou(db)
+        except (LdapAuthenticationError, LdapConfigurationError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="LDAP synchronization is not available",
+            ) from exc
         db.commit()
 
     users = db.scalars(

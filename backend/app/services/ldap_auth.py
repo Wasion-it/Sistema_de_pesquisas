@@ -65,13 +65,18 @@ def _open_connection(bind_dn: str | None, bind_password: str | None) -> Connecti
         receive_timeout=settings.ldap_timeout_seconds,
     )
 
-    connection.open()
+    try:
+        connection.open()
 
-    if settings.ldap_start_tls and not settings.ldap_use_ssl:
-        connection.start_tls()
+        if settings.ldap_start_tls and not settings.ldap_use_ssl:
+            connection.start_tls()
 
-    if not connection.bind():
-        raise LdapAuthenticationError("LDAP bind failed")
+        if not connection.bind():
+            raise LdapAuthenticationError("LDAP bind failed")
+    except LdapAuthenticationError:
+        raise
+    except Exception as exc:
+        raise LdapAuthenticationError("LDAP connection failed") from exc
 
     return connection
 
@@ -231,7 +236,7 @@ def authenticate_ldap_user(username: str, password: str) -> LdapAuthenticatedUse
     try:
         with _open_connection(username, password):
             return LdapAuthenticatedUser(user_dn=username)
-    except LDAPException:
+    except (LDAPException, LdapAuthenticationError):
         pass
 
     user_dn = _build_user_dn(username)
@@ -239,5 +244,5 @@ def authenticate_ldap_user(username: str, password: str) -> LdapAuthenticatedUse
     try:
         with _open_connection(user_dn, password):
             return LdapAuthenticatedUser(user_dn=user_dn)
-    except LDAPException as exc:
+    except (LDAPException, LdapAuthenticationError) as exc:
         raise LdapAuthenticationError("LDAP bind failed") from exc

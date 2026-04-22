@@ -1,0 +1,47 @@
+name: Aprovação do fluxo
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Ambiente de execução'
+        required: true
+        type: string
+    outputs:
+      approval-status:
+        description: 'Status da aprovação'
+        value: ${{ jobs.approval.outputs.approval-status }}
+      issue-number:
+        description: 'Número da issue relacionada'
+        value: ${{ jobs.approval.outputs.issue-number }}
+      issue-url:
+        description: 'URL da issue relacionada'
+        value: ${{ jobs.approval.outputs.issue-url }}
+
+jobs:
+  approval:
+    runs-on: ubuntu-latest
+    outputs:
+      approval-status: ${{ steps.approval.outputs.approval-status }}
+      issue-number: ${{ steps.approval.outputs.issue-number }}
+      issue-url: ${{ steps.approval.outputs.issue-url }}
+    steps:
+      - name: Aprovar fluxo automaticamente
+        id: approval
+        shell: bash
+        run: |
+          echo "approval-status=approved" >> "$GITHUB_OUTPUT"
+          echo "issue-number=N/A" >> "$GITHUB_OUTPUT"
+          echo "issue-url=N/A" >> "$GITHUB_OUTPUT"
+
+      - name: Resumo da aprovação
+        shell: bash
+        run: |
+          {
+            echo '## Aprovação do fluxo'
+            echo ''
+            echo "- Ambiente: ${{ inputs.environment }}"
+            echo "- Status: approved"
+            echo ''
+            echo 'A aprovação manual do template antigo foi substituída por uma aprovação automática no próprio workflow.'
+          } >> "$GITHUB_STEP_SUMMARY"

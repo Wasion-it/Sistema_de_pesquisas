@@ -1,0 +1,86 @@
+name: Resumo de execução
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Ambiente de execução'
+        required: true
+        type: string
+      start_time:
+        description: 'Horário de início'
+        required: false
+        type: string
+        default: 'N/A'
+      image_size:
+        description: 'Tamanho do artefato'
+        required: false
+        type: string
+        default: 'N/A'
+      setup_result:
+        description: 'Resultado do setup'
+        required: false
+        type: string
+        default: 'N/A'
+      test_result:
+        description: 'Resultado dos testes'
+        required: false
+        type: string
+        default: 'N/A'
+      build_result:
+        description: 'Resultado do build'
+        required: false
+        type: string
+        default: 'N/A'
+      deploy_result:
+        description: 'Resultado do deploy'
+        required: false
+        type: string
+        default: 'N/A'
+      notification_type:
+        description: 'Tipo de notificação'
+        required: false
+        type: string
+        default: 'summary'
+    outputs:
+      all_steps_success:
+        description: 'Indica se todas as etapas foram concluídas com sucesso'
+        value: ${{ jobs.notification.outputs.all_steps_success }}
+
+jobs:
+  notification:
+    runs-on: ubuntu-latest
+    outputs:
+      all_steps_success: ${{ steps.status.outputs.all_steps_success }}
+    steps:
+      - name: Consolidar status
+        id: status
+        shell: bash
+        run: |
+          all_steps_success=true
+
+          for step_result in "${{ inputs.setup_result }}" "${{ inputs.test_result }}" "${{ inputs.build_result }}" "${{ inputs.deploy_result }}"; do
+            if [ -n "$step_result" ] && [ "$step_result" != "success" ] && [ "$step_result" != "skipped" ] && [ "$step_result" != "N/A" ]; then
+              all_steps_success=false
+              break
+            fi
+          done
+
+          echo "all_steps_success=$all_steps_success" >> "$GITHUB_OUTPUT"
+
+      - name: Escrever resumo da execução
+        shell: bash
+        run: |
+          {
+            echo '## Resumo da execução'
+            echo ''
+            echo "- Ambiente: ${{ inputs.environment }}"
+            echo "- Tipo: ${{ inputs.notification_type }}"
+            echo "- Início: ${{ inputs.start_time }}"
+            echo "- Tamanho do artefato: ${{ inputs.image_size }}"
+            echo "- Setup: ${{ inputs.setup_result }}"
+            echo "- Testes: ${{ inputs.test_result }}"
+            echo "- Build: ${{ inputs.build_result }}"
+            echo "- Deploy: ${{ inputs.deploy_result }}"
+            echo "- Sucesso geral: ${{ steps.status.outputs.all_steps_success }}"
+          } >> "$GITHUB_STEP_SUMMARY"

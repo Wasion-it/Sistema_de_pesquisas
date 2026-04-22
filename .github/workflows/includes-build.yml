@@ -1,0 +1,136 @@
+name: Empacotar aplicação
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Nome do ambiente'
+        required: true
+        type: string
+      python_version:
+        description: 'Versão do Python'
+        required: false
+        type: string
+        default: '3.12'
+      node_version:
+        description: 'Versão do Node.js'
+        required: false
+        type: string
+        default: '20'
+      artifact_name:
+        description: 'Nome do artefato gerado'
+        required: false
+        type: string
+        default: 'sistema-de-pesquisas-bundle'
+    outputs:
+      build_result:
+        description: 'Resultado do build'
+        value: ${{ jobs.package.result }}
+      artifact_name:
+        description: 'Nome do artefato'
+        value: ${{ jobs.package.outputs.artifact_name }}
+      artifact_path:
+        description: 'Caminho do artefato'
+        value: ${{ jobs.package.outputs.artifact_path }}
+      artifact_size:
+        description: 'Tamanho do artefato'
+        value: ${{ jobs.package.outputs.artifact_size }}
+
+jobs:
+  environment:
+    name: Preparar ambiente
+    uses: ./.github/workflows/includes-environment.yml
+    with:
+      environment: ${{ inputs.environment }}
+
+  package:
+    name: Gerar pacote de distribuição
+    runs-on: ubuntu-latest
+    needs: environment
+    timeout-minutes: 20
+    outputs:
+      artifact_name: ${{ steps.bundle.outputs.artifact_name }}
+      artifact_path: ${{ steps.bundle.outputs.artifact_path }}
+      artifact_size: ${{ steps.bundle.outputs.artifact_size }}
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Instalar dependências do backend
+        working-directory: backend
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Validar backend
+        working-directory: backend
+        shell: bash
+        run: |
+          python -m compileall app seed.py
+          python -c "from app.main import app; print(app.title)"
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências do frontend
+        working-directory: frontend
+        shell: bash
+        run: npm ci --no-audit --no-fund
+
+      - name: Build do frontend
+        working-directory: frontend
+        shell: bash
+        run: npm run build
+
+      - name: Montar pacote final
+        id: bundle
+        shell: bash
+        run: |
+          artifact_dir=artifacts
+          package_dir="$artifact_dir/package"
+          artifact_name='${{ inputs.artifact_name }}'
+          artifact_path="$artifact_dir/${artifact_name}.zip"
+
+          rm -rf "$artifact_dir"
+          mkdir -p "$package_dir/backend" "$package_dir/frontend"
+
+          cp -R backend/app "$package_dir/backend/"
+          cp backend/requirements.txt "$package_dir/backend/"
+          cp backend/seed.py "$package_dir/backend/"
+          cp README.md "$package_dir/"
+          cp -R frontend/dist "$package_dir/frontend/"
+
+          (cd "$package_dir" && zip -qr "../${artifact_name}.zip" .)
+
+          artifact_size=$(du -sh "$artifact_path" | cut -f1)
+          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
+          echo "artifact_path=$artifact_path" >> "$GITHUB_OUTPUT"
+          echo "artifact_size=$artifact_size" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.bundle.outputs.artifact_name }}
+          path: ${{ steps.bundle.outputs.artifact_path }}
+          retention-days: 30
+
+      - name: Resumo do build
+        shell: bash
+        run: |
+          {
+            echo '## Build concluído'
+            echo ''
+            echo "- Ambiente: ${{ needs.environment.outputs.environment }}"
+            echo "- Artefato: ${{ steps.bundle.outputs.artifact_path }}"
+            echo "- Tamanho: ${{ steps.bundle.outputs.artifact_size }}"
+          } >> "$GITHUB_STEP_SUMMARY"

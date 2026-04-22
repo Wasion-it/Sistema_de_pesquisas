@@ -1,0 +1,68 @@
+name: Validar pacote de distribuição
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Nome do ambiente'
+        required: true
+        type: string
+      artifact_name:
+        description: 'Nome do artefato a ser validado'
+        required: false
+        type: string
+        default: 'sistema-de-pesquisas-bundle'
+    outputs:
+      deploy_result:
+        description: 'Resultado da validação'
+        value: ${{ jobs.deploy.result }}
+
+jobs:
+  environment:
+    name: Preparar ambiente
+    uses: ./.github/workflows/includes-environment.yml
+    with:
+      environment: ${{ inputs.environment }}
+
+  deploy:
+    name: Validar artefato gerado
+    runs-on: ubuntu-latest
+    needs: environment
+    timeout-minutes: 10
+    steps:
+      - name: Baixar artefato do build
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: deploy-package
+
+      - name: Verificar conteúdo do pacote
+        shell: bash
+        run: |
+          package_file="deploy-package/${{ inputs.artifact_name }}.zip"
+
+          if [ ! -f "$package_file" ]; then
+            echo "Pacote não encontrado: $package_file"
+            exit 1
+          fi
+
+          unzip -l "$package_file"
+
+          rm -rf deploy-unpacked
+          mkdir -p deploy-unpacked
+          unzip -q "$package_file" -d deploy-unpacked
+
+          test -f deploy-unpacked/README.md
+          test -f deploy-unpacked/backend/requirements.txt
+          test -d deploy-unpacked/frontend/dist
+          test -f deploy-unpacked/frontend/dist/index.html
+
+      - name: Resumo da validação de deploy
+        shell: bash
+        run: |
+          {
+            echo '## Validação de deploy concluída'
+            echo ''
+            echo "- Ambiente: ${{ needs.environment.outputs.environment }}"
+            echo "- Artefato validado: ${{ inputs.artifact_name }}"
+          } >> "$GITHUB_STEP_SUMMARY"

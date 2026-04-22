@@ -1,0 +1,73 @@
+name: Publicar release
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Ambiente de execução'
+        required: true
+        type: string
+      artifact_name:
+        description: 'Nome do artefato publicado'
+        required: false
+        type: string
+        default: 'sistema-de-pesquisas-bundle'
+      start_time:
+        description: 'Horário de início'
+        required: false
+        type: string
+        default: 'N/A'
+      artifact_size:
+        description: 'Tamanho do artefato'
+        required: false
+        type: string
+        default: 'N/A'
+    outputs:
+      release_url:
+        description: 'URL do release criado'
+        value: ${{ jobs.release.outputs.release_url }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_url: ${{ steps.create_release.outputs.url }}
+    steps:
+      - name: Baixar artefato para o release
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: release-package
+
+      - name: Criar release no GitHub
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: release-${{ github.run_number }}
+          name: 'Sistema de Pesquisas - ${{ inputs.environment }} #${{ github.run_number }}'
+          body: |
+            Release automática do projeto Sistema de Pesquisas.
+
+            - Ambiente: ${{ inputs.environment }}
+            - Artefato: ${{ inputs.artifact_name }}
+            - Tamanho: ${{ inputs.artifact_size }}
+            - Início: ${{ inputs.start_time }}
+          files: |
+            release-package/${{ inputs.artifact_name }}.zip
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Resumo do release
+        shell: bash
+        run: |
+          {
+            echo '## Release publicado'
+            echo ''
+            echo "- Ambiente: ${{ inputs.environment }}"
+            echo "- URL: ${{ steps.create_release.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,89 @@
+name: Publicação de produção
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    name: Preparar ambiente
+    uses: ./.github/workflows/includes-environment.yml
+    with:
+      environment: prod
+
+  approval:
+    name: Aprovação do fluxo
+    needs: setup
+    uses: ./.github/workflows/includes-approval.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+
+  test:
+    name: Validar projeto
+    needs: [setup, approval]
+    uses: ./.github/workflows/includes-test.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      python_version: '3.12'
+
+  build:
+    name: Empacotar aplicação
+    needs: [setup, test]
+    uses: ./.github/workflows/includes-build.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      python_version: '3.12'
+
+  deploy:
+    name: Validar pacote de entrega
+    needs: [setup, build]
+    uses: ./.github/workflows/includes-deploy.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      artifact_name: 'sistema-de-pesquisas-bundle'
+
+  release:
+    name: Publicar release
+    needs: [setup, build, deploy]
+    uses: ./.github/workflows/includes-release.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      artifact_name: 'sistema-de-pesquisas-bundle'
+      artifact_size: 'N/A'
+      start_time: ${{ github.run_id }}
+
+  report:
+    name: Resumo final
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: [setup, approval, test, build, deploy, release]
+    steps:
+      - name: Gerar resumo
+        shell: bash
+        run: |
+          {
+            echo '## Publicação de produção concluída'
+            echo ''
+            echo "- Projeto: ${{ needs.setup.outputs.project }}"
+            echo "- Ambiente: ${{ needs.setup.outputs.environment }}"
+            echo "- Aprovação: ${{ needs.approval.outputs.approval-status }}"
+            echo "- Testes: ${{ needs.test.result }}"
+            echo "- Build: ${{ needs.build.result }}"
+            echo "- Deploy: ${{ needs.deploy.result }}"
+            echo "- Release: ${{ needs.release.result }}"
+            echo "- Release URL: ${{ needs.release.outputs.release_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

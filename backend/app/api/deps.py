@@ -41,7 +41,7 @@ def get_current_admin_user(
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
     if not has_portal_access(db, user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrative access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     return user
 
@@ -51,6 +51,6 @@ def get_current_portal_user(
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
     if not has_portal_access(db, user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrative access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     return user

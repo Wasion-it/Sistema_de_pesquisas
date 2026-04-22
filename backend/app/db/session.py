@@ -116,6 +116,19 @@ def _ensure_user_columns() -> None:
             connection.execute(text("UPDATE users SET auth_source = 'LOCAL' WHERE auth_source IS NULL"))
 
 
+def _normalize_user_roles() -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "role" not in existing_columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("UPDATE users SET role = 'RH_ANALISTA' WHERE role = 'TI_SUPORTE'"))
+
+
 def _ensure_employee_columns() -> None:
     inspector = inspect(engine)
     if "employees" not in inspector.get_table_names():
@@ -533,6 +546,7 @@ def create_tables() -> None:
     import_all_models()
     Base.metadata.create_all(bind=engine)
     _ensure_user_columns()
+    _normalize_user_roles()
     _ensure_survey_question_columns()
     _ensure_department_columns()
     _ensure_job_title_columns()

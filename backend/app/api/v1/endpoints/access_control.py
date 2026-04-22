@@ -41,7 +41,7 @@ def list_access_control_users(
     db: Annotated[Session, Depends(get_db)],
 ) -> AccessControlUserListResponse:
     if user.role != RoleEnum.RH_ADMIN and not has_module_access(db, user, AccessModuleEnum.ACCESS_CONTROL):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrative access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     if settings.ldap_enabled and settings.ldap_user_base_dn:
         sync_directory_users_from_ou(db)
@@ -65,7 +65,7 @@ def update_access_control_user(
     db: Annotated[Session, Depends(get_db)],
 ) -> AccessControlUserResponse:
     if user.role != RoleEnum.RH_ADMIN and not has_module_access(db, user, AccessModuleEnum.ACCESS_CONTROL):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrative access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     target_user = db.scalar(select(User).where(User.id == user_id))
     if target_user is None:

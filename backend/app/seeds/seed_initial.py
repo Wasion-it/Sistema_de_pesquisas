@@ -208,7 +208,7 @@ def seed_users_and_employees(
             "email": "ti.suporte@example.com",
             "full_name": "Elisa Rocha",
             "password_hash": hash_password(DEV_PASSWORDS["it_support"]),
-            "role": RoleEnum.TI_SUPORTE,
+            "role": RoleEnum.RH_ANALISTA,
             "employee_code": "EMP-3001",
             "department": departments["OPS"],
             "job_title": job_titles["IT_SUPPORT"],

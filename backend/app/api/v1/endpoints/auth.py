@@ -167,7 +167,7 @@ def login_admin(
             db.commit()
         else:
             db.rollback()
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrative access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")

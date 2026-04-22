@@ -7,7 +7,6 @@ class RoleEnum(str, Enum):
     GESTOR = "GESTOR"
     DIRETOR_RAVI = "DIRETOR_RAVI"
     COLABORADOR = "COLABORADOR"
-    TI_SUPORTE = "TI_SUPORTE"
 
 
 class AuthenticationSourceEnum(str, Enum):

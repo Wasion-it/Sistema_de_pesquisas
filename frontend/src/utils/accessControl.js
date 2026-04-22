@@ -16,12 +16,13 @@ export const ACCESS_MODULE_META = {
   ACCESS_CONTROL: { label: 'Delegação de acesso', description: 'Gestão de permissões por módulo para usuários do AD.' },
 }
 
-const FULL_PORTAL_ROLES = new Set(['RH_ADMIN', 'TI_SUPORTE'])
+const FULL_PORTAL_ROLES = new Set(['RH_ADMIN'])
 const RH_ANALYST_MODULES = new Set(['ADMISSION', 'DISMISSAL'])
 const APPROVAL_ONLY_ROLES = new Set(['GESTOR', 'DIRETOR_RAVI'])
 
 export function hasPortalAccess(user) {
   if (!user) return false
+  if (user.role === 'COLABORADOR') return false
   if (FULL_PORTAL_ROLES.has(user.role) || APPROVAL_ONLY_ROLES.has(user.role) || user.role === 'RH_ANALISTA') return true
   return Boolean(user.access_grants?.some((grant) => grant.is_active !== false))
 }

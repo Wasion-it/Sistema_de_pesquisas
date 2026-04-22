@@ -9,7 +9,6 @@ const ROLE_OPTIONS = [
   { value: 'DIRETOR_RAVI', label: 'Diretor Ravi' },
   { value: 'RH_ANALISTA', label: 'RH Analista' },
   { value: 'RH_ADMIN', label: 'RH Admin' },
-  { value: 'TI_SUPORTE', label: 'TI Suporte' },
 ]
 
 function getInitials(name) {

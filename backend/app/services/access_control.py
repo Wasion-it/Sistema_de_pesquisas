@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import ADMIN_PORTAL_ROLES
-from app.models import AccessLevelEnum, AccessModuleEnum, User, UserModuleAccess
+from app.models import AccessLevelEnum, AccessModuleEnum, RoleEnum, User, UserModuleAccess
 
 
 def _is_grant_active(grant: UserModuleAccess) -> bool:
@@ -29,6 +29,9 @@ def get_active_access_grants(session: Session, user_id: int) -> list[UserModuleA
 
 
 def has_portal_access(session: Session, user: User) -> bool:
+    if user.role == RoleEnum.COLABORADOR:
+        return False
+
     if user.role in ADMIN_PORTAL_ROLES:
         return True
 

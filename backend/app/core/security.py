@@ -20,7 +20,6 @@ ADMIN_PORTAL_ROLES: Final[set[RoleEnum]] = {
     RoleEnum.RH_ANALISTA,
     RoleEnum.GESTOR,
     RoleEnum.DIRETOR_RAVI,
-    RoleEnum.TI_SUPORTE,
 }
 LDAP_AUTH_ROLES: Final[set[RoleEnum]] = {
     RoleEnum.RH_ADMIN,

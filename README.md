@@ -75,7 +75,7 @@ O backend agora possui uma base inicial em SQLite para o MVP corporativo de pesq
 
 - 3 departamentos
 - 5 cargos
-- 5 usuários com perfis `RH_ADMIN`, `RH_ANALISTA`, `GESTOR`, `COLABORADOR` e `TI_SUPORTE`
+- 5 usuários com perfis `RH_ADMIN`, `RH_ANALISTA`, `GESTOR` e `COLABORADOR`
 - 5 colaboradores vinculados
 - 1 pesquisa GPTW
 - 1 versão publicada
@@ -92,7 +92,7 @@ O portal administrativo agora usa autenticação JWT no backend.
 
 - Endpoint de login: `POST /api/v1/auth/login`
 - Endpoint de sessão autenticada: `GET /api/v1/auth/me`
-- Perfis com acesso ao portal administrativo: `RH_ADMIN`, `RH_ANALISTA` e `TI_SUPORTE`
+- Perfis com acesso ao portal administrativo: `RH_ADMIN` e `RH_ANALISTA`
 
 Credenciais de desenvolvimento já seedadas:
 
@@ -107,7 +107,7 @@ O backend agora pode autenticar perfis de RH usando LDAP/Active Directory, enqua
 Comportamento:
 
 - perfis `RH_ADMIN` e `RH_ANALISTA` usam LDAP quando `LDAP_ENABLED=true`
-- perfil `TI_SUPORTE` continua usando senha local do banco
+- usuários de apoio interno continuam usando senha local do banco
 - o usuario precisa continuar existindo na tabela `users` para manter papel, ativo/inativo e auditoria
 
 Variaveis de ambiente suportadas no backend:

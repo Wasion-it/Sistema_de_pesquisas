@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './auth/AuthProvider'
 import { AdminLayout } from './components/AdminLayout'
@@ -59,6 +59,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/solicitacoes/approvals"
+            element={
+              <ProtectedRoute>
+                <AdminApprovalsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/pesquisas" element={<SurveysPage />} />
           <Route path="/campaigns/:campaignId" element={<PublicCampaignPage />} />
           <Route path="/campaigns/:campaignId/thank-you" element={<PublicCampaignThankYouPage />} />
@@ -84,7 +92,7 @@ export default function App() {
             <Route path="dashboard/pesquisas" element={<AdminDashboardPesquisasPage />} />
             <Route path="dashboard/admissao" element={<AdminDashboardAdmissaoPage />} />
             <Route path="requests" element={<AdminRequestsPage />} />
-            <Route path="approvals" element={<AdminApprovalsPage />} />
+            <Route path="approvals" element={<Navigate replace to="/solicitacoes/approvals" />} />
             <Route path="departments" element={<AdminDepartmentsPage />} />
             <Route path="job-titles" element={<AdminJobTitlesPage />} />
             <Route path="admission-requests" element={<AdminAdmissionRequestsPage />} />

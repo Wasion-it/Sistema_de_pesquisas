@@ -48,6 +48,23 @@ export function RequestsPage() {
             <span className="module-card-action">Abrir painel</span>
           </Link>
 
+          <Link className="module-card" aria-label="Aprovações" to="/solicitacoes/approvals">
+            <div className="module-card-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12l4 4L19 6" />
+                <path d="M4 4h16v16H4z" />
+              </svg>
+            </div>
+            <div className="module-card-body">
+              <span className="module-card-kicker">Acompanhamento</span>
+              <h2>Aprovações</h2>
+              <p>
+                Acompanhe e avance a trilha de aprovação das solicitações de admissão e demissão.
+              </p>
+            </div>
+            <span className="module-card-action">Abrir fila</span>
+          </Link>
+
           <Link className="module-card" aria-label="Requisição de vaga" to="/solicitacoes/admissao">
             <div className="module-card-icon" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

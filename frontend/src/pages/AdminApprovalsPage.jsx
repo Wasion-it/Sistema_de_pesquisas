@@ -214,6 +214,7 @@ export function AdminApprovalsPage() {
   const [activeTab, setActiveTab] = useState('admission')
   const [queuesByKind, setQueuesByKind] = useState({ admission: [], dismissal: [] })
   const [isLoading, setIsLoading] = useState(true)
+  const [query, setQuery] = useState('')
   const [errorMessages, setErrorMessages] = useState({ admission: '', dismissal: '' })
   const [actionState, setActionState] = useState({ kind: '', requestId: null, action: '' })
   const [selectedRequest, setSelectedRequest] = useState(null)
@@ -296,13 +297,35 @@ export function AdminApprovalsPage() {
   const activeConfig = REQUEST_KIND_TABS[activeTab]
   const activeQueueStatusKey = activeTab === 'admission' ? 'PENDING' : 'UNDER_REVIEW'
 
+  const visibleQueue = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+    if (!normalizedQuery) return activeQueue
+
+    return activeQueue.filter((item) => {
+      const haystack = [
+        item.request_title,
+        item.request_subtitle,
+        item.request_status,
+        item.request_kind,
+        item.workflow_name,
+        item.current_step_label,
+        item.requester_name,
+        item.requester_email,
+        ...(item.steps ?? []).map((step) => `${step.approver_label} ${step.status}`),
+      ].filter(Boolean).join(' ').toLowerCase()
+
+      return haystack.includes(normalizedQuery)
+    })
+  }, [activeQueue, query])
+
   const summary = useMemo(() => {
     return {
-      total: activeQueue.length,
-      pending: activeQueue.filter((item) => item.request_status === 'PENDING').length,
-      underReview: activeQueue.filter((item) => item.request_status === activeQueueStatusKey).length,
+      total: visibleQueue.length,
+      pending: visibleQueue.filter((item) => item.request_status === 'PENDING').length,
+      underReview: visibleQueue.filter((item) => item.request_status === activeQueueStatusKey).length,
+      approved: visibleQueue.filter((item) => item.request_status === 'APPROVED').length,
     }
-  }, [activeQueue, activeQueueStatusKey])
+  }, [activeQueueStatusKey, visibleQueue])
 
   const allowedApprovalRoles = ROLE_TO_APPROVAL_ROLES[user?.role] ?? new Set()
 
@@ -409,142 +432,252 @@ export function AdminApprovalsPage() {
     }
   }
 
+  function handleTabChange(nextTab) {
+    setActiveTab(nextTab)
+    setQuery('')
+  }
+
+  const firstName = user?.full_name?.split(' ')[0] ?? 'usuário'
+
   return (
-    <div className="admin-view">
-      <div className="admin-view-header">
-        <div>
-          <span className="eyebrow">Aprovações RH</span>
-          <h2>{activeConfig.title}</h2>
-          <p>Acompanhe a trilha única de aprovação e avance cada solicitação por etapa.</p>
-        </div>
-        <Link className="secondary-link-button" to="/admin">
-          Voltar ao início
-        </Link>
-      </div>
-
-      <section className="admin-panel-card admin-request-tabs">
-        <div className="admin-request-tabs-row">
-          {Object.entries(REQUEST_KIND_TABS).map(([kind, config]) => {
-            const isActive = kind === activeTab
-            return (
-              <button
-                key={kind}
-                className={`admin-request-tab ${isActive ? 'active' : ''}`}
-                type="button"
-                onClick={() => setActiveTab(kind)}
-              >
-                <span>{config.label}</span>
-                <strong>{queuesByKind[kind].length}</strong>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      {errorMessages[activeTab] ? <div className="form-error">{errorMessages[activeTab]}</div> : null}
-
-      <section className="dashboard-stats-grid">
-        <article className="stat-card">
-          <span>Total</span>
-          <strong>{summary.total}</strong>
-        </article>
-        <article className="stat-card">
-          <span>Pendentes</span>
-          <strong>{summary.pending}</strong>
-        </article>
-        <article className="stat-card">
-          <span>Em andamento</span>
-          <strong>{summary.underReview}</strong>
-        </article>
-        <article className="stat-card">
-          <span>Fila</span>
-          <strong>{activeQueue.length}</strong>
-        </article>
-      </section>
-
-      <section className="admin-panel-card">
-        {isLoading ? (
-          <div className="empty-state">
-            <strong>Carregando aprovações...</strong>
+    <main className="page-shell" style={{ background: 'linear-gradient(150deg, var(--slate-50) 0%, var(--blue-50) 50%, #eef2ff 100%)' }}>
+      <div className="admin-view admin-home-view" style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, paddingBottom: 8 }}>
+          <div>
+            <span className="eyebrow">Solicitações RH</span>
+            <h2 style={{ margin: '4px 0 6px', fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', letterSpacing: '-.02em' }}>{activeConfig.title}</h2>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+              </svg>
+              {firstName} · Acompanhe a trilha única de aprovação e avance cada solicitação por etapa.
+            </p>
           </div>
-        ) : activeQueue.length === 0 ? (
-          <div className="empty-state">
-            <strong>Nenhuma aprovação pendente</strong>
-            <span>{activeConfig.emptyText}</span>
+          <Link className="secondary-link-button" to="/solicitacoes">← Voltar ao início</Link>
+        </div>
+
+        {errorMessages[activeTab] && (
+          <div className="form-error">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            {errorMessages[activeTab]}
+          </div>
+        )}
+
+        {!isLoading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+            <article className="stat-card">
+              <span>Total</span>
+              <strong>{summary.total}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Pendentes</span>
+              <strong>{summary.pending}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Em andamento</span>
+              <strong>{summary.underReview}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Aprovadas</span>
+              <strong>{summary.approved}</strong>
+            </article>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '16px 20px', borderRadius: 16, background: '#fff', border: '1px solid var(--slate-200)', boxShadow: '0 1px 3px rgba(15,23,42,.04)' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {Object.entries(REQUEST_KIND_TABS).map(([kind, config]) => {
+              const isActive = kind === activeTab
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => handleTabChange(kind)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 9,
+                    padding: '11px 18px',
+                    borderRadius: 12,
+                    border: isActive ? '1.5px solid var(--blue-300)' : '1.5px solid var(--slate-200)',
+                    background: isActive ? 'linear-gradient(180deg, var(--blue-50) 0%, #fff 100%)' : 'linear-gradient(180deg, #fff 0%, var(--slate-50) 100%)',
+                    color: isActive ? 'var(--blue-800)' : 'var(--slate-600)',
+                    fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 140ms',
+                    boxShadow: isActive ? '0 4px 12px rgba(37,99,235,.1)' : 'none',
+                  }}
+                >
+                  <span>{config.label}</span>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    minWidth: 24, height: 24, padding: '0 7px',
+                    borderRadius: 999,
+                    background: isActive ? 'var(--blue-600)' : 'var(--slate-200)',
+                    color: isActive ? '#fff' : 'var(--slate-600)',
+                    fontSize: 11, fontWeight: 700,
+                  }}>
+                    {queuesByKind[kind].length}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ position: 'relative', minWidth: 260 }}>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', pointerEvents: 'none' }}
+            >
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              placeholder="Buscar por título, fluxo ou solicitante..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 36px 10px 38px',
+                border: '1.5px solid var(--slate-200)',
+                borderRadius: 10,
+                background: 'var(--slate-50)',
+                color: 'var(--slate-900)',
+                fontSize: 13,
+                outline: 'none',
+                transition: 'border-color 140ms, box-shadow 140ms',
+              }}
+              onFocus={(event) => { event.target.style.borderColor = 'var(--blue-400)'; event.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,.08)'; event.target.style.background = '#fff' }}
+              onBlur={(event) => { event.target.style.borderColor = 'var(--slate-200)'; event.target.style.boxShadow = 'none'; event.target.style.background = 'var(--slate-50)' }}
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  width: 20, height: 20, borderRadius: '50%',
+                  border: 'none', background: 'var(--slate-200)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--slate-500)',
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {!isLoading && visibleQueue.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, color: 'var(--slate-400)', fontWeight: 600 }}>
+              {visibleQueue.length} aprovação{visibleQueue.length === 1 ? '' : 'es'} encontrada{visibleQueue.length === 1 ? '' : 's'}
+            </span>
+            {query && (
+              <span style={{
+                padding: '3px 10px', borderRadius: 999,
+                background: 'var(--blue-50)', color: 'var(--blue-700)',
+                fontSize: 12, fontWeight: 600,
+              }}>
+                "{query}"
+              </span>
+            )}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div style={{ padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)' }}>
+            <div style={{ width: 36, height: 36, border: '3px solid var(--blue-100)', borderTopColor: 'var(--blue-600)', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-400)', fontWeight: 500 }}>Carregando aprovações…</p>
+          </div>
+        ) : visibleQueue.length === 0 ? (
+          <div style={{ borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, padding: '72px 32px' }}>
+              <div style={{ width: 64, height: 64, borderRadius: 20, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate-300)', marginBottom: 4 }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" />
+                  <path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" />
+                </svg>
+              </div>
+              <strong style={{ fontSize: 16, color: 'var(--slate-700)', fontWeight: 600 }}>Nenhuma aprovação encontrada</strong>
+              <span style={{ fontSize: 14, color: 'var(--slate-400)', maxWidth: 300, lineHeight: 1.65 }}>{activeConfig.emptyText}</span>
+              {query && (
+                <button type="button" onClick={() => setQuery('')} className="secondary-button" style={{ marginTop: 8 }}>
+                  Limpar busca
+                </button>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="approval-queue-grid">
-            {activeQueue.map((item) => (
+          <div style={{ display: 'grid', gap: 14 }}>
+            {visibleQueue.map((item) => (
               <article className="approval-request-card" key={`${item.request_kind}-${item.request_id}`}>
                 {(() => {
                   const requestKind = normalizeRequestKind(item.request_kind)
                   return (
                     <>
-                <div className="approval-request-top">
-                  <div>
-                    <span className="approval-kind">{REQUEST_KIND_TABS[requestKind]?.label ?? item.request_kind}</span>
-                    <h3>{item.request_title}</h3>
-                    <p>{item.request_subtitle}</p>
-                  </div>
-                  <span className={`status-pill ${item.request_status === activeQueueStatusKey ? 'active' : 'inactive'}`}>
-                    {item.request_status === activeQueueStatusKey ? (activeTab === 'admission' ? 'Pendente' : 'Em análise') : 'Pendente'}
-                  </span>
-                </div>
+                      <div className="approval-request-top">
+                        <div>
+                          <span className="approval-kind">{REQUEST_KIND_TABS[requestKind]?.label ?? item.request_kind}</span>
+                          <h3>{item.request_title}</h3>
+                          <p>{item.request_subtitle}</p>
+                        </div>
+                        <span className={`status-pill ${item.request_status === activeQueueStatusKey ? 'active' : 'inactive'}`}>
+                          {item.request_status === activeQueueStatusKey ? (activeTab === 'admission' ? 'Pendente' : 'Em análise') : 'Pendente'}
+                        </span>
+                      </div>
 
-                <div className="approval-request-meta">
-                  <div>
-                    <span>Solicitante</span>
-                    <strong>{item.requester_name}</strong>
-                    <small>{item.requester_email}</small>
-                  </div>
-                  <div>
-                    <span>Fluxo</span>
-                    <strong>{item.workflow_name}</strong>
-                    <small>Etapa atual: {item.current_step_label ?? 'Concluída'}</small>
-                  </div>
-                  <div>
-                    <span>Atualizado em</span>
-                    <strong>{formatDateTime(item.created_at)}</strong>
-                    <small>Submetido em {formatDateTime(item.submitted_at)}</small>
-                  </div>
-                </div>
+                      <div className="approval-request-meta">
+                        <div>
+                          <span>Solicitante</span>
+                          <strong>{item.requester_name}</strong>
+                          <small>{item.requester_email}</small>
+                        </div>
+                        <div>
+                          <span>Fluxo</span>
+                          <strong>{item.workflow_name}</strong>
+                          <small>Etapa atual: {item.current_step_label ?? 'Concluída'}</small>
+                        </div>
+                        <div>
+                          <span>Atualizado em</span>
+                          <strong>{formatDateTime(item.created_at)}</strong>
+                          <small>Submetido em {formatDateTime(item.submitted_at)}</small>
+                        </div>
+                      </div>
 
-                <ApprovalStepTracker steps={item.steps} />
+                      <ApprovalStepTracker steps={item.steps} />
 
-                <div className="approval-request-actions">
-                  {!canActOnItem(item) ? (
-                    <div className="approval-locked-note">
-                      Apenas {getActionableStepLabel(item)} pode executar esta etapa.
-                    </div>
-                  ) : null}
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() => setSelectedRequest(item)}
-                  >
-                    Detalhes
-                  </button>
-                  <button
-                    className="primary-button"
-                    disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
-                    type="button"
-                    onClick={() => openApprovalConfirmation(item)}
-                  >
-                    {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'approve'
-                      ? 'Aprovando...'
-                      : 'Aprovar etapa'}
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
-                    type="button"
-                    onClick={() => handleReject(requestKind, item.request_id)}
-                  >
-                    {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'reject'
-                      ? 'Rejeitando...'
-                      : 'Rejeitar solicitação'}
-                  </button>
-                </div>
+                      <div className="approval-request-actions">
+                        {!canActOnItem(item) ? (
+                          <div className="approval-locked-note">
+                            Apenas {getActionableStepLabel(item)} pode executar esta etapa.
+                          </div>
+                        ) : null}
+                        <button className="secondary-button" type="button" onClick={() => setSelectedRequest(item)}>
+                          Detalhes
+                        </button>
+                        <button
+                          className="primary-button"
+                          disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
+                          type="button"
+                          onClick={() => openApprovalConfirmation(item)}
+                        >
+                          {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'approve'
+                            ? 'Aprovando...'
+                            : 'Aprovar etapa'}
+                        </button>
+                        <button
+                          className="secondary-button"
+                          disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
+                          type="button"
+                          onClick={() => handleReject(requestKind, item.request_id)}
+                        >
+                          {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'reject'
+                            ? 'Rejeitando...'
+                            : 'Rejeitar solicitação'}
+                        </button>
+                      </div>
                     </>
                   )
                 })()}
@@ -552,20 +685,20 @@ export function AdminApprovalsPage() {
             ))}
           </div>
         )}
-      </section>
 
-      <RequestDetailsModal request={selectedRequest} token={token} onClose={() => setSelectedRequest(null)} />
-      <RecruiterApprovalModal
-        request={recruiterApprovalRequest}
-        recruiterOptions={recruiterOptions}
-        selectedRecruiterId={selectedRecruiterId}
-        onChangeRecruiterId={setSelectedRecruiterId}
-        onClose={closeRecruiterModal}
-        onConfirm={confirmRecruiterApproval}
-        isLoading={isLoadingRecruiters}
-        isSubmitting={actionState.kind === 'admission' && actionState.requestId === recruiterApprovalRequest?.request_id && actionState.action === 'approve'}
-        errorMessage={recruiterErrorMessage}
-      />
-    </div>
+        <RequestDetailsModal request={selectedRequest} token={token} onClose={() => setSelectedRequest(null)} />
+        <RecruiterApprovalModal
+          request={recruiterApprovalRequest}
+          recruiterOptions={recruiterOptions}
+          selectedRecruiterId={selectedRecruiterId}
+          onChangeRecruiterId={setSelectedRecruiterId}
+          onClose={closeRecruiterModal}
+          onConfirm={confirmRecruiterApproval}
+          isLoading={isLoadingRecruiters}
+          isSubmitting={actionState.kind === 'admission' && actionState.requestId === recruiterApprovalRequest?.request_id && actionState.action === 'approve'}
+          errorMessage={recruiterErrorMessage}
+        />
+      </div>
+    </main>
   )
 }

@@ -56,7 +56,7 @@ const ADMIN_MODULES = [
   {
     title: 'Aprovações',
     description: 'Acompanhe e avance a fila de admissão e demissão.',
-    to: '/admin/approvals',
+    to: '/solicitacoes/approvals',
     accent: 'green',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -120,7 +120,7 @@ export function AdminHomePage() {
   const { user } = useAuth()
   const visibleModules = user?.role === 'RH_ANALISTA'
     ? ADMIN_MODULES
-    : ADMIN_MODULES.filter((module) => module.title !== 'Admissão' && module.title !== 'KPIs de admissão')
+    : ADMIN_MODULES.filter((module) => module.title !== 'Aprovações' && module.title !== 'Admissão' && module.title !== 'KPIs de admissão')
 
   return (
     <div className="admin-view admin-home-view">

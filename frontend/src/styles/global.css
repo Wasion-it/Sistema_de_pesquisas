@@ -1851,6 +1851,60 @@ body:has(.admin-shell) { background: var(--slate-100); }
   font-weight: 700;
 }
 
+.admin-requests-secondary {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.admin-requests-secondary-header {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-requests-secondary-header p {
+  color: var(--slate-500);
+  line-height: 1.7;
+  max-width: 60ch;
+}
+
+.admin-home-modules-secondary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-home-module--secondary {
+  background: linear-gradient(180deg, rgba(248,250,252,.96), rgba(241,245,249,.94));
+  border-style: dashed;
+  border-color: var(--slate-200);
+  box-shadow: none;
+}
+
+.admin-home-module--secondary:hover {
+  transform: translateY(-2px);
+  border-color: var(--slate-300);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-home-module--secondary .admin-home-module-icon {
+  width: 48px;
+  height: 48px;
+  box-shadow: none;
+  opacity: .9;
+}
+
+.admin-home-module--secondary .admin-home-module-body h3 {
+  font-size: 1.08rem;
+}
+
+.admin-home-module-kicker-secondary {
+  color: var(--slate-500);
+}
+
+.admin-home-module-action-secondary {
+  background: var(--slate-50);
+  color: var(--slate-600);
+}
+
 .admin-home-module.module-blue .admin-home-module-icon { background: linear-gradient(135deg, var(--blue-600), var(--blue-800)); }
 .admin-home-module.module-slate .admin-home-module-icon { background: linear-gradient(135deg, var(--slate-700), var(--slate-900)); }
 .admin-home-module.module-amber .admin-home-module-icon { background: linear-gradient(135deg, var(--amber-500), var(--amber-700)); }

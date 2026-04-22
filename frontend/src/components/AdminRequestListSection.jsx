@@ -6,11 +6,13 @@ import { useAuth } from '../auth/AuthProvider'
 import { AdmissionChecklistModal } from './AdmissionChecklistModal'
 import { AdmissionHireModal } from './AdmissionHireModal'
 import { ApprovalStatusModal } from './ApprovalStatusModal'
+import { DismissalChecklistModal } from './DismissalChecklistModal'
 import { RequestDetailsModal } from './RequestDetailsModal'
 import {
   finalizeAdminAdmissionRequest,
   getAdminAdmissionChecklist,
   getAdminAdmissionRequests,
+  getAdminDismissalChecklist,
   getAdminDismissalRequests,
   rejectAdminDismissalRequest,
 } from '../services/admin'
@@ -393,6 +395,13 @@ function DismissalCard({ item, actions, user }) {
             </svg>
             Aprovações
           </button>
+          <button onClick={actions.onViewChecklist} style={btnStyle('ghost')}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            Checklist
+          </button>
           <button onClick={actions.onViewDetails} style={btnStyle('ghost')}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -500,12 +509,14 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   const [selectedApprovalRequest, setSelectedApprovalRequest] = useState(null)
   const [selectedDetailsRequest, setSelectedDetailsRequest] = useState(null)
   const [selectedChecklistRequest, setSelectedChecklistRequest] = useState(null)
+  const [selectedDismissalChecklistRequest, setSelectedDismissalChecklistRequest] = useState(null)
   const [selectedHireRequest, setSelectedHireRequest] = useState(null)
   const [selectedDismissalRejectionRequest, setSelectedDismissalRejectionRequest] = useState(null)
   const [dismissalRejectionComments, setDismissalRejectionComments] = useState('')
   const [dismissalRejectionError, setDismissalRejectionError] = useState('')
   const [isRejectingDismissal, setIsRejectingDismissal] = useState(false)
   const [admissionChecklistSteps, setAdmissionChecklistSteps] = useState([])
+  const [dismissalChecklistSteps, setDismissalChecklistSteps] = useState([])
   const [refreshCounter, setRefreshCounter] = useState(0)
 
   useEffect(() => {
@@ -532,6 +543,14 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     getAdminAdmissionChecklist(token)
       .then((data) => { if (isMounted) setAdmissionChecklistSteps(data.items ?? []) })
       .catch(() => { if (isMounted) setAdmissionChecklistSteps([]) })
+    return () => { isMounted = false }
+  }, [token, refreshCounter])
+
+  useEffect(() => {
+    let isMounted = true
+    getAdminDismissalChecklist(token)
+      .then((data) => { if (isMounted) setDismissalChecklistSteps(data.items ?? []) })
+      .catch(() => { if (isMounted) setDismissalChecklistSteps([]) })
     return () => { isMounted = false }
   }, [token, refreshCounter])
 
@@ -627,7 +646,11 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
           <p>{activeConfig.description}</p>
         </div>
         <div className="admin-header-actions">
-          <Link className="secondary-link-button" to="/admin/admission-checklist">Gerenciar checklist</Link>
+          {activeTab === 'admission' ? (
+            <Link className="secondary-link-button" to="/admin/admission-checklist">Gerenciar checklist</Link>
+          ) : (
+            <Link className="secondary-link-button" to="/admin/dismissal-checklist">Gerenciar checklist</Link>
+          )}
           <Link className="secondary-link-button" to="/admin">Voltar ao início</Link>
         </div>
       </div>
@@ -819,6 +842,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                   user={user}
                   actions={{
                     onViewApprovalStatus: () => openApprovalStatus(item),
+                    onViewChecklist: () => setSelectedDismissalChecklistRequest(item),
                     onViewDetails: () => openDetailsModal(item),
                     onRejectDismissal: () => openDismissalRejectionModal(item),
                     canRejectDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
@@ -853,6 +877,17 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
         onClose={() => setSelectedChecklistRequest(null)}
         onUpdated={(updatedRequest) => {
           setSelectedChecklistRequest(updatedRequest)
+          setRefreshCounter((v) => v + 1)
+        }}
+      />
+
+      <DismissalChecklistModal
+        request={selectedDismissalChecklistRequest}
+        steps={dismissalChecklistSteps}
+        token={token}
+        onClose={() => setSelectedDismissalChecklistRequest(null)}
+        onUpdated={(updatedRequest) => {
+          setSelectedDismissalChecklistRequest(updatedRequest)
           setRefreshCounter((v) => v + 1)
         }}
       />

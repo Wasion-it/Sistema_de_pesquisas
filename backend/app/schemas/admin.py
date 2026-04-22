@@ -166,6 +166,10 @@ class AdmissionChecklistProgressUpdateRequest(BaseModel):
     completed_steps: int = Field(ge=0, le=1000)
 
 
+class DismissalChecklistProgressUpdateRequest(BaseModel):
+    completed_steps: int = Field(ge=0, le=1000)
+
+
 class DismissalChecklistStepResponse(BaseModel):
     id: int
     step_order: int
@@ -315,6 +319,7 @@ class DismissalRequestResponse(BaseModel):
     created_by_user_name: str
     created_by_user_email: str
     approval_workflow_template_id: int | None
+    checklist_completed_steps: int
     submitted_at: datetime | None
     created_at: datetime
     updated_at: datetime

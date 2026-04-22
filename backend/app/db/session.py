@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload, sessionmaker
 from app.core.config import settings
 from app.db.base import Base, import_all_models
 from app.services.admission_checklist import DEFAULT_ADMISSION_CHECKLIST_STEPS
+from app.services.dismissal_checklist import DEFAULT_DISMISSAL_CHECKLIST_STEPS
 
 
 def _build_engine() -> Engine:
@@ -263,6 +264,26 @@ def _ensure_default_admission_checklist() -> None:
         session.commit()
 
 
+def _ensure_default_dismissal_checklist() -> None:
+    from app.models import DismissalChecklistStep
+
+    with SessionLocal() as session:
+        existing_step = session.scalar(select(DismissalChecklistStep.id).limit(1))
+        if existing_step is not None:
+            return
+
+        for step_order, title, description in DEFAULT_DISMISSAL_CHECKLIST_STEPS:
+            session.add(
+                DismissalChecklistStep(
+                    step_order=step_order,
+                    title=title,
+                    description=description,
+                )
+            )
+
+        session.commit()
+
+
 def _ensure_approval_workflow_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
@@ -310,6 +331,10 @@ def _ensure_approval_workflow_columns() -> None:
         if "approval_workflow_template_id" not in existing_columns:
             statements.append(
                 "ALTER TABLE dismissal_requests ADD COLUMN approval_workflow_template_id INTEGER REFERENCES approval_workflow_templates(id)"
+            )
+        if "checklist_completed_steps" not in existing_columns:
+            statements.append(
+                "ALTER TABLE dismissal_requests ADD COLUMN checklist_completed_steps INTEGER NOT NULL DEFAULT 0"
             )
         if "recruiter_user_id" not in existing_columns:
             statements.append(
@@ -493,6 +518,7 @@ def create_tables() -> None:
     _ensure_admission_request_columns()
     _normalize_admission_request_statuses()
     _ensure_default_admission_checklist()
+    _ensure_default_dismissal_checklist()
     _ensure_approval_workflow_columns()
     _ensure_default_approval_workflow()
     _backfill_request_approval_steps()

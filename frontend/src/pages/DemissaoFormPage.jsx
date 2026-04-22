@@ -454,6 +454,9 @@ export function DemissaoFormPage() {
               <button className="secondary-button" type="button" onClick={handleReset}>
                 Limpar formulário
               </button>
+              <Link className="secondary-link-button" to="/admin/dismissal-checklist">
+                Abrir checklist
+              </Link>
             </div>
           </form>
 

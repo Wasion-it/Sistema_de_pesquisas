@@ -65,6 +65,7 @@ from app.schemas.admin import (
     AdmissionChecklistStepListResponse,
     AdmissionChecklistStepResponse,
     AdmissionChecklistStepUpdateRequest,
+    DismissalChecklistProgressUpdateRequest,
     DismissalChecklistReorderRequest,
     DismissalChecklistStepCreateRequest,
     DismissalChecklistStepListResponse,
@@ -364,6 +365,7 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
         created_by_user_name=item.created_by_user.full_name,
         created_by_user_email=item.created_by_user.email,
         approval_workflow_template_id=item.approval_workflow_template_id,
+        checklist_completed_steps=item.checklist_completed_steps or 0,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -1952,6 +1954,58 @@ def update_admin_admission_request_checklist_progress(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Admission request was updated but could not be loaded")
 
     return _serialize_admission_request(loaded_item)
+
+
+@router.post("/hr/dismissal-requests/{request_id}/checklist-progress", response_model=DismissalRequestResponse)
+def update_admin_dismissal_request_checklist_progress(
+    request_id: int,
+    payload: DismissalChecklistProgressUpdateRequest,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalRequestResponse:
+    _require_recruiter_access(user)
+
+    request_item = db.scalar(
+        select(DismissalRequest)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
+        )
+        .where(DismissalRequest.id == request_id)
+    )
+    if request_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    if not _can_user_view_dismissal_request(user, request_item):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    request_item.checklist_completed_steps = max(payload.completed_steps, 0)
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="dismissal_request",
+            entity_id=str(request_item.id),
+            description="Dismissal checklist progress updated from administrative portal.",
+            details_json=json.dumps({"request_id": request_item.id, "completed_steps": request_item.checklist_completed_steps}),
+            ip_address="127.0.0.1",
+            created_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+
+    loaded_item = db.scalar(
+        select(DismissalRequest)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
+        )
+        .where(DismissalRequest.id == request_id)
+    )
+    if loaded_item is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Dismissal request was updated but could not be loaded")
+
+    return _serialize_dismissal_request(loaded_item)
 
 
 @router.post("/hr/admission-requests/{request_id}/hire", response_model=AdmissionRequestResponse)

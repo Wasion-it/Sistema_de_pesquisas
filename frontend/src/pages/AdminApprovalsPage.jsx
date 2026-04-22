@@ -453,7 +453,7 @@ export function AdminApprovalsPage() {
               {firstName} · Acompanhe a trilha única de aprovação e avance cada solicitação por etapa.
             </p>
           </div>
-          <Link className="secondary-link-button" to="/solicitacoes">← Voltar ao início</Link>
+          <Link className="secondary-link-button" to="/admin">← Voltar ao início</Link>
         </div>
 
         {errorMessages[activeTab] && (

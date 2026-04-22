@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-import { AuthProvider } from './auth/AuthProvider'
+import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { AdminLayout } from './components/AdminLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminCampaignKpisPage } from './pages/AdminCampaignKpisPage'
@@ -28,6 +28,17 @@ import { DemissaoFormPage } from './pages/DemissaoFormPage'
 import { SurveysPage } from './pages/SurveysPage'
 import { PublicCampaignPage } from './pages/PublicCampaignPage'
 import { PublicCampaignThankYouPage } from './pages/PublicCampaignThankYouPage'
+
+function AdminRestrictedRoute({ children }) {
+  const { user } = useAuth()
+  const isApprovalOnlyRole = user?.role === 'GESTOR' || user?.role === 'DIRETOR_RAVI'
+
+  if (isApprovalOnlyRole) {
+    return <Navigate replace to="/admin/approvals" />
+  }
+
+  return children
+}
 
 export default function App() {
   return (
@@ -62,9 +73,7 @@ export default function App() {
           <Route
             path="/solicitacoes/approvals"
             element={
-              <ProtectedRoute>
-                <AdminApprovalsPage />
-              </ProtectedRoute>
+              <Navigate replace to="/admin/approvals" />
             }
           />
           <Route path="/pesquisas" element={<SurveysPage />} />
@@ -88,21 +97,21 @@ export default function App() {
             }
           >
             <Route index element={<AdminHomePage />} />
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="dashboard/pesquisas" element={<AdminDashboardPesquisasPage />} />
-            <Route path="dashboard/admissao" element={<AdminDashboardAdmissaoPage />} />
-            <Route path="requests" element={<AdminRequestsPage />} />
-            <Route path="approvals" element={<Navigate replace to="/solicitacoes/approvals" />} />
-            <Route path="departments" element={<AdminDepartmentsPage />} />
-            <Route path="job-titles" element={<AdminJobTitlesPage />} />
-            <Route path="admission-requests" element={<AdminAdmissionRequestsPage />} />
-            <Route path="admission-checklist" element={<AdminAdmissionChecklistPage />} />
-            <Route path="dismissal-requests" element={<AdminDismissalRequestsPage />} />
-            <Route path="dismissal-checklist" element={<AdminDismissalChecklistPage />} />
-            <Route path="surveys" element={<AdminSurveysPage />} />
-            <Route path="campaigns/:campaignId/kpis" element={<AdminCampaignKpisPage />} />
-            <Route path="campaigns/:campaignId/responses" element={<AdminCampaignResponsesPage />} />
-            <Route path="surveys/:surveyId" element={<AdminSurveyDetailPage />} />
+            <Route path="dashboard" element={<AdminRestrictedRoute><AdminDashboardPage /></AdminRestrictedRoute>} />
+            <Route path="dashboard/pesquisas" element={<AdminRestrictedRoute><AdminDashboardPesquisasPage /></AdminRestrictedRoute>} />
+            <Route path="dashboard/admissao" element={<AdminRestrictedRoute><AdminDashboardAdmissaoPage /></AdminRestrictedRoute>} />
+            <Route path="requests" element={<AdminRestrictedRoute><AdminRequestsPage /></AdminRestrictedRoute>} />
+            <Route path="approvals" element={<AdminApprovalsPage />} />
+            <Route path="departments" element={<AdminRestrictedRoute><AdminDepartmentsPage /></AdminRestrictedRoute>} />
+            <Route path="job-titles" element={<AdminRestrictedRoute><AdminJobTitlesPage /></AdminRestrictedRoute>} />
+            <Route path="admission-requests" element={<AdminRestrictedRoute><AdminAdmissionRequestsPage /></AdminRestrictedRoute>} />
+            <Route path="admission-checklist" element={<AdminRestrictedRoute><AdminAdmissionChecklistPage /></AdminRestrictedRoute>} />
+            <Route path="dismissal-requests" element={<AdminRestrictedRoute><AdminDismissalRequestsPage /></AdminRestrictedRoute>} />
+            <Route path="dismissal-checklist" element={<AdminRestrictedRoute><AdminDismissalChecklistPage /></AdminRestrictedRoute>} />
+            <Route path="surveys" element={<AdminRestrictedRoute><AdminSurveysPage /></AdminRestrictedRoute>} />
+            <Route path="campaigns/:campaignId/kpis" element={<AdminRestrictedRoute><AdminCampaignKpisPage /></AdminRestrictedRoute>} />
+            <Route path="campaigns/:campaignId/responses" element={<AdminRestrictedRoute><AdminCampaignResponsesPage /></AdminRestrictedRoute>} />
+            <Route path="surveys/:surveyId" element={<AdminRestrictedRoute><AdminSurveyDetailPage /></AdminRestrictedRoute>} />
           </Route>
         </Routes>
       </AuthProvider>

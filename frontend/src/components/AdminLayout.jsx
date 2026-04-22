@@ -15,6 +15,7 @@ function getInitials(name) {
 export function AdminLayout() {
   const { signOut, user } = useAuth()
   const canAccessAdmissions = user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN'
+  const isApprovalOnlyRole = user?.role === 'GESTOR' || user?.role === 'DIRETOR_RAVI'
 
   function handleSignOut() {
     signOut('/')
@@ -38,6 +39,14 @@ export function AdminLayout() {
         </Link>
 
         <nav className="admin-nav">
+          {isApprovalOnlyRole ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/approvals">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M5 12l4 4L19 6" />
+              </svg>
+              Aprovações
+            </NavLink>
+          ) : null}
           <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} end to="/admin">
             <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
               <rect height="9" rx="1.5" width="9" x="3" y="3" />
@@ -47,14 +56,16 @@ export function AdminLayout() {
             </svg>
             Início
           </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dashboard">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M3 13l4-4 4 4 6-6 4 4" />
-              <path d="M21 7v6h-6" />
-            </svg>
-            Dashboard
-          </NavLink>
-          {canAccessAdmissions ? (
+          {!isApprovalOnlyRole ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dashboard">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M3 13l4-4 4 4 6-6 4 4" />
+                <path d="M21 7v6h-6" />
+              </svg>
+              Dashboard
+            </NavLink>
+          ) : null}
+          {!isApprovalOnlyRole && canAccessAdmissions ? (
             <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/requests">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
                 <rect height="18" rx="2" width="18" x="3" y="3" />
@@ -65,7 +76,7 @@ export function AdminLayout() {
               Solicitações
             </NavLink>
           ) : null}
-          {canAccessAdmissions ? (
+          {!isApprovalOnlyRole && canAccessAdmissions ? (
             <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/admission-checklist">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M9 11l3 3L22 4" />
@@ -74,7 +85,7 @@ export function AdminLayout() {
               Checklist admissão
             </NavLink>
           ) : null}
-          {canAccessAdmissions ? (
+          {!isApprovalOnlyRole && canAccessAdmissions ? (
             <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dismissal-checklist">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M12 8v8" />
@@ -85,25 +96,29 @@ export function AdminLayout() {
               Checklist demissão
             </NavLink>
           ) : null}
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <line x1="3" x2="21" y1="6" y2="6" />
-              <line x1="3" x2="21" y1="12" y2="12" />
-              <line x1="3" x2="15" y1="18" y2="18" />
-            </svg>
-            Pesquisas
-          </NavLink>
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/departments">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M4 21h16" />
-              <path d="M6 21V7l6-4 6 4v14" />
-              <path d="M9 10h.01" />
-              <path d="M15 10h.01" />
-              <path d="M9 14h.01" />
-              <path d="M15 14h.01" />
-            </svg>
-            Departamentos
-          </NavLink>
+          {!isApprovalOnlyRole ? (
+            <>
+              <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">
+                <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="3" x2="21" y1="6" y2="6" />
+                  <line x1="3" x2="21" y1="12" y2="12" />
+                  <line x1="3" x2="15" y1="18" y2="18" />
+                </svg>
+                Pesquisas
+              </NavLink>
+              <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/departments">
+                <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M4 21h16" />
+                  <path d="M6 21V7l6-4 6 4v14" />
+                  <path d="M9 10h.01" />
+                  <path d="M15 10h.01" />
+                  <path d="M9 14h.01" />
+                  <path d="M15 14h.01" />
+                </svg>
+                Departamentos
+              </NavLink>
+            </>
+          ) : null}
         </nav>
 
         <div className="admin-user-card">

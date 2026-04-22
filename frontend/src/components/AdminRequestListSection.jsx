@@ -559,6 +559,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
   const visibleRequests = useMemo(() => {
     if (activeTab === 'dismissal') {
+      if (user?.role === 'RH_ADMIN') return activeRequests
       if (user?.role !== 'RH_ANALISTA') return []
       return activeRequests.filter((item) => item.recruiter_user_id === user?.id)
     }

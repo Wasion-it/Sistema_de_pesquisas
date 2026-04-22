@@ -449,6 +449,9 @@ def _can_user_view_admission_request(user: User, request_item: AdmissionRequest)
 
 
 def _can_user_view_dismissal_request(user: User, request_item: DismissalRequest) -> bool:
+    if user.role == RoleEnum.RH_ADMIN:
+        return True
+
     return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
 
 
@@ -2283,7 +2286,7 @@ def read_admin_dismissal_requests(
     )
     if user.role == RoleEnum.RH_ANALISTA:
         statement = statement.where(DismissalRequest.recruiter_user_id == user.id)
-    else:
+    elif user.role != RoleEnum.RH_ADMIN:
         statement = statement.where(false())
 
     items = db.scalars(statement).all()

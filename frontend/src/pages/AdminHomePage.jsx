@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { hasAdminSectionAccess, hasModuleAccess, isApprovalOnlyUser } from '../utils/accessControl'
@@ -120,6 +120,10 @@ const ADMIN_MODULES = [
 export function AdminHomePage() {
   const { user } = useAuth()
   const isApprovalOnlyRole = isApprovalOnlyUser(user)
+  if (isApprovalOnlyRole) {
+    return <Navigate replace to="/admin/approvals" />
+  }
+
   const visibleModules = isApprovalOnlyRole
     ? ADMIN_MODULES.filter((module) => module.title === 'Aprovações')
     : ADMIN_MODULES.filter((module) => {

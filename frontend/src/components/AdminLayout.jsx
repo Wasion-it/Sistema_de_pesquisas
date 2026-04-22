@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { hasAdminSectionAccess, hasModuleAccess, isApprovalOnlyUser } from '../utils/accessControl'
+import { hasModuleAccess, isApprovalOnlyUser } from '../utils/accessControl'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -18,8 +18,6 @@ export function AdminLayout() {
   const isApprovalOnlyRole = isApprovalOnlyUser(user)
   const canAccessAdmissions = hasModuleAccess(user, 'ADMISSION')
   const canAccessApprovals = hasModuleAccess(user, 'APPROVALS')
-  const canAccessDepartments = hasAdminSectionAccess(user, 'DEPARTMENTS')
-  const canAccessJobTitles = hasAdminSectionAccess(user, 'JOB_TITLES')
   const canAccessAccessControl = user?.role === 'RH_ADMIN' || hasModuleAccess(user, 'ACCESS_CONTROL')
 
   function handleSignOut() {
@@ -34,14 +32,16 @@ export function AdminLayout() {
           <span className="admin-brand-name">Sistema de Recursos Humanos</span>
         </div>
 
-        <Link className="admin-home-button" replace to="/">
-          <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M3 12l9-8 9 8" />
-            <path d="M5 10v10h14V10" />
-            <path d="M10 20v-6h4v6" />
-          </svg>
-          Voltar para a home
-        </Link>
+        {!isApprovalOnlyRole ? (
+          <Link className="admin-home-button" replace to="/">
+            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M3 12l9-8 9 8" />
+              <path d="M5 10v10h14V10" />
+              <path d="M10 20v-6h4v6" />
+            </svg>
+            Voltar para a home
+          </Link>
+        ) : null}
 
         <nav className="admin-nav">
           {canAccessApprovals || isApprovalOnlyRole ? (
@@ -52,15 +52,17 @@ export function AdminLayout() {
               Aprovações
             </NavLink>
           ) : null}
-          <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} end to="/admin">
-            <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-              <rect height="9" rx="1.5" width="9" x="3" y="3" />
-              <rect height="9" rx="1.5" width="9" x="14" y="3" />
-              <rect height="9" rx="1.5" width="9" x="3" y="14" />
-              <rect height="9" rx="1.5" width="9" x="14" y="14" />
-            </svg>
-            Início
-          </NavLink>
+          {!isApprovalOnlyRole ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} end to="/admin">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <rect height="9" rx="1.5" width="9" x="3" y="3" />
+                <rect height="9" rx="1.5" width="9" x="14" y="3" />
+                <rect height="9" rx="1.5" width="9" x="3" y="14" />
+                <rect height="9" rx="1.5" width="9" x="14" y="14" />
+              </svg>
+              Início
+            </NavLink>
+          ) : null}
           {!isApprovalOnlyRole && canAccessAdmissions ? (
             <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/requests">
               <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
@@ -70,29 +72,6 @@ export function AdminLayout() {
                 <path d="M8 17h5" />
               </svg>
               Solicitações
-            </NavLink>
-          ) : null}
-          {canAccessDepartments ? (
-            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/departments">
-              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M4 21h16" />
-                <path d="M6 21V7l6-4 6 4v14" />
-                <path d="M9 10h.01" />
-                <path d="M15 10h.01" />
-                <path d="M9 14h.01" />
-                <path d="M15 14h.01" />
-              </svg>
-              Departamentos
-            </NavLink>
-          ) : null}
-          {canAccessJobTitles ? (
-            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/job-titles">
-              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M4 7h16" />
-                <path d="M4 12h16" />
-                <path d="M4 17h10" />
-              </svg>
-              Cargos
             </NavLink>
           ) : null}
           {canAccessAccessControl ? (

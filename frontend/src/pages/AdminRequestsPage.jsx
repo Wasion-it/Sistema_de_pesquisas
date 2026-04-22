@@ -71,6 +71,23 @@ const REQUEST_MODULES = [
     ),
   },
   {
+    title: 'Departamentos',
+    description: 'Cadastre e revise os departamentos usados nas admissões e aprovações.',
+    to: '/admin/departments',
+    variant: 'secondary',
+    accent: 'slate',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 21h16" />
+        <path d="M6 21V7l6-4 6 4v14" />
+        <path d="M9 10h.01" />
+        <path d="M15 10h.01" />
+        <path d="M9 14h.01" />
+        <path d="M15 14h.01" />
+      </svg>
+    ),
+  },
+  {
     title: 'Cargos',
     description: 'Cadastre e revise os cargos usados nas admissões e aprovações.',
     to: '/admin/job-titles',

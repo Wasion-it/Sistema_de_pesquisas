@@ -76,26 +76,6 @@ export function AdminLayout() {
               Solicitações
             </NavLink>
           ) : null}
-          {!isApprovalOnlyRole && canAccessAdmissions ? (
-            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/admission-checklist">
-              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-              </svg>
-              Checklist admissão
-            </NavLink>
-          ) : null}
-          {!isApprovalOnlyRole && canAccessAdmissions ? (
-            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/dismissal-checklist">
-              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M12 8v8" />
-                <path d="M8 12h8" />
-                <path d="M6 4h12a2 2 0 0 1 2 2v12" />
-                <path d="M18 20H6a2 2 0 0 1-2-2V6" />
-              </svg>
-              Checklist demissão
-            </NavLink>
-          ) : null}
           {!isApprovalOnlyRole ? (
             <>
               <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/surveys">

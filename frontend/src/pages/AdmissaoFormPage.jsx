@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { createAdminAdmissionRequest, getAdminJobTitles } from '../services/admin'
+import { createAdminAdmissionRequest, getAdminDepartments, getAdminJobTitles } from '../services/admin'
 
 const INITIAL_FORM = {
   tipo: '',
@@ -116,7 +116,9 @@ function SummaryRow({ label, value }) {
 export function AdmissaoFormPage() {
   const { isAuthenticated, isLoading, token } = useAuth()
   const [formValues, setFormValues] = useState(INITIAL_FORM)
+  const [departments, setDepartments] = useState([])
   const [jobTitles, setJobTitles] = useState([])
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true)
   const [isLoadingJobTitles, setIsLoadingJobTitles] = useState(true)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -130,11 +132,26 @@ export function AdmissaoFormPage() {
 
     if (!token || !isAuthenticated) {
       if (isMounted) {
+        setDepartments([])
+        setIsLoadingDepartments(false)
         setJobTitles([])
         setIsLoadingJobTitles(false)
       }
       return () => { isMounted = false }
     }
+
+    setIsLoadingDepartments(true)
+    getAdminDepartments(token)
+      .then((data) => {
+        if (!isMounted) return
+        setDepartments(data.items ?? [])
+      })
+      .catch((error) => {
+        if (isMounted) setErrorMessage(error.message)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingDepartments(false)
+      })
 
     setIsLoadingJobTitles(true)
     getAdminJobTitles(token)
@@ -152,6 +169,7 @@ export function AdmissaoFormPage() {
     return () => { isMounted = false }
   }, [isAuthenticated, token])
 
+  const activeDepartments = useMemo(() => departments.filter((department) => department.is_active), [departments])
   const activeJobTitles = useMemo(() => jobTitles.filter((jt) => jt.is_active), [jobTitles])
 
   useEffect(() => {
@@ -159,6 +177,12 @@ export function AdmissaoFormPage() {
     const still = activeJobTitles.some((jt) => jt.name === formValues.cargo)
     if (!still) setFormValues((cur) => ({ ...cur, cargo: '' }))
   }, [activeJobTitles, formValues.cargo])
+
+  useEffect(() => {
+    if (!formValues.setor) return
+    const still = activeDepartments.some((department) => department.name === formValues.setor)
+    if (!still) setFormValues((cur) => ({ ...cur, setor: '' }))
+  }, [activeDepartments, formValues.setor])
 
   const isSubmitDisabled = useMemo(() => {
     if (!formValues.tipo || !formValues.cargo || !formValues.setor || !formValues.recrutamento) return true
@@ -239,6 +263,7 @@ export function AdmissaoFormPage() {
   }
 
   const posicaoLabel = POSITION_OPTIONS.find((o) => o.value === formValues.posicaoVaga)?.label
+  const setorLabel = activeDepartments.find((department) => department.name === formValues.setor)?.name
 
   return (
     <main className="collab-shell">
@@ -445,12 +470,26 @@ export function AdmissaoFormPage() {
 
                 <label className="field-group">
                   <span>Setor</span>
-                  <input
+                  <select
                     name="setor"
-                    placeholder="Ex: Tecnologia, Comercial..."
                     value={formValues.setor}
                     onChange={handleFieldChange}
-                  />
+                    disabled={isLoadingDepartments}
+                  >
+                    <option value="">
+                      {isLoadingDepartments ? 'Carregando departamentos...' : 'Selecione um setor'}
+                    </option>
+                    {activeDepartments.map((department) => (
+                      <option key={department.id} value={department.name}>
+                        {department.name}{department.code ? ` — ${department.code}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {!isLoadingDepartments && activeDepartments.length === 0 ? (
+                    <span style={{ color: 'var(--red-600)', fontSize: 12, marginTop: 2 }}>
+                      Nenhum departamento ativo cadastrado pelo RH.
+                    </span>
+                  ) : null}
                 </label>
               </div>
             </section>
@@ -574,7 +613,7 @@ export function AdmissaoFormPage() {
               <SummaryRow label="Posição" value={posicaoLabel} />
               <SummaryRow label="Confidencial" value={formValues.isConfidential ? 'Sim' : 'Não'} />
               <SummaryRow label="Cargo" value={formValues.cargo} />
-              <SummaryRow label="Setor" value={formValues.setor} />
+              <SummaryRow label="Setor" value={setorLabel ?? formValues.setor} />
               <SummaryRow label="Recrutamento" value={formValues.recrutamento} />
               <SummaryRow label="Vagas" value={formValues.quantidadePessoas} />
               <SummaryRow label="Turno" value={formValues.turno} />

@@ -3,6 +3,8 @@ from __future__ import annotations
 import ssl
 from dataclasses import dataclass
 import secrets
+from urllib.parse import urlparse
+from time import sleep
 
 from ldap3 import ALL, ANONYMOUS, SIMPLE, SUBTREE, Connection, Server, Tls
 from ldap3.core.exceptions import LDAPException
@@ -45,40 +47,58 @@ def _build_server() -> Server:
     if not settings.ldap_server_uri:
         raise LdapConfigurationError("LDAP server URI is not configured")
 
+    parsed_uri = urlparse(settings.ldap_server_uri)
+    if parsed_uri.scheme:
+        server_host = parsed_uri.hostname or settings.ldap_server_uri
+        server_port = parsed_uri.port
+    else:
+        server_host = settings.ldap_server_uri
+        server_port = None
+
     return Server(
-        settings.ldap_server_uri,
+        server_host,
+        port=server_port,
         use_ssl=settings.ldap_use_ssl,
         tls=_build_tls(),
-        connect_timeout=settings.ldap_timeout_seconds,
-        get_info=ALL,
+        connect_timeout=max(1, int(settings.ldap_timeout_seconds)),
+        get_info=None,
     )
 
 
 def _open_connection(bind_dn: str | None, bind_password: str | None) -> Connection:
-    server = _build_server()
-    connection = Connection(
-        server,
-        user=bind_dn,
-        password=bind_password,
-        authentication=SIMPLE if bind_dn else ANONYMOUS,
-        auto_bind=False,
-        receive_timeout=settings.ldap_timeout_seconds,
-    )
+    last_error: Exception | None = None
 
-    try:
-        connection.open()
+    for attempt in range(5):
+        server = _build_server()
+        connection = Connection(
+            server,
+            user=bind_dn,
+            password=bind_password,
+            authentication=SIMPLE if bind_dn else ANONYMOUS,
+            auto_bind=False,
+            receive_timeout=max(1, int(settings.ldap_timeout_seconds)),
+        )
 
-        if settings.ldap_start_tls and not settings.ldap_use_ssl:
-            connection.start_tls()
+        try:
+            connection.open()
 
-        if not connection.bind():
-            raise LdapAuthenticationError("LDAP bind failed")
-    except LdapAuthenticationError:
-        raise
-    except Exception as exc:
-        raise LdapAuthenticationError("LDAP connection failed") from exc
+            if settings.ldap_start_tls and not settings.ldap_use_ssl:
+                connection.start_tls()
 
-    return connection
+            if not connection.bind():
+                raise LdapAuthenticationError("LDAP bind failed")
+
+            return connection
+        except LdapAuthenticationError:
+            raise
+        except Exception as exc:
+            last_error = exc
+            if attempt < 4:
+                sleep(0.5 * (attempt + 1))
+                continue
+            break
+
+    raise LdapAuthenticationError("LDAP connection failed") from last_error
 
 
 def _build_user_dn(username: str) -> str:

@@ -44,8 +44,8 @@ const STEP_TRACKER_META = {
 }
 
 const ROLE_TO_APPROVAL_ROLES = {
-  GESTOR: new Set(['MANAGER', 'DIRECTOR_RAVI']),
-  DIRETOR_RAVI: new Set(['MANAGER', 'DIRECTOR_RAVI']),
+  GESTOR: new Set(['MANAGER']),
+  DIRETOR_RAVI: new Set(['DIRECTOR_RAVI']),
   RH_ADMIN: new Set(['RH_MANAGER']),
 }
 
@@ -657,26 +657,30 @@ export function AdminApprovalsPage() {
                         <button className="secondary-button" type="button" onClick={() => setSelectedRequest(item)}>
                           Detalhes
                         </button>
-                        <button
-                          className="primary-button"
-                          disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
-                          type="button"
-                          onClick={() => openApprovalConfirmation(item)}
-                        >
-                          {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'approve'
-                            ? 'Aprovando...'
-                            : 'Aprovar etapa'}
-                        </button>
-                        <button
-                          className="secondary-button"
-                          disabled={actionState.kind === requestKind && actionState.requestId === item.request_id || !canActOnItem(item)}
-                          type="button"
-                          onClick={() => handleReject(requestKind, item.request_id)}
-                        >
-                          {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'reject'
-                            ? 'Rejeitando...'
-                            : 'Rejeitar solicitação'}
-                        </button>
+                        {canActOnItem(item) ? (
+                          <>
+                            <button
+                              className="primary-button"
+                              disabled={actionState.kind === requestKind && actionState.requestId === item.request_id}
+                              type="button"
+                              onClick={() => openApprovalConfirmation(item)}
+                            >
+                              {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'approve'
+                                ? 'Aprovando...'
+                                : 'Aprovar etapa'}
+                            </button>
+                            <button
+                              className="secondary-button"
+                              disabled={actionState.kind === requestKind && actionState.requestId === item.request_id}
+                              type="button"
+                              onClick={() => handleReject(requestKind, item.request_id)}
+                            >
+                              {actionState.kind === requestKind && actionState.requestId === item.request_id && actionState.action === 'reject'
+                                ? 'Rejeitando...'
+                                : 'Rejeitar solicitação'}
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                     </>
                   )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,6 +21,7 @@ from app.services.access_control import has_module_access
 from app.services.ldap_auth import LdapAuthenticationError, LdapConfigurationError, sync_directory_users_from_ou
 
 router = APIRouter(prefix="/admin/access-control", tags=["access-control"])
+logger = logging.getLogger(__name__)
 
 
 def _serialize_user(user: User, session: Session) -> AccessControlUserResponse:
@@ -46,12 +48,10 @@ def list_access_control_users(
     if settings.ldap_enabled and settings.ldap_user_base_dn:
         try:
             sync_directory_users_from_ou(db)
+            db.commit()
         except (LdapAuthenticationError, LdapConfigurationError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="LDAP synchronization is not available",
-            ) from exc
-        db.commit()
+            db.rollback()
+            logger.warning("LDAP synchronization skipped: %s", exc)
 
     users = db.scalars(
         select(User)

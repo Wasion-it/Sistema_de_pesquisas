@@ -445,11 +445,17 @@ def _can_user_view_admission_request(user: User, request_item: AdmissionRequest)
     if user.role == RoleEnum.RH_ADMIN:
         return True
 
+    if user.role in {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI}:
+        return True
+
     return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
 
 
 def _can_user_view_dismissal_request(user: User, request_item: DismissalRequest) -> bool:
     if user.role == RoleEnum.RH_ADMIN:
+        return True
+
+    if user.role in {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI}:
         return True
 
     return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
@@ -1302,8 +1308,8 @@ def _get_current_pending_step(approval_steps):
 
 def _get_allowed_roles_for_step(approver_role: ApprovalRoleEnum) -> set[RoleEnum]:
     mapping = {
-        ApprovalRoleEnum.MANAGER: {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI},
-        ApprovalRoleEnum.DIRECTOR_RAVI: {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI},
+        ApprovalRoleEnum.MANAGER: {RoleEnum.GESTOR},
+        ApprovalRoleEnum.DIRECTOR_RAVI: {RoleEnum.DIRETOR_RAVI},
         ApprovalRoleEnum.RH_MANAGER: {RoleEnum.RH_ADMIN},
     }
     return mapping.get(approver_role, set())

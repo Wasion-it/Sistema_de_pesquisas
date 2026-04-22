@@ -1,9 +1,15 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import router as v1_router
 from app.core.config import settings
 from app.db.session import create_tables
+from app.db.session import SessionLocal
+from app.services.ldap_auth import LdapAuthenticationError, LdapConfigurationError, sync_directory_users_from_ou
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.app_name,
@@ -24,6 +30,14 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup() -> None:
     create_tables()
+
+    if settings.ldap_enabled and settings.ldap_user_base_dn:
+        try:
+            with SessionLocal() as session:
+                sync_directory_users_from_ou(session)
+                session.commit()
+        except (LdapAuthenticationError, LdapConfigurationError) as exc:
+            logger.warning("LDAP startup sync skipped: %s", exc)
 
 
 @app.get("/", tags=["root"])

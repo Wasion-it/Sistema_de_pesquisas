@@ -28,7 +28,7 @@ const POSITION_OPTIONS = [
   { label: 'Liderança', value: 'PUBLIC_LEADERSHIP' },
 ]
 
-const TURNO_OPTIONS = ['Integral', 'Manhã', 'Tarde', 'Noite', 'Misto']
+const TURNO_OPTIONS = ['Comercial', '1º turno', '2º turno', '3º turno']
 
 const REGIME_OPTIONS = [
   'Temporário',

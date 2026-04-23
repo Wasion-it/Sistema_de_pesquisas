@@ -134,6 +134,7 @@ jobs:
           key: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
           source: deploy-package/deploy-source.tar.gz
           target: ${{ inputs.deploy_path }}
+          strip_components: 1
 
       - name: Publicar aplicação no servidor
         uses: appleboy/ssh-action@v1.2.0

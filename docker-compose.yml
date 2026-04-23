@@ -16,6 +16,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+    restart: unless-stopped
 
   backend:
     build:
@@ -23,14 +24,15 @@ services:
       dockerfile: Dockerfile
       target: backend
     container_name: sistema-de-pesquisas-backend
+    env_file:
+      - ./backend/.env
     command: >-
-      sh -c "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
-      DEBUG: "true"
-      JWT_SECRET_KEY: change-this-secret-for-development
-    volumes:
-      - ./backend:/app/backend
+      DEBUG: "false"
+      JWT_SECRET_KEY: change-this-secret-for-production
+      CORS_ALLOW_ORIGINS: http://localhost,http://127.0.0.1,http://localhost:80,http://127.0.0.1:80
     ports:
       - "8000:8000"
     depends_on:
@@ -43,24 +45,22 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+    restart: unless-stopped
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
       target: frontend
+      args:
+        VITE_API_URL: /api/v1
     container_name: sistema-de-pesquisas-frontend
-    environment:
-      VITE_API_URL: http://127.0.0.1:8000/api/v1
-    volumes:
-      - ./frontend:/app/frontend
-      - frontend-node-modules:/app/frontend/node_modules
     ports:
-      - "5173:5173"
+      - "80:80"
     depends_on:
       backend:
         condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres-data:
-  frontend-node-modules:

@@ -49,12 +49,16 @@ jobs:
       python_version: '3.12'
 
   deploy:
-    name: Validar pacote de entrega
+    name: Publicar no servidor
     needs: [setup, build]
-    uses: ./.github/workflows/includes-deploy.yml
+    uses: ./.github/workflows/includes-remote-deploy.yml
+    secrets: inherit
     with:
       environment: ${{ needs.setup.outputs.environment }}
       artifact_name: 'sistema-de-pesquisas-bundle'
+      deploy_host: ${{ vars.DEPLOY_PROD_HOST }}
+      deploy_user: ${{ vars.DEPLOY_PROD_USER }}
+      deploy_path: ${{ vars.DEPLOY_PROD_PATH }}
 
   release:
     name: Publicar release

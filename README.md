@@ -181,6 +181,48 @@ npm run dev
 
 A interface ficará disponível em `http://127.0.0.1:5173`.
 
+## Deploy via GitHub Actions
+
+O workflow de produção agora faz deploy direto no servidor via SSH e reinicia a stack com `docker compose`.
+
+## Guia de configuração da chave SSH
+
+1. No servidor de produção, entre no usuário que vai receber o deploy e crie a pasta de SSH se ela ainda não existir:
+
+```bash
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+```
+
+2. Gere um par de chaves. O ideal é fazer isso em uma máquina segura que você controla, como sua máquina local ou um host administrativo:
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy"
+```
+
+3. Copie a chave pública para o servidor e autorize o acesso do GitHub Actions:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+Adicione o conteúdo retornado no arquivo `~/.ssh/authorized_keys` do usuário do servidor.
+
+4. Pegue a chave privada gerada no passo anterior e cadastre no GitHub em `Settings > Secrets and variables > Actions > New repository secret`.
+
+5. Crie o secret `DEPLOY_PROD_SSH_KEY` com o conteúdo completo da chave privada.
+
+6. Garanta que os secrets e variáveis do workflow estejam preenchidos:
+
+- `DEPLOY_PROD_HOST`: host do servidor de produção.
+- `DEPLOY_PROD_USER`: usuário SSH do servidor.
+- `DEPLOY_PROD_PATH`: diretório onde o projeto ficará no servidor.
+- `DEPLOY_PROD_SSH_KEY`: chave privada SSH usada pelo deploy.
+
+O servidor precisa ter `git` e `docker compose` disponíveis, além de acesso ao diretório informado em `DEPLOY_PROD_PATH`.
+
+7. Execute o workflow `Publicação de produção` em `Actions` e confirme que o job de deploy consegue conectar no servidor.
+
 ## Depuração no VS Code
 
 Use as configurações em `.vscode/launch.json`:

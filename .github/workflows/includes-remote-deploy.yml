@@ -1,0 +1,169 @@
+name: Deploy direto no servidor
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Nome do ambiente'
+        required: true
+        type: string
+      artifact_name:
+        description: 'Nome do artefato a ser validado'
+        required: false
+        type: string
+        default: 'sistema-de-pesquisas-bundle'
+      deploy_host:
+        description: 'Host do servidor de deploy'
+        required: true
+        type: string
+      deploy_user:
+        description: 'Usuário do servidor de deploy'
+        required: true
+        type: string
+      deploy_path:
+        description: 'Diretório de deploy no servidor'
+        required: true
+        type: string
+    secrets:
+      DEPLOY_PROD_SSH_KEY:
+        required: true
+    outputs:
+      deploy_result:
+        description: 'Resultado do deploy'
+        value: ${{ jobs.deploy.result }}
+
+jobs:
+  environment:
+    name: Preparar ambiente
+    uses: ./.github/workflows/includes-environment.yml
+    with:
+      environment: ${{ inputs.environment }}
+
+  deploy:
+    name: Enviar fonte e publicar no servidor
+    runs-on: ubuntu-latest
+    needs: environment
+    timeout-minutes: 30
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Baixar artefato do build
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: deploy-package
+
+      - name: Verificar conteúdo do pacote
+        shell: bash
+        run: |
+          package_file="deploy-package/${{ inputs.artifact_name }}.zip"
+
+          if [ ! -f "$package_file" ]; then
+            echo "Pacote não encontrado: $package_file"
+            exit 1
+          fi
+
+          unzip -l "$package_file"
+
+          rm -rf deploy-unpacked
+          mkdir -p deploy-unpacked
+          unzip -q "$package_file" -d deploy-unpacked
+
+          test -f deploy-unpacked/README.md
+          test -f deploy-unpacked/backend/requirements.txt
+          test -d deploy-unpacked/frontend/dist
+          test -f deploy-unpacked/frontend/dist/index.html
+
+      - name: Montar pacote de deploy
+        shell: bash
+        run: |
+          rm -f deploy-source.tar.gz
+          tar -czf deploy-source.tar.gz \
+            --exclude=.git \
+            --exclude=.venv \
+            --exclude=node_modules \
+            --exclude=artifacts \
+            --exclude=deploy-package \
+            --exclude=deploy-unpacked \
+            --exclude=frontend/dist \
+            --exclude=backend/.env \
+            --exclude=frontend/.env \
+            .
+
+      - name: Preparar destino no servidor
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ inputs.deploy_host }}
+          username: ${{ inputs.deploy_user }}
+          key: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+
+            mkdir -p "${{ inputs.deploy_path }}"
+            cd "${{ inputs.deploy_path }}"
+            backup_dir=".deploy-backup"
+
+            rm -rf "$backup_dir"
+            mkdir -p "$backup_dir/backend"
+
+            if [ -f .env ]; then
+              mv .env "$backup_dir/.env"
+            fi
+
+            if [ -f backend/.env ]; then
+              mv backend/.env "$backup_dir/backend/.env"
+            fi
+
+            find . -mindepth 1 -maxdepth 1 \
+              ! -name "$backup_dir" \
+              -exec rm -rf {} +
+
+      - name: Enviar pacote ao servidor
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ inputs.deploy_host }}
+          username: ${{ inputs.deploy_user }}
+          key: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
+          source: deploy-source.tar.gz
+          target: ${{ inputs.deploy_path }}
+
+      - name: Publicar aplicação no servidor
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ inputs.deploy_host }}
+          username: ${{ inputs.deploy_user }}
+          key: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+
+            mkdir -p "${{ inputs.deploy_path }}"
+            cd "${{ inputs.deploy_path }}"
+            tar -xzf deploy-source.tar.gz
+
+            if [ -f .deploy-backup/.env ]; then
+              mv .deploy-backup/.env .env
+            fi
+
+            if [ -f .deploy-backup/backend/.env ]; then
+              mkdir -p backend
+              mv .deploy-backup/backend/.env backend/.env
+            fi
+
+            rm -rf .deploy-backup deploy-source.tar.gz
+
+            docker compose up -d --build --remove-orphans
+            docker compose ps
+
+      - name: Resumo do deploy
+        shell: bash
+        run: |
+          {
+            echo '## Deploy direto no servidor concluido'
+            echo ''
+            echo "- Ambiente: ${{ needs.environment.outputs.environment }}"
+            echo "- Servidor: ${{ inputs.deploy_host }}"
+            echo "- Caminho: ${{ inputs.deploy_path }}"
+          } >> "$GITHUB_STEP_SUMMARY"

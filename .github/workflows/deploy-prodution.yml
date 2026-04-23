@@ -55,6 +55,7 @@ jobs:
     secrets: inherit
     with:
       environment: ${{ needs.setup.outputs.environment }}
+      runner_label: self-hosted
       artifact_name: 'sistema-de-pesquisas-bundle'
       deploy_host: ${{ vars.DEPLOY_PROD_HOST }}
       deploy_user: ${{ vars.DEPLOY_PROD_USER }}

@@ -7,6 +7,11 @@ on:
         description: 'Nome do ambiente'
         required: true
         type: string
+      runner_label:
+        description: 'Label do runner interno usado para executar o deploy'
+        required: false
+        type: string
+        default: 'self-hosted'
       artifact_name:
         description: 'Nome do artefato a ser validado'
         required: false
@@ -41,7 +46,7 @@ jobs:
 
   deploy:
     name: Enviar fonte e publicar no servidor
-    runs-on: self-hosted
+    runs-on: ${{ inputs.runner_label }}
     environment: ${{ inputs.environment }}
     needs: environment
     timeout-minutes: 30

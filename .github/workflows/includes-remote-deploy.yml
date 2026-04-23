@@ -78,8 +78,8 @@ jobs:
       - name: Montar pacote de deploy
         shell: bash
         run: |
-          rm -f deploy-source.tar.gz
-          tar -czf deploy-source.tar.gz \
+          rm -f /tmp/deploy-source.tar.gz
+          tar -czf /tmp/deploy-source.tar.gz \
             --exclude=.git \
             --exclude=.venv \
             --exclude=node_modules \
@@ -126,7 +126,7 @@ jobs:
           host: ${{ inputs.deploy_host }}
           username: ${{ inputs.deploy_user }}
           key: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
-          source: deploy-source.tar.gz
+          source: /tmp/deploy-source.tar.gz
           target: ${{ inputs.deploy_path }}
 
       - name: Publicar aplicação no servidor

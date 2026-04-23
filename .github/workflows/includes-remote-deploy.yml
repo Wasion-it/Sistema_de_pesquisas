@@ -157,6 +157,12 @@ jobs:
             if [ -f .deploy-backup/backend/.env ]; then
               mkdir -p backend
               mv .deploy-backup/backend/.env backend/.env
+            elif [ -f backend/.env.example ]; then
+              mkdir -p backend
+              cp backend/.env.example backend/.env
+            else
+              mkdir -p backend
+              touch backend/.env
             fi
 
             rm -rf .deploy-backup deploy-source.tar.gz

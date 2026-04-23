@@ -1,20 +1,7 @@
 name: Validação de desenvolvimento
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - develop
-      - 'develop/**'
-      - feature/**
-      - bugfix/**
-      - hotfix/**
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/**'
-      - 'README.md'
-  workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -1,17 +1,7 @@
 name: Validação de testes
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - release
-      - 'release/**'
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/**'
-      - 'README.md'
-  workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -32,7 +32,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
       DEBUG: "false"
       JWT_SECRET_KEY: change-this-secret-for-production
-      CORS_ALLOW_ORIGINS: http://localhost,http://127.0.0.1,http://localhost:80,http://127.0.0.1:80
+      CORS_ALLOW_ORIGINS: http://localhost,http://127.0.0.1,http://localhost:7000,http://127.0.0.1:7000,http://localhost:80,http://127.0.0.1:80
     ports:
       - "8000:8000"
     depends_on:
@@ -56,7 +56,7 @@ services:
         VITE_API_URL: /api/v1
     container_name: sistema-de-pesquisas-frontend
     ports:
-      - "80:80"
+      - "7000:80"
     depends_on:
       backend:
         condition: service_healthy

@@ -179,7 +179,7 @@ npm install
 npm run dev
 ```
 
-A interface ficará disponível em `http://127.0.0.1:5173`.
+A interface ficará disponível em `http://127.0.0.1:5173` no ambiente de desenvolvimento e em `http://127.0.0.1:7000` no deploy com Docker.
 
 ## Deploy via GitHub Actions
 
@@ -220,6 +220,7 @@ Adicione o conteúdo retornado no arquivo `~/.ssh/authorized_keys` do usuário d
 - `DEPLOY_PROD_SSH_KEY`: chave privada SSH usada pelo deploy.
 
 O servidor precisa ter `git` e `docker compose` disponíveis, além de acesso ao diretório informado em `DEPLOY_PROD_PATH`.
+O frontend do deploy fica exposto na porta `7000`.
 
 7. Execute o workflow `Publicação de produção` em `Actions` e confirme que o job de deploy consegue conectar no servidor.
 

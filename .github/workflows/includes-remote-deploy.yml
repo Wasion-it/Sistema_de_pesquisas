@@ -167,7 +167,10 @@ jobs:
 
             rm -rf .deploy-backup deploy-source.tar.gz
 
-            docker swarm ls >/dev/null 2>&1 || { echo 'Swarm não está ativo neste servidor'; exit 1; }
+            if ! docker info --format '{{.Swarm.LocalNodeState}} {{.Swarm.ControlAvailable}}' | grep -Eq '^active true$'; then
+              echo 'Este servidor não está ativo como manager do Swarm'
+              exit 1
+            fi
             docker compose -f docker-compose.yml build backend frontend
             docker stack deploy --with-registry-auth --prune -c docker-compose.yml sistema-de-pesquisas
             docker stack services sistema-de-pesquisas

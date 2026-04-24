@@ -35,9 +35,6 @@ services:
       DEBUG: "false"
       JWT_SECRET_KEY: change-this-secret-for-production
       CORS_ALLOW_ORIGINS: https://systemrh.wasion.com.com
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test:
         ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/health')"]
@@ -70,9 +67,6 @@ services:
       target: frontend
       args:
         VITE_API_URL: /api/v1
-    depends_on:
-      backend:
-        condition: service_healthy
     restart: unless-stopped
     networks:
       - controle_overlay

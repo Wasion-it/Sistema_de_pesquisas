@@ -222,7 +222,7 @@ Adicione o conteúdo retornado no arquivo `~/.ssh/authorized_keys` do usuário d
 O servidor precisa ter `git` e `docker compose` disponíveis, além de acesso ao diretório informado em `DEPLOY_PROD_PATH`.
 O acesso público da aplicação é feito pelo Traefik, usando o domínio `systemrh.wasion.com.br` em HTTPS. Sem certificado customizado, o Traefik pode servir o certificado padrão e o navegador pode exibir aviso de segurança.
 
-7. Garanta que o servidor esteja com Swarm ativo e que a rede externa `controle_overlay` exista no mesmo cluster onde o Traefik roda.
+7. Garanta que o servidor esteja com Swarm ativo e que a rede externa `apps` exista no mesmo cluster onde o Traefik roda.
 
 8. Crie ou ajuste o DNS do domínio `systemrh.wasion.com.br` para apontar para o host onde o Traefik está rodando. Em geral isso é feito com um registro `A` para o IP público do proxy ou um `CNAME` para o hostname que resolve esse proxy.
 

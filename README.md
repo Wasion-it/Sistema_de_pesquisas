@@ -179,7 +179,7 @@ npm install
 npm run dev
 ```
 
-A interface ficará disponível em `http://127.0.0.1:5173` no ambiente de desenvolvimento e em `http://127.0.0.1:7000` no deploy com Docker.
+A interface ficará disponível em `http://127.0.0.1:5173` no ambiente de desenvolvimento e via Traefik no domínio `https://systemrh.wasion.com.com` no deploy.
 
 ## Deploy via GitHub Actions
 
@@ -220,9 +220,11 @@ Adicione o conteúdo retornado no arquivo `~/.ssh/authorized_keys` do usuário d
 - `DEPLOY_PROD_SSH_KEY`: chave privada SSH usada pelo deploy.
 
 O servidor precisa ter `git` e `docker compose` disponíveis, além de acesso ao diretório informado em `DEPLOY_PROD_PATH`.
-O frontend do deploy fica exposto na porta `7000`.
+O acesso público da aplicação é feito pelo Traefik, usando o domínio `systemrh.wasion.com.com`.
 
-7. Execute o workflow `Publicação de produção` em `Actions` e confirme que o job de deploy consegue conectar no servidor.
+7. Crie ou ajuste o DNS do domínio `systemrh.wasion.com.com` para apontar para o host onde o Traefik está rodando. Em geral isso é feito com um registro `A` para o IP público do proxy ou um `CNAME` para o hostname que resolve esse proxy.
+
+8. Execute o workflow `Publicação de produção` em `Actions` e confirme que o job de deploy consegue conectar no servidor.
 
 ## Depuração no VS Code
 

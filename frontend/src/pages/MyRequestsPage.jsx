@@ -16,10 +16,10 @@ const REQUEST_KIND_TABS = {
 const STATUS_CONFIG = {
   PENDING: {
     label: 'Pendente',
-    color: '#d97706',
-    bg: '#fffbeb',
-    border: '#fde68a',
-    dot: '#f59e0b',
+    color: '#F28C1B',
+    bg: '#FFF4E6',
+    border: '#FED7AA',
+    dot: '#F28C1B',
     icon: (
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -28,10 +28,10 @@ const STATUS_CONFIG = {
   },
   UNDER_REVIEW: {
     label: 'Em análise',
-    color: '#2563eb',
-    bg: '#eff6ff',
-    border: '#bfdbfe',
-    dot: '#3b82f6',
+    color: '#1F4E99',
+    bg: '#EAF1FB',
+    border: '#BFD1EA',
+    dot: '#2E5DA8',
     icon: (
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -89,13 +89,13 @@ const STATUS_CONFIG = {
 }
 
 const REQUEST_KIND_CONFIG = {
-  ADMISSION: { label: 'Admissão', color: '#7c3aed', bg: '#ede9fe' },
-  DISMISSAL: { label: 'Demissão', color: '#0284c7', bg: '#e0f2fe' },
+  ADMISSION: { label: 'Admissão', color: '#1F4E99', bg: '#EAF1FB' },
+  DISMISSAL: { label: 'Demissão', color: '#F28C1B', bg: '#FFF4E6' },
 }
 
 const STEP_STATUS_CONFIG = {
   APPROVED: { className: 'completed', label: 'Concluída', color: '#16a34a', bg: '#f0fdf4' },
-  PENDING: { className: 'current', label: 'Aguardando', color: '#2563eb', bg: '#eff6ff' },
+  PENDING: { className: 'current', label: 'Aguardando', color: '#1F4E99', bg: '#EAF1FB' },
   REJECTED: { className: 'rejected', label: 'Rejeitada', color: '#dc2626', bg: '#fef2f2' },
   SKIPPED: { className: 'skipped', label: 'Ignorada', color: '#94a3b8', bg: '#f8fafc' },
 }
@@ -198,13 +198,12 @@ function ApprovalFlowTracker({ steps }) {
         ? 'linear-gradient(180deg,#fef2f2 0%,#fff 100%)'
         : approved === total
         ? 'linear-gradient(180deg,#f0fdf4 0%,#fff 100%)'
-        : 'linear-gradient(180deg,#eff6ff 0%,#fff 100%)',
-      border: `1px solid ${rejected ? '#fecaca' : approved === total ? '#bbf7d0' : '#bfdbfe'}`,
+        : 'linear-gradient(180deg,#EAF1FB 0%,#fff 100%)',
+      border: `1px solid ${rejected ? '#fecaca' : approved === total ? '#bbf7d0' : '#BFD1EA'}`,
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
         <div>
-          <span style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: rejected ? '#dc2626' : approved === total ? '#16a34a' : '#2563eb', marginBottom: 4 }}>
+          <span style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: rejected ? '#dc2626' : approved === total ? '#16a34a' : '#1F4E99', marginBottom: 4 }}>
             Fluxo de aprovação
           </span>
           <strong style={{ fontSize: 13, color: 'var(--slate-800)', fontWeight: 600 }}>{progressLabel}</strong>
@@ -214,7 +213,6 @@ function ApprovalFlowTracker({ steps }) {
         </span>
       </div>
 
-      {/* Progress bar */}
       <div style={{ height: 5, borderRadius: 999, background: 'rgba(148,163,184,.2)', overflow: 'hidden', marginBottom: 14 }}>
         <div style={{
           height: '100%',
@@ -224,12 +222,11 @@ function ApprovalFlowTracker({ steps }) {
             ? 'linear-gradient(90deg,#ef4444,#dc2626)'
             : approved === total
             ? 'linear-gradient(90deg,#22c55e,#16a34a)'
-            : 'linear-gradient(90deg,#60a5fa,#2563eb)',
+            : 'linear-gradient(90deg,#2E5DA8,#1F4E99)',
           transition: 'width .4s ease',
         }} />
       </div>
 
-      {/* Steps */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {steps.map((step) => {
           const cfg = STEP_STATUS_CONFIG[step.status] ?? STEP_STATUS_CONFIG.PENDING
@@ -300,14 +297,12 @@ function RequestCard({ item, onViewDetails }) {
       onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(15,23,42,.09)'; e.currentTarget.style.borderColor = 'var(--slate-300)' }}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(15,23,42,.04)'; e.currentTarget.style.borderColor = 'var(--slate-200)' }}
     >
-      {/* Top accent bar based on status */}
       <div style={{
         height: 3,
         background: `linear-gradient(90deg, ${statusCfg.dot}, ${statusCfg.color})`,
       }} />
 
       <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Header row */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -324,7 +319,6 @@ function RequestCard({ item, onViewDetails }) {
             )}
           </div>
 
-          {/* Mini progress circle */}
           <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <MiniProgressRing progress={progress} rejected={rejected} approved={approved === total && total > 0} />
             <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
@@ -333,7 +327,6 @@ function RequestCard({ item, onViewDetails }) {
           </div>
         </div>
 
-        {/* Meta grid */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
@@ -356,10 +349,8 @@ function RequestCard({ item, onViewDetails }) {
           />
         </div>
 
-        {/* Approval flow tracker */}
         <ApprovalFlowTracker steps={item.steps ?? []} />
 
-        {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
             className="secondary-button"
@@ -383,7 +374,7 @@ function MiniProgressRing({ progress, rejected, approved }) {
   const r = 18
   const circ = 2 * Math.PI * r
   const dash = (progress / 100) * circ
-  const color = rejected ? '#ef4444' : approved ? '#22c55e' : '#3b82f6'
+  const color = rejected ? '#ef4444' : approved ? '#22c55e' : '#1F4E99'
 
   return (
     <svg width="44" height="44" viewBox="0 0 44 44" style={{ transform: 'rotate(-90deg)' }}>
@@ -406,17 +397,17 @@ function MetaCell({ label, value, sub, highlight }) {
     <div style={{
       padding: '10px 12px',
       borderRadius: 10,
-      background: highlight ? 'var(--blue-50)' : 'var(--slate-50)',
-      border: `1px solid ${highlight ? 'var(--blue-100)' : 'var(--slate-100)'}`,
+      background: highlight ? '#EAF1FB' : 'var(--slate-50)',
+      border: `1px solid ${highlight ? '#BFD1EA' : 'var(--slate-100)'}`,
     }}>
-      <span style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: highlight ? 'var(--blue-500)' : 'var(--slate-400)', marginBottom: 4 }}>
+      <span style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: highlight ? '#1F4E99' : 'var(--slate-400)', marginBottom: 4 }}>
         {label}
       </span>
-      <strong style={{ display: 'block', fontSize: 13, fontWeight: 600, color: highlight ? 'var(--blue-800)' : 'var(--slate-800)', lineHeight: 1.3, wordBreak: 'break-word' }}>
+      <strong style={{ display: 'block', fontSize: 13, fontWeight: 600, color: highlight ? '#163B73' : 'var(--slate-800)', lineHeight: 1.3, wordBreak: 'break-word' }}>
         {value || '—'}
       </strong>
       {sub && (
-        <span style={{ display: 'block', fontSize: 11, color: highlight ? 'var(--blue-500)' : 'var(--slate-400)', marginTop: 2 }}>
+        <span style={{ display: 'block', fontSize: 11, color: highlight ? '#2E5DA8' : 'var(--slate-400)', marginTop: 2 }}>
           {sub}
         </span>
       )}
@@ -437,7 +428,7 @@ function StatCard({ label, value, color }) {
     }}>
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-        background: color ?? 'linear-gradient(90deg, var(--blue-500), var(--blue-400))',
+        background: color ?? 'linear-gradient(90deg, #1F4E99, #2E5DA8)',
       }} />
       <span style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: 10 }}>
         {label}
@@ -458,13 +449,13 @@ function TabButton({ label, count, isActive, onClick }) {
         display: 'inline-flex', alignItems: 'center', gap: 9,
         padding: '11px 18px',
         borderRadius: 12,
-        border: isActive ? '1.5px solid var(--blue-300)' : '1.5px solid var(--slate-200)',
-        background: isActive ? 'linear-gradient(180deg, var(--blue-50) 0%, #fff 100%)' : 'linear-gradient(180deg, #fff 0%, var(--slate-50) 100%)',
-        color: isActive ? 'var(--blue-800)' : 'var(--slate-600)',
+        border: isActive ? '1.5px solid #BFD1EA' : '1.5px solid var(--slate-200)',
+        background: isActive ? 'linear-gradient(180deg, #EAF1FB 0%, #fff 100%)' : 'linear-gradient(180deg, #fff 0%, var(--slate-50) 100%)',
+        color: isActive ? '#163B73' : 'var(--slate-600)',
         fontSize: 13, fontWeight: 600,
         cursor: 'pointer',
         transition: 'all 140ms',
-        boxShadow: isActive ? '0 4px 12px rgba(37,99,235,.1)' : 'none',
+        boxShadow: isActive ? '0 4px 12px rgba(31,78,153,.1)' : 'none',
       }}
     >
       <span>{label}</span>
@@ -472,7 +463,7 @@ function TabButton({ label, count, isActive, onClick }) {
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         minWidth: 24, height: 24, padding: '0 7px',
         borderRadius: 999,
-        background: isActive ? 'var(--blue-600)' : 'var(--slate-200)',
+        background: isActive ? '#1F4E99' : 'var(--slate-200)',
         color: isActive ? '#fff' : 'var(--slate-600)',
         fontSize: 11, fontWeight: 700,
       }}>
@@ -524,7 +515,6 @@ export function MyRequestsPage() {
     return () => { isMounted = false }
   }, [token])
 
-  // Counts per kind for tab badges
   const countsByKind = useMemo(() => ({
     all: requests.length,
     admission: requests.filter((r) => normalizeRequestKind(r.request_kind) === 'admission').length,
@@ -568,173 +558,165 @@ export function MyRequestsPage() {
   return (
     <main
       className="page-shell"
-      style={{ background: 'linear-gradient(150deg, var(--slate-50) 0%, var(--blue-50) 50%, #eef2ff 100%)' }}
+      style={{ background: 'linear-gradient(150deg, var(--slate-50) 0%, #EAF1FB 50%, #F5F8FC 100%)' }}
     >
       <div className="admin-view admin-home-view" style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
-      {/* ── Header ── */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
-        paddingBottom: 8,
-      }}>
-        <div>
-          <span className="eyebrow">Solicitações RH</span>
-          <h2 style={{ margin: '4px 0 6px', fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', letterSpacing: '-.02em' }}>
-            Minhas solicitações
-          </h2>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-            {firstName} · Acompanhe o andamento de cada pedido em tempo real.
-          </p>
-        </div>
-        <Link className="secondary-link-button" to="/">← Voltar para a home</Link>
-      </div>
-
-      {/* ── Error ── */}
-      {errorMessage && (
-        <div className="form-error">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          {errorMessage}
-        </div>
-      )}
-
-      {/* ── Stats ── */}
-      {!isLoading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0,1fr))', gap: 12 }}>
-          <StatCard label="Total" value={summary.total} color="linear-gradient(90deg, var(--slate-400), var(--slate-300))" />
-          <StatCard label="Pendentes" value={summary.pending} color="linear-gradient(90deg, #f59e0b, #d97706)" />
-          <StatCard label="Em análise" value={summary.underReview} color="linear-gradient(90deg, #3b82f6, #2563eb)" />
-          <StatCard label="Aprovadas" value={summary.approved} color="linear-gradient(90deg, #22c55e, #16a34a)" />
-          <StatCard label="Rejeitadas" value={summary.rejected} color="linear-gradient(90deg, #f87171, #dc2626)" />
-        </div>
-      )}
-
-      {/* ── Tabs + Search ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 12,
-        padding: '16px 20px',
-        borderRadius: 16,
-        background: '#fff',
-        border: '1px solid var(--slate-200)',
-        boxShadow: '0 1px 3px rgba(15,23,42,.04)',
-      }}>
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {Object.entries(REQUEST_KIND_TABS).map(([kind, cfg]) => (
-            <TabButton
-              key={kind}
-              label={cfg.label}
-              count={countsByKind[kind]}
-              isActive={activeTab === kind}
-              onClick={() => { setActiveTab(kind); setQuery('') }}
-            />
-          ))}
-        </div>
-
-        {/* Search */}
-        <div style={{ position: 'relative', minWidth: 260 }}>
-          <svg
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', pointerEvents: 'none' }}
-          >
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            placeholder="Buscar por título, status…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px 36px 10px 38px',
-              border: '1.5px solid var(--slate-200)',
-              borderRadius: 10,
-              background: 'var(--slate-50)',
-              color: 'var(--slate-900)',
-              fontSize: 13,
-              outline: 'none',
-              transition: 'border-color 140ms, box-shadow 140ms',
-            }}
-            onFocus={(e) => { e.target.style.borderColor = 'var(--blue-400)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,.08)'; e.target.style.background = '#fff' }}
-            onBlur={(e) => { e.target.style.borderColor = 'var(--slate-200)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'var(--slate-50)' }}
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                width: 20, height: 20, borderRadius: '50%',
-                border: 'none', background: 'var(--slate-200)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--slate-500)',
-              }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Results count ── */}
-      {!isLoading && visibleRequests.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, color: 'var(--slate-400)', fontWeight: 600 }}>
-            {visibleRequests.length} solicitaç{visibleRequests.length === 1 ? 'ão' : 'ões'} encontrada{visibleRequests.length === 1 ? '' : 's'}
-          </span>
-          {query && (
-            <span style={{
-              padding: '3px 10px', borderRadius: 999,
-              background: 'var(--blue-50)', color: 'var(--blue-700)',
-              fontSize: 12, fontWeight: 600,
-            }}>
-              "{query}"
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* ── Content ── */}
-      {isLoading ? (
         <div style={{
-          padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
-          borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
+          paddingBottom: 8,
         }}>
-          <div style={{
-            width: 36, height: 36,
-            border: '3px solid var(--blue-100)', borderTopColor: 'var(--blue-600)',
-            borderRadius: '50%', animation: 'spin .7s linear infinite',
-          }} />
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-400)', fontWeight: 500 }}>
-            Carregando suas solicitações…
-          </p>
+          <div>
+            <span className="eyebrow" style={{ color: '#F28C1B' }}>Solicitações RH</span>
+            <h2 style={{ margin: '4px 0 6px', fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', letterSpacing: '-.02em' }}>
+              Minhas solicitações
+            </h2>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              {firstName} · Acompanhe o andamento de cada pedido em tempo real.
+            </p>
+          </div>
+          <Link className="secondary-link-button" to="/">← Voltar para a home</Link>
         </div>
-      ) : visibleRequests.length === 0 ? (
-        <div style={{ borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)' }}>
-          <EmptyState text={REQUEST_KIND_TABS[activeTab]?.emptyText ?? 'Nenhuma solicitação encontrada.'} />
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: 14 }}>
-          {visibleRequests.map((item) => (
-            <RequestCard
-              key={`${item.request_kind}-${item.request_id}`}
-              item={item}
-              onViewDetails={setSelectedRequest}
-            />
-          ))}
-        </div>
-      )}
 
-      <RequestDetailsModal
-        request={selectedRequest}
-        token={token}
-        onClose={() => setSelectedRequest(null)}
-      />
+        {errorMessage && (
+          <div className="form-error">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {errorMessage}
+          </div>
+        )}
+
+        {!isLoading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0,1fr))', gap: 12 }}>
+            <StatCard label="Total" value={summary.total} color="linear-gradient(90deg, var(--slate-400), var(--slate-300))" />
+            <StatCard label="Pendentes" value={summary.pending} color="linear-gradient(90deg, #F28C1B, #d97706)" />
+            <StatCard label="Em análise" value={summary.underReview} color="linear-gradient(90deg, #2E5DA8, #1F4E99)" />
+            <StatCard label="Aprovadas" value={summary.approved} color="linear-gradient(90deg, #22c55e, #16a34a)" />
+            <StatCard label="Rejeitadas" value={summary.rejected} color="linear-gradient(90deg, #f87171, #dc2626)" />
+          </div>
+        )}
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: 12,
+          padding: '16px 20px',
+          borderRadius: 16,
+          background: '#fff',
+          border: '1px solid var(--slate-200)',
+          boxShadow: '0 1px 3px rgba(15,23,42,.04)',
+        }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {Object.entries(REQUEST_KIND_TABS).map(([kind, cfg]) => (
+              <TabButton
+                key={kind}
+                label={cfg.label}
+                count={countsByKind[kind]}
+                isActive={activeTab === kind}
+                onClick={() => { setActiveTab(kind); setQuery('') }}
+              />
+            ))}
+          </div>
+
+          <div style={{ position: 'relative', minWidth: 260 }}>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', pointerEvents: 'none' }}
+            >
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              placeholder="Buscar por título, status…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 36px 10px 38px',
+                border: '1.5px solid var(--slate-200)',
+                borderRadius: 10,
+                background: 'var(--slate-50)',
+                color: 'var(--slate-900)',
+                fontSize: 13,
+                outline: 'none',
+                transition: 'border-color 140ms, box-shadow 140ms',
+              }}
+              onFocus={(e) => { e.target.style.borderColor = '#1F4E99'; e.target.style.boxShadow = '0 0 0 3px rgba(31,78,153,.08)'; e.target.style.background = '#fff' }}
+              onBlur={(e) => { e.target.style.borderColor = 'var(--slate-200)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'var(--slate-50)' }}
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  width: 20, height: 20, borderRadius: '50%',
+                  border: 'none', background: 'var(--slate-200)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--slate-500)',
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {!isLoading && visibleRequests.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, color: 'var(--slate-400)', fontWeight: 600 }}>
+              {visibleRequests.length} solicitaç{visibleRequests.length === 1 ? 'ão' : 'ões'} encontrada{visibleRequests.length === 1 ? '' : 's'}
+            </span>
+            {query && (
+              <span style={{
+                padding: '3px 10px', borderRadius: 999,
+                background: '#EAF1FB', color: '#163B73',
+                fontSize: 12, fontWeight: 600,
+              }}>
+                "{query}"
+              </span>
+            )}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div style={{
+            padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+            borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)',
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              border: '3px solid #BFD1EA', borderTopColor: '#1F4E99',
+              borderRadius: '50%', animation: 'spin .7s linear infinite',
+            }} />
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-400)', fontWeight: 500 }}>
+              Carregando suas solicitações…
+            </p>
+          </div>
+        ) : visibleRequests.length === 0 ? (
+          <div style={{ borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)' }}>
+            <EmptyState text={REQUEST_KIND_TABS[activeTab]?.emptyText ?? 'Nenhuma solicitação encontrada.'} />
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 14 }}>
+            {visibleRequests.map((item) => (
+              <RequestCard
+                key={`${item.request_kind}-${item.request_id}`}
+                item={item}
+                onViewDetails={setSelectedRequest}
+              />
+            ))}
+          </div>
+        )}
+
+        <RequestDetailsModal
+          request={selectedRequest}
+          token={token}
+          onClose={() => setSelectedRequest(null)}
+        />
       </div>
     </main>
   )

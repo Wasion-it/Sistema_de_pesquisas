@@ -7,12 +7,25 @@ function TimeGreeting() {
   return 'Boa noite'
 }
 
+// Wasion América brand palette
+const BRAND = {
+  blue:        '#1F4E99',
+  blueSecond:  '#2E5DA8',
+  blueTertiary:'#3A6BB5',
+  orange:      '#F28C1B',
+  orangeLight: '#FEF3E2',
+  orangeBorder:'#FAD49A',
+  blueLight:   '#EBF1FB',
+  blueBorder:  '#AABFDE',
+  white:       '#FFFFFF',
+}
+
 const MODULES = [
   {
     to: '/pesquisas',
-    accent: '#2563eb',
-    accentLight: '#eff6ff',
-    accentBorder: '#bfdbfe',
+    accent: BRAND.blue,
+    accentLight: BRAND.blueLight,
+    accentBorder: BRAND.blueBorder,
     kicker: 'Participação',
     title: 'Pesquisas',
     description: 'Veja as campanhas abertas, responda de forma anônima e acompanhe o histórico de pesquisas da empresa.',
@@ -30,9 +43,9 @@ const MODULES = [
   },
   {
     to: '/solicitacoes',
-    accent: '#0f766e',
-    accentLight: '#f0fdfa',
-    accentBorder: '#99f6e4',
+    accent: BRAND.orange,
+    accentLight: BRAND.orangeLight,
+    accentBorder: BRAND.orangeBorder,
     kicker: 'Operacional',
     title: 'Solicitações',
     description: 'Abra requisições de vaga, solicite desligamentos e acompanhe o andamento de cada pedido em tempo real.',
@@ -61,7 +74,7 @@ export function HomePage() {
       {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 40,
-        background: 'rgba(255,255,255,.88)',
+        background: 'rgba(255,255,255,.92)',
         backdropFilter: 'blur(16px) saturate(180%)',
         borderBottom: '1px solid #e2e8f0',
       }}>
@@ -73,9 +86,9 @@ export function HomePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 32, height: 32, borderRadius: 9,
-              background: 'linear-gradient(135deg, #2563eb, #1e40af)',
+              background: `linear-gradient(135deg, ${BRAND.blue}, ${BRAND.blueSecond})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(37,99,235,.28)',
+              boxShadow: `0 2px 8px ${BRAND.blue}44`,
               flexShrink: 0,
             }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -96,15 +109,15 @@ export function HomePage() {
               display: 'inline-flex', alignItems: 'center', gap: 7,
               padding: '8px 16px',
               borderRadius: 999,
-              border: '1.5px solid #e2e8f0',
-              background: '#fff',
-              color: '#475569',
+              border: `1.5px solid ${BRAND.blueBorder}`,
+              background: BRAND.white,
+              color: BRAND.blueSecond,
               fontSize: 13, fontWeight: 600,
               textDecoration: 'none',
               transition: 'all 140ms ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#bfdbfe'; e.currentTarget.style.color = '#1d4ed8'; e.currentTarget.style.background = '#eff6ff' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; e.currentTarget.style.background = '#fff' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = BRAND.blue; e.currentTarget.style.color = BRAND.white; e.currentTarget.style.background = BRAND.blue }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = BRAND.blueBorder; e.currentTarget.style.color = BRAND.blueSecond; e.currentTarget.style.background = BRAND.white }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -127,15 +140,15 @@ export function HomePage() {
           display: 'inline-flex', alignItems: 'center', gap: 7,
           padding: '5px 14px',
           borderRadius: 999,
-          background: '#eff6ff',
-          border: '1px solid #bfdbfe',
+          background: BRAND.blueLight,
+          border: `1px solid ${BRAND.blueBorder}`,
           fontSize: 12, fontWeight: 700,
-          color: '#1d4ed8',
+          color: BRAND.blue,
           letterSpacing: '.04em',
           textTransform: 'uppercase',
           marginBottom: 4,
         }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', animation: 'pulse 2s ease-in-out infinite' }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: BRAND.orange, animation: 'pulse 2s ease-in-out infinite' }} />
           Portal do colaborador
         </div>
 
@@ -150,7 +163,7 @@ export function HomePage() {
           maxWidth: 600,
         }}>
           {TimeGreeting()},<br />
-          <span style={{ color: '#2563eb' }}>o que você precisa</span>{' '}
+          <span style={{ color: BRAND.blue }}>o que você precisa</span>{' '}
           hoje?
         </h1>
 
@@ -181,7 +194,7 @@ export function HomePage() {
             style={{
               textDecoration: 'none',
               borderRadius: 24,
-              background: '#fff',
+              background: BRAND.white,
               border: `1.5px solid ${mod.accentBorder}`,
               overflow: 'hidden',
               display: 'flex', flexDirection: 'column',
@@ -252,7 +265,7 @@ export function HomePage() {
                   padding: '12px 22px',
                   borderRadius: 12,
                   background: mod.accent,
-                  color: '#fff',
+                  color: BRAND.white,
                   fontSize: 14, fontWeight: 700,
                   letterSpacing: '.01em',
                   boxShadow: `0 4px 14px ${mod.accent}44`,
@@ -272,7 +285,7 @@ export function HomePage() {
       <footer style={{
         marginTop: 'auto',
         borderTop: '1px solid #e2e8f0',
-        background: '#fff',
+        background: BRAND.white,
         padding: '20px 32px',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
@@ -281,15 +294,15 @@ export function HomePage() {
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <Link to="/pesquisas" style={{ fontSize: 12, color: '#94a3b8', textDecoration: 'none', fontWeight: 500, transition: 'color 140ms' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#475569' }}
+              onMouseEnter={e => { e.currentTarget.style.color = BRAND.blue }}
               onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8' }}
             >Pesquisas</Link>
             <Link to="/solicitacoes" style={{ fontSize: 12, color: '#94a3b8', textDecoration: 'none', fontWeight: 500, transition: 'color 140ms' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#475569' }}
+              onMouseEnter={e => { e.currentTarget.style.color = BRAND.orange }}
               onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8' }}
             >Solicitações</Link>
             <Link to="/admin/login" state={{ returnTo: '/admin' }} style={{ fontSize: 12, color: '#94a3b8', textDecoration: 'none', fontWeight: 500, transition: 'color 140ms' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#475569' }}
+              onMouseEnter={e => { e.currentTarget.style.color = BRAND.blue }}
               onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8' }}
             >Área RH</Link>
           </div>

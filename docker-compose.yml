@@ -57,6 +57,10 @@ services:
       - "traefik.http.routers.pesquisas-api.tls=true"
       - "traefik.http.routers.pesquisas-api.priority=100"
       - "traefik.http.services.pesquisas-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.pesquisas-api-http.rule=Host(`systemrh.wasion.com.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.pesquisas-api-http.entrypoints=web"
+      - "traefik.http.routers.pesquisas-api-http.middlewares=pesquisas-api-redirect"
+      - "traefik.http.middlewares.pesquisas-api-redirect.redirectscheme.scheme=https"
 
   frontend:
     build:
@@ -80,6 +84,10 @@ services:
       - "traefik.http.routers.pesquisas.tls=true"
       - "traefik.http.routers.pesquisas.priority=10"
       - "traefik.http.services.pesquisas.loadbalancer.server.port=80"
+      - "traefik.http.routers.pesquisas-http.rule=Host(`systemrh.wasion.com.com`)"
+      - "traefik.http.routers.pesquisas-http.entrypoints=web"
+      - "traefik.http.routers.pesquisas-http.middlewares=pesquisas-redirect"
+      - "traefik.http.middlewares.pesquisas-redirect.redirectscheme.scheme=https"
 
 volumes:
   postgres-data:

@@ -1,15 +1,14 @@
+version: "3.8"
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: sistema-de-pesquisas-postgres
     environment:
       POSTGRES_DB: sistema_de_pesquisas
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d sistema_de_pesquisas"]
       interval: 10s
@@ -19,13 +18,14 @@ services:
     restart: unless-stopped
     networks:
       - pesquisas_internal
+      - controle_overlay
 
   backend:
+    image: sistema-de-pesquisas-backend:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: backend
-    container_name: sistema-de-pesquisas-backend
     env_file:
       - ./backend/.env
     command: >-
@@ -49,43 +49,45 @@ services:
     networks:
       - pesquisas_internal
       - controle_overlay
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=controle_overlay"
-      - "traefik.http.routers.pesquisas-api.rule=Host(`systemrh.wasion.com.com`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.pesquisas-api.entrypoints=websecure"
-      - "traefik.http.routers.pesquisas-api.tls=true"
-      - "traefik.http.routers.pesquisas-api.priority=100"
-      - "traefik.http.services.pesquisas-api.loadbalancer.server.port=8000"
-      - "traefik.http.routers.pesquisas-api-http.rule=Host(`systemrh.wasion.com.com`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.pesquisas-api-http.entrypoints=web"
-      - "traefik.http.routers.pesquisas-api-http.priority=90"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=controle_overlay"
+        - "traefik.http.routers.pesquisas-api.rule=Host(`systemrh.wasion.com.com`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.pesquisas-api.entrypoints=websecure"
+        - "traefik.http.routers.pesquisas-api.tls=true"
+        - "traefik.http.routers.pesquisas-api.priority=100"
+        - "traefik.http.services.pesquisas-api.loadbalancer.server.port=8000"
 
   frontend:
+    image: sistema-de-pesquisas-frontend:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: frontend
       args:
         VITE_API_URL: /api/v1
-    container_name: sistema-de-pesquisas-frontend
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     networks:
       - controle_overlay
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=controle_overlay"
-      - "traefik.http.routers.pesquisas.rule=Host(`systemrh.wasion.com.com`)"
-      - "traefik.http.routers.pesquisas.entrypoints=websecure"
-      - "traefik.http.routers.pesquisas.tls=true"
-      - "traefik.http.routers.pesquisas.priority=10"
-      - "traefik.http.services.pesquisas.loadbalancer.server.port=80"
-      - "traefik.http.routers.pesquisas-http.rule=Host(`systemrh.wasion.com.com`)"
-      - "traefik.http.routers.pesquisas-http.entrypoints=web"
-      - "traefik.http.routers.pesquisas-http.priority=5"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=controle_overlay"
+        - "traefik.http.routers.pesquisas.rule=Host(`systemrh.wasion.com.com`)"
+        - "traefik.http.routers.pesquisas.entrypoints=websecure"
+        - "traefik.http.routers.pesquisas.tls=true"
+        - "traefik.http.routers.pesquisas.priority=10"
+        - "traefik.http.services.pesquisas.loadbalancer.server.port=80"
 
 volumes:
   postgres-data:
@@ -95,4 +97,4 @@ networks:
     external: true
 
   pesquisas_internal:
-    driver: bridge
+    driver: overlay

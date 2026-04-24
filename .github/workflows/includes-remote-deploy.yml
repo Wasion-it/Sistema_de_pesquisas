@@ -167,8 +167,10 @@ jobs:
 
             rm -rf .deploy-backup deploy-source.tar.gz
 
-            docker compose up -d --build --remove-orphans
-            docker compose ps
+            docker swarm ls >/dev/null 2>&1 || { echo 'Swarm não está ativo neste servidor'; exit 1; }
+            docker compose -f docker-compose.yml build backend frontend
+            docker stack deploy --with-registry-auth --prune -c docker-compose.yml sistema-de-pesquisas
+            docker stack services sistema-de-pesquisas
 
       - name: Resumo do deploy
         shell: bash

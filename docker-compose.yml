@@ -34,7 +34,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
       DEBUG: "false"
       JWT_SECRET_KEY: change-this-secret-for-production
-      CORS_ALLOW_ORIGINS: https://systemrh.wasion.com.com
+      CORS_ALLOW_ORIGINS: https://systemrh.wasion.com.br
     healthcheck:
       test:
         ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/health')"]
@@ -53,7 +53,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=controle_overlay"
-        - "traefik.http.routers.pesquisas-api.rule=Host(`systemrh.wasion.com.com`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.pesquisas-api.rule=Host(`systemrh.wasion.com.br`) && PathPrefix(`/api`)"
         - "traefik.http.routers.pesquisas-api.entrypoints=websecure"
         - "traefik.http.routers.pesquisas-api.tls=true"
         - "traefik.http.routers.pesquisas-api.priority=100"
@@ -77,7 +77,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=controle_overlay"
-        - "traefik.http.routers.pesquisas.rule=Host(`systemrh.wasion.com.com`)"
+        - "traefik.http.routers.pesquisas.rule=Host(`systemrh.wasion.com.br`)"
         - "traefik.http.routers.pesquisas.entrypoints=websecure"
         - "traefik.http.routers.pesquisas.tls=true"
         - "traefik.http.routers.pesquisas.priority=10"

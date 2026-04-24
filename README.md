@@ -179,7 +179,7 @@ npm install
 npm run dev
 ```
 
-A interface ficará disponível em `http://127.0.0.1:5173` no ambiente de desenvolvimento e via Traefik no domínio `http://systemrh.wasion.com.com` no deploy.
+A interface ficará disponível em `http://127.0.0.1:5173` no ambiente de desenvolvimento e via Traefik no domínio `https://systemrh.wasion.com.com` no deploy.
 
 ## Deploy via GitHub Actions
 
@@ -220,7 +220,7 @@ Adicione o conteúdo retornado no arquivo `~/.ssh/authorized_keys` do usuário d
 - `DEPLOY_PROD_SSH_KEY`: chave privada SSH usada pelo deploy.
 
 O servidor precisa ter `git` e `docker compose` disponíveis, além de acesso ao diretório informado em `DEPLOY_PROD_PATH`.
-O acesso público da aplicação é feito pelo Traefik, usando o domínio `systemrh.wasion.com.com` em HTTP.
+O acesso público da aplicação é feito pelo Traefik, usando o domínio `systemrh.wasion.com.com` em HTTPS. Se você não tiver certificado customizado, o Traefik pode servir o certificado padrão e o navegador pode exibir aviso de segurança.
 
 7. Crie ou ajuste o DNS do domínio `systemrh.wasion.com.com` para apontar para o host onde o Traefik está rodando. Em geral isso é feito com um registro `A` para o IP público do proxy ou um `CNAME` para o hostname que resolve esse proxy.
 

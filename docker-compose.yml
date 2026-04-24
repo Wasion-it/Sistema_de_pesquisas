@@ -34,7 +34,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
       DEBUG: "false"
       JWT_SECRET_KEY: change-this-secret-for-production
-      CORS_ALLOW_ORIGINS: http://systemrh.wasion.com.com
+      CORS_ALLOW_ORIGINS: https://systemrh.wasion.com.com
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,9 +53,13 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=controle_overlay"
       - "traefik.http.routers.pesquisas-api.rule=Host(`systemrh.wasion.com.com`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.pesquisas-api.entrypoints=web"
+      - "traefik.http.routers.pesquisas-api.entrypoints=websecure"
+      - "traefik.http.routers.pesquisas-api.tls=true"
       - "traefik.http.routers.pesquisas-api.priority=100"
       - "traefik.http.services.pesquisas-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.pesquisas-api-http.rule=Host(`systemrh.wasion.com.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.pesquisas-api-http.entrypoints=web"
+      - "traefik.http.routers.pesquisas-api-http.priority=90"
 
   frontend:
     build:
@@ -75,9 +79,13 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=controle_overlay"
       - "traefik.http.routers.pesquisas.rule=Host(`systemrh.wasion.com.com`)"
-      - "traefik.http.routers.pesquisas.entrypoints=web"
+      - "traefik.http.routers.pesquisas.entrypoints=websecure"
+      - "traefik.http.routers.pesquisas.tls=true"
       - "traefik.http.routers.pesquisas.priority=10"
       - "traefik.http.services.pesquisas.loadbalancer.server.port=80"
+      - "traefik.http.routers.pesquisas-http.rule=Host(`systemrh.wasion.com.com`)"
+      - "traefik.http.routers.pesquisas-http.entrypoints=web"
+      - "traefik.http.routers.pesquisas-http.priority=5"
 
 volumes:
   postgres-data:

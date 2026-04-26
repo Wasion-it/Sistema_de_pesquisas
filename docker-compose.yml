@@ -14,11 +14,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 30s
     restart: unless-stopped
     networks:
       - pesquisas_internal
-      - apps
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     image: sistema-de-pesquisas-backend:latest
@@ -28,20 +39,40 @@ services:
       target: backend
     env_file:
       - ./backend/.env
-    command: >-
-      sh -c "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
       DEBUG: "false"
       JWT_SECRET_KEY: change-this-secret-for-production
       CORS_ALLOW_ORIGINS: https://systemrh.wasion.com.br
+    command: >
+      sh -c "
+      python - <<'PY'
+      import socket, time
+      host='postgres'
+      port=5432
+      for i in range(60):
+          try:
+              s=socket.create_connection((host, port), timeout=3)
+              s.close()
+              print('PostgreSQL disponível')
+              break
+          except Exception:
+              print('Aguardando PostgreSQL...')
+              time.sleep(2)
+      else:
+          raise SystemExit('PostgreSQL não ficou disponível')
+      PY
+      &&
+      python -m alembic upgrade head
+      &&
+      python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
     healthcheck:
-      test:
-        ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/health')"]
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/health')"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 40s
     restart: unless-stopped
     networks:
       - pesquisas_internal
@@ -58,6 +89,11 @@ services:
         - "traefik.http.routers.pesquisas-api.tls=true"
         - "traefik.http.routers.pesquisas-api.priority=100"
         - "traefik.http.services.pesquisas-api.loadbalancer.server.port=8000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     image: sistema-de-pesquisas-frontend:latest
@@ -82,6 +118,11 @@ services:
         - "traefik.http.routers.pesquisas.tls=true"
         - "traefik.http.routers.pesquisas.priority=10"
         - "traefik.http.services.pesquisas.loadbalancer.server.port=80"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres-data:
@@ -92,3 +133,4 @@ networks:
 
   pesquisas_internal:
     driver: overlay
+    attachable: true

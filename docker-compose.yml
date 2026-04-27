@@ -54,7 +54,7 @@ services:
       start_period: 40s
     networks:
       - pesquisas_internal
-      - apps
+      - controle_overlay
     deploy:
       replicas: 1
       restart_policy:
@@ -64,7 +64,7 @@ services:
         - "portainer.service=backend"
 
         - "traefik.enable=true"
-        - "traefik.docker.network=apps"
+        - "traefik.docker.network=controle_overlay"
         - "traefik.http.routers.pesquisas-api.rule=Host(`systemrh.wasion.com.br`) && PathPrefix(`/api`)"
         - "traefik.http.routers.pesquisas-api.entrypoints=websecure"
         - "traefik.http.routers.pesquisas-api.tls=true"
@@ -85,7 +85,7 @@ services:
       args:
         VITE_API_URL: /api/v1
     networks:
-      - apps
+      - controle_overlay
     deploy:
       replicas: 1
       restart_policy:
@@ -95,7 +95,7 @@ services:
         - "portainer.service=frontend"
 
         - "traefik.enable=true"
-        - "traefik.docker.network=apps"
+        - "traefik.docker.network=controle_overlay"
         - "traefik.http.routers.pesquisas.rule=Host(`systemrh.wasion.com.br`)"
         - "traefik.http.routers.pesquisas.entrypoints=websecure"
         - "traefik.http.routers.pesquisas.tls=true"
@@ -111,7 +111,7 @@ volumes:
   postgres-data:
 
 networks:
-  apps:
+  controle_overlay:
     external: true
 
   pesquisas_internal:

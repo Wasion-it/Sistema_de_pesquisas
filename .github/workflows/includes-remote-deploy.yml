@@ -32,6 +32,8 @@ on:
     secrets:
       DEPLOY_PROD_SSH_KEY:
         required: true
+      LDAP_BIND_PASSWORD:
+        required: true
     outputs:
       deploy_result:
         description: 'Resultado do deploy'
@@ -150,20 +152,20 @@ jobs:
             cd "${{ inputs.deploy_path }}"
             tar -xzf deploy-source.tar.gz
 
-            if [ -f .deploy-backup/.env ]; then
-              mv .deploy-backup/.env .env
-            fi
+            mkdir -p backend
 
-            if [ -f .deploy-backup/backend/.env ]; then
-              mkdir -p backend
-              mv .deploy-backup/backend/.env backend/.env
-            elif [ -f backend/.env.example ]; then
-              mkdir -p backend
-              cp backend/.env.example backend/.env
-            else
-              mkdir -p backend
-              touch backend/.env
-            fi
+            cat > backend/.env <<EOF
+            DATABASE_URL=postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
+            DEBUG=false
+            JWT_SECRET_KEY=change-this-secret-for-production
+            CORS_ALLOW_ORIGINS=https://systemrh.wasion.com.br
+
+            LDAP_ENABLED=${{ vars.LDAP_ENABLED }}
+            LDAP_SERVER_URI=${{ vars.LDAP_SERVER_URI }}
+            LDAP_USER_BASE_DN=${{ vars.LDAP_USER_BASE_DN }}
+            LDAP_BIND_DN=${{ vars.LDAP_BIND_DN }}
+            LDAP_BIND_PASSWORD=${{ secrets.LDAP_BIND_PASSWORD }}
+            EOF
 
             rm -rf .deploy-backup deploy-source.tar.gz
 
@@ -171,6 +173,7 @@ jobs:
               echo 'Este servidor não está ativo como manager do Swarm'
               exit 1
             fi
+
             docker compose -f docker-compose.yml build backend frontend
             docker stack deploy --with-registry-auth --prune -c docker-compose.yml sistema-de-pesquisas
             docker stack services sistema-de-pesquisas

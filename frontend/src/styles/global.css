@@ -2318,6 +2318,314 @@ body:has(.admin-shell) { background: var(--slate-100); }
 .admin-home-module.module-amber .admin-home-module-kicker { color: var(--amber-700); }
 .admin-home-module.module-green .admin-home-module-kicker { color: var(--green-700); }
 
+.admin-home-view {
+  gap: 28px;
+}
+
+.admin-home-hero {
+  align-items: center;
+  padding: 36px 40px;
+  border-radius: var(--r-xl);
+  background: linear-gradient(135deg, #1F4E99 0%, #2E5DA8 60%, #3A6BB5 100%);
+  box-shadow: 0 12px 34px rgba(31,78,153,.2);
+}
+
+.admin-home-hero::before,
+.admin-home-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.admin-home-hero::before {
+  right: -60px;
+  top: -60px;
+  width: 260px;
+  height: 260px;
+  background: rgba(255,255,255,.05);
+}
+
+.admin-home-hero::after {
+  right: 80px;
+  bottom: -80px;
+  width: 180px;
+  height: 180px;
+  background: rgba(242,140,27,.1);
+}
+
+.admin-home-hero-copy,
+.admin-home-hero-badge {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-home-eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: rgba(255,255,255,.8);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.admin-home-hero h2 {
+  margin: 0 0 10px;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.admin-home-hero p {
+  max-width: 460px;
+  margin: 0;
+  color: rgba(255,255,255,.72);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.admin-home-hero-badge {
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: var(--r-lg);
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(8px);
+  text-align: center;
+}
+
+.admin-home-hero-badge span {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(255,255,255,.6);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.admin-home-hero-badge strong {
+  display: block;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.admin-home-sections {
+  display: grid;
+  gap: 24px;
+}
+
+.admin-home-section {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-home-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-home-section-header .eyebrow {
+  margin-bottom: 6px;
+}
+
+.admin-home-section-header h3 {
+  margin: 0;
+  max-width: 58ch;
+  color: var(--slate-700);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+.admin-home-section-count {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--slate-200);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--slate-500);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-home-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.admin-home-module {
+  --admin-module-accent: var(--blue-600);
+  --admin-module-light: var(--blue-50);
+  --admin-module-border: var(--blue-200);
+  min-width: 0;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 24px 20px;
+  border: 1.5px solid var(--admin-module-border);
+  border-radius: var(--r-lg);
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(15,23,42,.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-home-module::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--admin-module-accent);
+}
+
+.admin-home-module:hover,
+.admin-home-module:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--admin-module-accent);
+  box-shadow: 0 10px 32px rgba(15,23,42,.1);
+}
+
+.admin-home-module:focus-visible {
+  outline: 3px solid rgba(31,78,153,.24);
+  outline-offset: 3px;
+}
+
+.admin-home-module.module-blue {
+  --admin-module-accent: #1F4E99;
+  --admin-module-light: #EBF1FB;
+  --admin-module-border: #AABFDE;
+}
+
+.admin-home-module.module-amber {
+  --admin-module-accent: #F28C1B;
+  --admin-module-light: #FEF3E2;
+  --admin-module-border: #FAD49A;
+}
+
+.admin-home-module.module-slate {
+  --admin-module-accent: var(--slate-600);
+  --admin-module-light: var(--slate-100);
+  --admin-module-border: var(--slate-300);
+}
+
+.admin-home-module.module-green {
+  --admin-module-accent: var(--green-600);
+  --admin-module-light: var(--green-50);
+  --admin-module-border: var(--green-100);
+}
+
+.admin-home-module .admin-home-module-icon {
+  width: 48px;
+  height: 48px;
+  border: 1.5px solid var(--admin-module-border);
+  border-radius: 14px;
+  background: var(--admin-module-light);
+  color: var(--admin-module-accent);
+  box-shadow: none;
+}
+
+.admin-home-module .admin-home-module-kicker {
+  color: var(--admin-module-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.admin-home-module-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-home-module-body h4 {
+  margin: 0;
+  color: var(--slate-900);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.admin-home-module-body p {
+  margin: 0;
+  color: var(--slate-500);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admin-home-module-action {
+  width: 100%;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--admin-module-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--admin-module-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .admin-home-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-home-hero-badge {
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-home-hero {
+    padding: 28px 24px;
+    border-radius: var(--r-lg);
+  }
+
+  .admin-home-hero h2 {
+    font-size: clamp(1.45rem, 9vw, 1.9rem);
+  }
+
+  .admin-home-hero-badge {
+    width: 100%;
+  }
+
+  .admin-home-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-home-modules {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-home-module {
+    padding: 22px 20px 18px;
+  }
+}
+
 .admin-view-header {
   display: flex;
   justify-content: space-between;

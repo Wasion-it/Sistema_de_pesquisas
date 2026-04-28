@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
-import { createAdminDismissalRequest } from '../services/admin'
+import { createAdminDismissalRequest, getAdminJobTitles } from '../services/admin'
 
 const INITIAL_FORM = {
   nome: '',
@@ -115,11 +115,47 @@ function SummaryRow({ label, value }) {
 export function DemissaoFormPage() {
   const { isAuthenticated, isLoading, token } = useAuth()
   const [formValues, setFormValues] = useState(INITIAL_FORM)
+  const [jobTitles, setJobTitles] = useState([])
+  const [isLoadingJobTitles, setIsLoadingJobTitles] = useState(true)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const requiresRehireJustification = formValues.podeSerRecontratada === 'Não'
+  const activeJobTitles = useMemo(() => jobTitles.filter((jt) => jt.is_active), [jobTitles])
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (!token || !isAuthenticated) {
+      if (isMounted) {
+        setJobTitles([])
+        setIsLoadingJobTitles(false)
+      }
+      return () => { isMounted = false }
+    }
+
+    setIsLoadingJobTitles(true)
+    getAdminJobTitles(token)
+      .then((data) => {
+        if (!isMounted) return
+        setJobTitles(data.items ?? [])
+      })
+      .catch((error) => {
+        if (isMounted) setErrorMessage(error.message)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingJobTitles(false)
+      })
+
+    return () => { isMounted = false }
+  }, [isAuthenticated, token])
+
+  useEffect(() => {
+    if (!formValues.cargo) return
+    const still = activeJobTitles.some((jt) => jt.name === formValues.cargo)
+    if (!still) setFormValues((current) => ({ ...current, cargo: '' }))
+  }, [activeJobTitles, formValues.cargo])
 
   const isSubmitDisabled = useMemo(() => {
     const requiredFields = [
@@ -305,12 +341,26 @@ export function DemissaoFormPage() {
 
                 <label className="field-group">
                   <span>Cargo</span>
-                  <input
+                  <select
                     name="cargo"
-                    placeholder="Cargo atual"
                     value={formValues.cargo}
                     onChange={handleFieldChange}
-                  />
+                    disabled={isLoadingJobTitles}
+                  >
+                    <option value="">
+                      {isLoadingJobTitles ? 'Carregando cargos...' : 'Selecione um cargo'}
+                    </option>
+                    {activeJobTitles.map((jt) => (
+                      <option key={jt.id} value={jt.name}>
+                        {jt.name}{jt.description ? ` — ${jt.description}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {!isLoadingJobTitles && activeJobTitles.length === 0 ? (
+                    <span style={{ color: 'var(--red-600)', fontSize: 12, marginTop: 2 }}>
+                      Nenhum cargo ativo cadastrado pelo RH.
+                    </span>
+                  ) : null}
                 </label>
 
                 <label className="field-group">
@@ -438,7 +488,7 @@ export function DemissaoFormPage() {
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button
                 className="primary-button"
-                disabled={isSubmitDisabled || isSubmitting || !isAuthenticated}
+                disabled={isSubmitDisabled || isSubmitting || !isAuthenticated || activeJobTitles.length === 0}
                 type="submit"
                 style={{ minWidth: 180, padding: '13px 20px', fontSize: 15 }}
               >
@@ -454,9 +504,6 @@ export function DemissaoFormPage() {
               <button className="secondary-button" type="button" onClick={handleReset}>
                 Limpar formulário
               </button>
-              <Link className="secondary-link-button" to="/admin/dismissal-checklist">
-                Abrir checklist
-              </Link>
             </div>
           </form>
 

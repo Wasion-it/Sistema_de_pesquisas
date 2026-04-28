@@ -16,7 +16,195 @@ O Sistema de Recursos Humanos centraliza fluxos de RH em um portal único para c
 
 O acesso às telas depende do perfil do usuário. Por isso, algumas opções podem não aparecer para todos.
 
-## 2. Tipos de usuário
+## 2. Fluxos principais
+
+Esta seção resume, em formato visual, os três fluxos mais importantes do sistema. Eles ajudam o usuário a entender o caminho completo antes de consultar as telas em detalhe.
+
+### 2.1 Fluxo de admissão
+
+```text
+[Solicitante]
+      |
+      v
+[Acessa Solicitações > Requisição de vaga]
+      |
+      v
+[Preenche dados da vaga]
+  - tipo da solicitação
+  - cargo e setor
+  - quantidade de pessoas
+  - turno e regime
+  - justificativa
+      |
+      v
+[Envia solicitação]
+      |
+      v
+[Sistema cria fluxo de aprovação]
+      |
+      v
+[Gestor avalia]
+      |
+      v
+[Diretor RAVI avalia]
+      |
+      v
+[Gerente de RH avalia]
+      |
+      +--------------------+
+      |                    |
+      v                    v
+[Rejeitada]          [Aprovada]
+      |                    |
+      v                    v
+[Solicitante         [RH acompanha
+ acompanha status]    solicitação]
+                           |
+                           v
+                  [Checklist de admissão]
+                           |
+                           v
+                  [Registro de candidatos
+                   contratados]
+                           |
+                           v
+                  [Finalização da admissão]
+```
+
+Resumo do fluxo:
+
+1. O solicitante cria uma requisição de vaga.
+2. A solicitação passa pelas etapas de aprovação configuradas.
+3. Se recusada, o status fica disponível para acompanhamento.
+4. Se aprovada, o RH executa o checklist, registra contratações e finaliza o processo.
+
+### 2.2 Fluxo de demissão
+
+```text
+[Solicitante]
+      |
+      v
+[Acessa Solicitações > Demissão]
+      |
+      v
+[Preenche dados do desligamento]
+  - colaborador
+  - cargo e departamento
+  - tipo de desligamento
+  - data estimada
+  - substituição
+  - possibilidade de recontratação
+  - observações
+      |
+      v
+[Envia solicitação]
+      |
+      v
+[Sistema cria fluxo de aprovação]
+      |
+      v
+[Gestor avalia]
+      |
+      v
+[Diretor RAVI avalia]
+      |
+      v
+[Gerente de RH avalia]
+      |
+      +--------------------+
+      |                    |
+      v                    v
+[Rejeitada]          [Aprovada]
+      |                    |
+      v                    v
+[Solicitante         [RH acompanha
+ acompanha status]    desligamento]
+                           |
+                           v
+                  [Checklist de demissão]
+                           |
+                           v
+                  [Conferência operacional]
+                           |
+               +-----------+-----------+
+               |                       |
+               v                       v
+       [Pendência encontrada]   [Processo segue]
+               |                       |
+               v                       v
+       [RH registra recusa       [RH conclui as
+        operacional, se           etapas necessárias]
+        necessário]
+```
+
+Resumo do fluxo:
+
+1. O solicitante abre o pedido de desligamento.
+2. O pedido segue para aprovação conforme o fluxo definido.
+3. Se rejeitado, o solicitante pode consultar o status.
+4. Se aprovado, o RH acompanha as etapas do checklist.
+5. Se houver impedimento operacional, o RH pode registrar a recusa ou pendência conforme o caso.
+
+### 2.3 Fluxo de pesquisas
+
+```text
+[RH / Administrador de pesquisas]
+      |
+      v
+[Acessa Admin > Pesquisas]
+      |
+      v
+[Cria ou edita pesquisa]
+      |
+      v
+[Configura versão]
+      |
+      v
+[Cadastra dimensões]
+      |
+      v
+[Cadastra perguntas]
+  - escala de 1 a 5
+  - texto livre
+  - escolha única
+      |
+      v
+[Publica campanha]
+  - período de início e fim
+  - anonimato
+  - rascunho permitido ou não
+      |
+      v
+[Campanha aparece em /pesquisas]
+      |
+      v
+[Colaborador seleciona campanha]
+      |
+      v
+[Informa departamento e posição]
+      |
+      v
+[Responde perguntas]
+      |
+      v
+[Envia participação]
+      |
+      v
+[Tela de agradecimento]
+      |
+      v
+[RH acompanha respostas e KPIs]
+```
+
+Resumo do fluxo:
+
+1. O RH cria a pesquisa e organiza perguntas por dimensões.
+2. A campanha é publicada com período de participação.
+3. O colaborador acessa a campanha pela lista de pesquisas.
+4. Após o envio, o sistema registra a resposta.
+5. O RH acompanha participação, respostas e indicadores administrativos.
+
+## 3. Tipos de usuário
 
 ### Colaborador
 
@@ -46,7 +234,7 @@ Usuário com acesso amplo ao portal administrativo, incluindo cadastros, pesquis
 
 Usuário com foco na administração de pesquisas, campanhas, respostas e indicadores.
 
-## 3. Página inicial
+## 4. Página inicial
 
 A página inicial apresenta os módulos disponíveis para o usuário.
 
@@ -58,7 +246,7 @@ Principais opções:
 
 Caso uma opção não apareça, significa que o perfil logado não possui acesso àquele módulo.
 
-## 4. Login e sessão
+## 5. Login e sessão
 
 O sistema utiliza login para áreas protegidas.
 
@@ -66,7 +254,7 @@ Ao acessar uma tela protegida, o usuário é direcionado para a página de login
 
 Na área administrativa, o botão de sair fica no menu lateral, junto ao nome e e-mail do usuário.
 
-## 5. Módulo de solicitações
+## 6. Módulo de solicitações
 
 O módulo de solicitações concentra os processos de admissão e demissão.
 
@@ -80,7 +268,7 @@ Nesta tela o usuário encontra três caminhos:
 - **Requisição de vaga**: criação de uma nova solicitação de admissão.
 - **Demissão**: criação de uma solicitação de desligamento.
 
-## 6. Requisição de vaga
+## 7. Requisição de vaga
 
 Endereço: `/solicitacoes/admissao`
 
@@ -109,7 +297,7 @@ Depois do envio, a solicitação entra no fluxo de aprovação. O usuário pode 
 - Em caso de substituição, informe corretamente o colaborador substituído.
 - Revise quantidade de vagas, turno e regime antes de enviar.
 
-## 7. Solicitação de desligamento
+## 8. Solicitação de desligamento
 
 Endereço: `/solicitacoes/demissao`
 
@@ -134,7 +322,7 @@ Após o envio, a solicitação segue para aprovação. Dependendo do resultado, 
 
 Solicitações de desligamento lidam com informação sensível. Preencha apenas dados necessários e mantenha a justificativa profissional.
 
-## 8. Minhas solicitações
+## 9. Minhas solicitações
 
 Endereço: `/my-requests`
 
@@ -156,7 +344,7 @@ Status comuns:
 - **Finalizado**: concluído operacionalmente pelo RH;
 - **Em análise**: solicitação de desligamento em avaliação.
 
-## 9. Aprovações
+## 10. Aprovações
 
 Endereço administrativo: `/admin/approvals`
 
@@ -187,7 +375,7 @@ Na fila de aprovação é possível:
 4. Informe um comentário ou justificativa quando solicitado.
 5. Confirme a decisão.
 
-## 10. Portal administrativo
+## 11. Portal administrativo
 
 Endereço: `/admin`
 
@@ -203,7 +391,7 @@ O menu lateral pode exibir:
 
 As opções variam conforme o perfil.
 
-## 11. Início administrativo
+## 12. Início administrativo
 
 Endereço: `/admin`
 
@@ -218,7 +406,7 @@ Pode apresentar atalhos para:
 - cadastros;
 - controle de acesso.
 
-## 12. Dashboard administrativo
+## 13. Dashboard administrativo
 
 Endereço: `/admin/dashboard`
 
@@ -230,7 +418,7 @@ Pode conter atalhos para:
 - KPIs de admissão;
 - visões consolidadas do ambiente administrativo.
 
-## 13. Dashboard de admissão
+## 14. Dashboard de admissão
 
 Endereço: `/admin/dashboard/admissao`
 
@@ -246,7 +434,7 @@ Informações acompanhadas:
 
 Use esta tela para entender gargalos, volume de demandas e tempo de atendimento.
 
-## 14. Dashboard de pesquisas
+## 15. Dashboard de pesquisas
 
 Endereço: `/admin/dashboard/pesquisas`
 
@@ -259,7 +447,7 @@ Informações acompanhadas:
 - fluxo de respostas;
 - atalhos para gestão e análise.
 
-## 15. Solicitações administrativas
+## 16. Solicitações administrativas
 
 Endereço: `/admin/requests`
 
@@ -277,7 +465,7 @@ Recursos disponíveis:
 - finalizar admissões quando o processo estiver completo;
 - rejeitar desligamentos após análise, quando aplicável.
 
-## 16. Solicitações de admissão
+## 17. Solicitações de admissão
 
 Endereço: `/admin/admission-requests`
 
@@ -298,7 +486,7 @@ O RH pode:
 
 Quando uma solicitação de admissão está aprovada, o RH pode registrar candidatos contratados. O sistema controla a quantidade de posições disponíveis e cria o vínculo do colaborador contratado quando aplicável.
 
-## 17. Checklist de admissão
+## 18. Checklist de admissão
 
 Endereço: `/admin/admission-checklist`
 
@@ -314,7 +502,7 @@ Permite:
 
 O checklist configurado é usado no acompanhamento das admissões aprovadas.
 
-## 18. Solicitações de demissão
+## 19. Solicitações de demissão
 
 Endereço: `/admin/dismissal-requests`
 
@@ -329,7 +517,7 @@ O RH pode:
 - acompanhar checklist;
 - registrar rejeição operacional após aprovação, quando necessário.
 
-## 19. Checklist de demissão
+## 20. Checklist de demissão
 
 Endereço: `/admin/dismissal-checklist`
 
@@ -345,7 +533,7 @@ Permite:
 
 Esse checklist ajuda o RH a controlar atividades como documentação, devoluções, comunicações internas e encerramentos operacionais.
 
-## 20. Departamentos
+## 21. Departamentos
 
 Endereço: `/admin/departments`
 
@@ -360,7 +548,7 @@ Permite:
 
 Departamentos ativos são usados em pesquisas, relatórios e cadastros relacionados.
 
-## 21. Cargos
+## 22. Cargos
 
 Endereço: `/admin/job-titles`
 
@@ -375,7 +563,7 @@ Permite:
 
 Cargos ativos podem ser usados em pesquisas, solicitações e agrupamentos de indicadores.
 
-## 22. Pesquisas
+## 23. Pesquisas
 
 Endereço: `/admin/surveys`
 
@@ -402,7 +590,7 @@ Recursos disponíveis:
 
 Depois disso, acesse os detalhes para cadastrar perguntas e publicar uma campanha.
 
-## 23. Detalhe da pesquisa
+## 24. Detalhe da pesquisa
 
 Endereço: `/admin/surveys/:surveyId`
 
@@ -438,7 +626,7 @@ Para publicar, a pesquisa precisa ter pelo menos uma pergunta ativa. Na publica�
 
 Após publicada, a campanha aparece na área de pesquisas para participação.
 
-## 24. Respostas de campanha
+## 25. Respostas de campanha
 
 Endereço: `/admin/campaigns/:campaignId/responses`
 
@@ -454,7 +642,7 @@ Pode apresentar:
 
 Em campanhas anônimas, a identificação individual do participante não deve ser exibida como informação pessoal.
 
-## 25. KPIs de campanha
+## 26. KPIs de campanha
 
 Endereço: `/admin/campaigns/:campaignId/kpis`
 
@@ -468,7 +656,7 @@ Pode apresentar:
 - distribuição de respostas;
 - leitura gerencial da campanha.
 
-## 26. Pesquisas para colaboradores
+## 27. Pesquisas para colaboradores
 
 Endereço: `/pesquisas`
 
@@ -481,7 +669,7 @@ Mostra:
 - período de participação;
 - botão para responder campanhas disponíveis.
 
-## 27. Responder pesquisa
+## 28. Responder pesquisa
 
 Endereço: `/campaigns/:campaignId`
 
@@ -502,13 +690,13 @@ Ao concluir, o participante envia as respostas e é direcionado para a tela de a
 - Observe se a campanha permite rascunho ou exige envio em uma única sessão.
 - Em campanhas anônimas, as respostas são tratadas sem identificação pessoal direta.
 
-## 28. Tela de agradecimento
+## 29. Tela de agradecimento
 
 Endereço: `/campaigns/:campaignId/thank-you`
 
 Confirma que a participação foi registrada com sucesso e oferece retorno para a lista de pesquisas.
 
-## 29. Delegação de acesso
+## 30. Delegação de acesso
 
 Endereço: `/admin/access-control`
 
@@ -523,7 +711,7 @@ Uso típico:
 - alterar perfil quando necessário;
 - salvar a atualização.
 
-## 30. Segurança e privacidade para usuários
+## 31. Segurança e privacidade para usuários
 
 Recomendações:
 
@@ -533,7 +721,7 @@ Recomendações:
 - em solicitações de desligamento, escreva justificativas de forma objetiva e profissional;
 - em pesquisas, respeite o propósito da campanha e evite incluir dados pessoais desnecessários em respostas abertas.
 
-## 31. Dúvidas frequentes
+## 32. Dúvidas frequentes
 
 ### Não consigo ver um módulo. O que fazer?
 
@@ -554,4 +742,3 @@ As aprovações aparecem conforme o papel do usuário e a etapa atual do fluxo. 
 ### O checklist pode ser alterado?
 
 Sim. Usuários administrativos autorizados podem alterar os checklists de admissão e demissão nas telas específicas.
-

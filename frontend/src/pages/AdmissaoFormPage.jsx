@@ -276,7 +276,7 @@ export function AdmissaoFormPage() {
             </svg>
             Solicitações
           </Link>
-          <span className="collab-brand">RH Operacional</span>
+          <span className="collab-brand">Recursos Humanos</span>
         </div>
       </header>
 

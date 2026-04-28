@@ -66,7 +66,7 @@ export function HomePage() {
         <div className="home-header-inner">
           <span className="home-brand">
             <img src="/wasion-logo.png" alt="Wasion América" />
-            <span>Sistema de Recursos Humanos</span>
+            <span>Recursos Humanos</span>
           </span>
           <Link className="home-admin-link" to="/admin/login" state={{ returnTo: '/admin' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -152,7 +152,7 @@ export function HomePage() {
 
       <footer className="home-footer">
         <div className="home-footer-inner">
-          <span>Sistema de Recursos Humanos</span>
+          <span>Recursos Humanos</span>
           <nav aria-label="Links rápidos da home">
             <Link to="/pesquisas">Pesquisas</Link>
             <Link to="/solicitacoes">Solicitações</Link>

@@ -221,7 +221,7 @@ export function DemissaoFormPage() {
             </svg>
             Solicitações
           </Link>
-          <span className="collab-brand">RH Operacional</span>
+          <span className="collab-brand">Recursos Humanos</span>
         </div>
       </header>
 

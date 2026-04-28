@@ -12,7 +12,7 @@ export function RequestsPage() {
             </svg>
             Início
           </Link>
-          <span className="collab-brand">RH Operacional</span>
+          <span className="collab-brand">Recursos Humanos</span>
         </div>
       </header>
 

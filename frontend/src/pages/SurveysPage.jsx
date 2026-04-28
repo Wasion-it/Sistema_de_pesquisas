@@ -75,7 +75,7 @@ export function SurveysPage() {
             </svg>
             Início
           </Link>
-          <span className="collab-brand">Sistema de Recursos Humanos</span>
+          <span className="collab-brand">Recursos Humanos</span>
         </div>
       </header>
 

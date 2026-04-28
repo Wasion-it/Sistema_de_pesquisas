@@ -29,7 +29,7 @@ export function AdminLayout() {
     <main className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand-block">
-          <div className="admin-brand-logo">RH</div>
+          <img className="admin-brand-logo" src="/wasion-logo.png" alt="Wasion América" />
           <span className="admin-brand-name">Sistema de Recursos Humanos</span>
         </div>
 

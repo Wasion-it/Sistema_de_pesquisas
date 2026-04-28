@@ -29,11 +29,13 @@ on:
         description: 'Diretório de deploy no servidor'
         required: true
         type: string
+
     secrets:
       DEPLOY_PROD_SSH_KEY:
         required: true
       LDAP_BIND_PASSWORD:
         required: true
+
     outputs:
       deploy_result:
         description: 'Resultado do deploy'
@@ -52,6 +54,7 @@ jobs:
     environment: ${{ inputs.environment }}
     needs: environment
     timeout-minutes: 30
+
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
@@ -87,6 +90,7 @@ jobs:
         shell: bash
         run: |
           rm -f deploy-package/deploy-source.tar.gz
+
           tar -czf deploy-package/deploy-source.tar.gz \
             --exclude=.git \
             --exclude=.venv \
@@ -111,6 +115,7 @@ jobs:
 
             mkdir -p "${{ inputs.deploy_path }}"
             cd "${{ inputs.deploy_path }}"
+
             backup_dir=".deploy-backup"
 
             rm -rf "$backup_dir"
@@ -148,8 +153,13 @@ jobs:
           script: |
             set -e
 
+            STACK_NAME="sistema-de-pesquisas"
+            BACKEND_IMAGE="sistema-de-pesquisas-backend:latest"
+            FRONTEND_IMAGE="sistema-de-pesquisas-frontend:latest"
+
             mkdir -p "${{ inputs.deploy_path }}"
             cd "${{ inputs.deploy_path }}"
+
             tar -xzf deploy-source.tar.gz
 
             mkdir -p backend
@@ -174,9 +184,38 @@ jobs:
               exit 1
             fi
 
-            docker compose -f docker-compose.yml build backend frontend
-            docker stack deploy --with-registry-auth --prune -c docker-compose.yml sistema-de-pesquisas
-            docker stack services sistema-de-pesquisas
+            echo "Construindo imagem do backend sem Docker Compose..."
+            docker build --no-cache \
+              --target backend \
+              -t "$BACKEND_IMAGE" \
+              -f Dockerfile \
+              .
+
+            echo "Construindo imagem do frontend sem Docker Compose..."
+            docker build --no-cache \
+              --target frontend \
+              --build-arg VITE_API_URL=/api/v1 \
+              -t "$FRONTEND_IMAGE" \
+              -f Dockerfile \
+              .
+
+            echo "Publicando stack no Docker Swarm..."
+            docker stack deploy \
+              --with-registry-auth \
+              --prune \
+              -c docker-compose.yml \
+              "$STACK_NAME"
+
+            echo "Forçando recriação dos serviços backend e frontend..."
+            docker service update --force "${STACK_NAME}_backend"
+            docker service update --force "${STACK_NAME}_frontend"
+
+            echo "Serviços da stack:"
+            docker stack services "$STACK_NAME"
+
+            echo "Validando labels das imagens:"
+            docker image inspect "$BACKEND_IMAGE" --format '{{json .Config.Labels}}'
+            docker image inspect "$FRONTEND_IMAGE" --format '{{json .Config.Labels}}'
 
       - name: Resumo do deploy
         shell: bash
@@ -187,4 +226,5 @@ jobs:
             echo "- Ambiente: ${{ needs.environment.outputs.environment }}"
             echo "- Servidor: ${{ inputs.deploy_host }}"
             echo "- Caminho: ${{ inputs.deploy_path }}"
+            echo "- Stack: sistema-de-pesquisas"
           } >> "$GITHUB_STEP_SUMMARY"

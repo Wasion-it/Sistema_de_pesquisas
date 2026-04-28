@@ -1,135 +1,205 @@
 # Sistema de Recursos Humanos
 
-Estrutura inicial simples com backend em FastAPI e frontend em React.
+Portal web para centralizar processos de Recursos Humanos, com fluxos de admissão, desligamento, aprovações, checklists operacionais, pesquisas internas, campanhas e dashboards administrativos.
 
-## Estrutura
+O projeto é composto por uma API em FastAPI e uma interface em React + Vite.
 
-- `backend/`: API HTTP com organização por camadas simples.
-- `frontend/`: aplicação React usando Vite.
+## Módulos
+
+- **Solicitações de admissão**: abertura de requisições de vaga, aprovação por fluxo, contratação de candidatos e finalização.
+- **Solicitações de demissão**: criação de pedidos de desligamento, aprovação, acompanhamento e checklist.
+- **Aprovações**: fila para gestores, diretoria e RH decidirem etapas pendentes.
+- **Checklists de RH**: configuração e acompanhamento de etapas operacionais de admissão e demissão.
+- **Pesquisas internas**: criação de pesquisas, dimensões, perguntas, campanhas e publicação.
+- **Respostas e KPIs**: acompanhamento de participação, respostas e indicadores de campanhas.
+- **Cadastros auxiliares**: departamentos e cargos.
+- **Controle de acesso**: perfis administrativos e integração opcional com LDAP/Active Directory.
+
+## Stack
+
+| Camada | Tecnologia |
+| --- | --- |
+| Frontend | React, Vite, React Router |
+| Backend | FastAPI, Pydantic, SQLAlchemy |
+| Autenticação | JWT, login local e LDAP opcional |
+| Banco local | SQLite |
+| Migrations | Alembic |
+| Deploy | Docker, Docker Swarm, Traefik, GitHub Actions |
+
+## Estrutura do projeto
 
 ```text
 backend/
-	app/
-		api/
-			v1/
-				endpoints/
-				router.py
-		core/
-		db/
-		models/
-		repositories/
-		schemas/
-		seeds/
-		services/
-		main.py
-	seed.py
-	tests/
+  app/
+    api/              # Rotas, dependências e endpoints HTTP
+    core/             # Configuração e segurança
+    db/               # Engine, sessão e base ORM
+    models/           # Modelos SQLAlchemy
+    schemas/          # Contratos Pydantic
+    seeds/            # Dados iniciais
+    services/         # Serviços de domínio e integrações
+    main.py           # Aplicação FastAPI
+  alembic/            # Migrations
+  requirements.txt
+  seed.py
 
 frontend/
-	src/
-		components/
-		pages/
-		services/
-		styles/
-		App.jsx
-		main.jsx
+  public/
+  src/
+    auth/             # Sessão e autenticação no frontend
+    components/       # Componentes compartilhados
+    pages/            # Telas da aplicação
+    services/         # Clientes HTTP
+    styles/           # CSS global
+    utils/            # Utilitários
+    App.jsx           # Rotas
+    main.jsx
+  package.json
 ```
 
-## Backend
+## Documentação
+
+- [Documentação do usuário](DOCUMENTACAO_USUARIO.md): guia funcional das telas, perfis e fluxos.
+- [Documentação de arquitetura](DOCUMENTACAO_ARQUITETURA.md): visão técnica da arquitetura, módulos, API e decisões.
+- [Arquitetura resumida](ARCHITECTURE.md): registro arquitetural original do projeto.
+- [Documentação técnica RH](DOCUMENTACAO_TECNICA_RH.md): detalhes técnicos e regras dos fluxos de RH.
+
+## Pré-requisitos
+
+- Python 3.11 ou superior;
+- Node.js 20 ou superior;
+- npm;
+- Git;
+- Docker, apenas para execução/deploy em container.
+
+## Como rodar localmente
+
+### 1. Backend
 
 ```bash
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
+python seed.py
 uvicorn app.main:app --reload
 ```
 
-A API ficará disponível em `http://127.0.0.1:8000`.
+A API ficará disponível em:
+
+```text
+http://127.0.0.1:8000
+```
+
+Documentação interativa da API:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### 2. Frontend
+
+Em outro terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+A interface ficará disponível em:
+
+```text
+http://127.0.0.1:5173
+```
 
 ## Banco de dados local
 
-O backend agora possui uma base inicial em SQLite para o MVP corporativo de pesquisas de RH.
+O ambiente local usa SQLite. Ao rodar o seed, o arquivo de banco é criado em:
 
-- Configuração do banco: `backend/app/core/config.py`
-- Base declarativa e registro dos modelos: `backend/app/db/base.py`
-- Engine, session local e criação das tabelas: `backend/app/db/session.py`
-- Modelos do domínio: `backend/app/models/`
-- Seed inicial: `backend/app/seeds/seed_initial.py`
-- Script simples para seed: `backend/seed.py`
+```text
+backend/rh_surveys.db
+```
 
-### Cobertura inicial do domínio
+O seed inicial inclui:
 
-- autenticação e usuários
-- colaboradores
-- departamentos
-- cargos
-- pesquisas e versões
-- dimensões e perguntas
-- opções de resposta
-- campanhas e público-alvo congelado
-- respostas e itens de resposta
-- auditoria básica
+- departamentos e cargos;
+- usuários de desenvolvimento;
+- colaboradores vinculados;
+- pesquisa publicada;
+- dimensões, perguntas e opções;
+- campanha ativa;
+- respostas de exemplo;
+- dados mínimos para fluxos administrativos.
 
-### Seed inicial incluído
+## Credenciais de desenvolvimento
 
-- 3 departamentos
-- 5 cargos
-- 5 usuários com perfis `RH_ADMIN`, `RH_ANALISTA`, `GESTOR` e `COLABORADOR`
-- 5 colaboradores vinculados
-- 1 pesquisa GPTW
-- 1 versão publicada
-- 4 dimensões
-- 6 perguntas
-- 3 opções de resposta para pergunta `SINGLE_CHOICE`
-- 1 campanha ativa
-- 3 registros de público-alvo
-- 1 resposta em rascunho com 2 itens respondidos
+Usuários seedados para testes locais:
 
-### Login administrativo local
+| Perfil | E-mail | Senha |
+| --- | --- | --- |
+| RH Admin | `rh.admin@example.com` | `AdminRH123!` |
+| RH Analista | `rh.analyst@example.com` | `AnalistaRH123!` |
+| Suporte TI | `ti.suporte@example.com` | `SuporteTI123!` |
 
-O portal administrativo agora usa autenticação JWT no backend.
+## Principais rotas
 
-- Endpoint de login: `POST /api/v1/auth/login`
-- Endpoint de sessão autenticada: `GET /api/v1/auth/me`
-- Perfis com acesso ao portal administrativo: `RH_ADMIN` e `RH_ANALISTA`
+### Interface
 
-Credenciais de desenvolvimento já seedadas:
+```text
+/                         Home
+/solicitacoes             Solicitações de admissão e demissão
+/my-requests              Minhas solicitações
+/pesquisas                Campanhas de pesquisa
+/admin                    Portal administrativo
+/admin/approvals          Aprovações
+/admin/surveys            Gestão de pesquisas
+/admin/requests           Solicitações administrativas
+/admin/access-control     Controle de acesso
+```
 
-- `rh.admin@example.com` / `AdminRH123!`
-- `rh.analyst@example.com` / `AnalistaRH123!`
-- `ti.suporte@example.com` / `SuporteTI123!`
+### API
 
-### Login corporativo via LDAP para RH
+```text
+GET  /api/v1/health
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
+GET  /api/v1/campaigns/published
+GET  /api/v1/admin/dashboard
+GET  /api/v1/admin/surveys
+GET  /api/v1/admin/hr/admission-requests
+GET  /api/v1/admin/hr/dismissal-requests
+GET  /api/v1/admin/hr/approvals/admission
+GET  /api/v1/admin/hr/approvals/dismissal
+```
 
-O backend agora pode autenticar perfis de RH usando LDAP/Active Directory, enquanto a autorizacao continua baseada no usuario ja cadastrado no banco.
+## Autenticação e permissões
 
-Comportamento:
+O portal usa JWT para sessão administrativa. A autorização é baseada em perfis e módulos.
 
-- perfis `RH_ADMIN` e `RH_ANALISTA` usam LDAP quando `LDAP_ENABLED=true`
-- usuários de apoio interno continuam usando senha local do banco
-- o usuario precisa continuar existindo na tabela `users` para manter papel, ativo/inativo e auditoria
+Perfis principais:
 
-Variaveis de ambiente suportadas no backend:
+- `RH_ADMIN`;
+- `RH_ANALISTA`;
+- `RH_PESQUISAS`;
+- `GESTOR`;
+- `DIRETOR_RAVI`;
+- `COLABORADOR`.
 
-- `LDAP_ENABLED=false`
-- `LDAP_SERVER_URI=ldap://servidor.corporativo.local:389`
-- `LDAP_USE_SSL=false`
-- `LDAP_START_TLS=true`
-- `LDAP_VALIDATE_CERTIFICATES=true`
-- `LDAP_BIND_DN=CN=svc_ldap,OU=Servicos,DC=empresa,DC=local`
-- `LDAP_BIND_PASSWORD=sua-senha-de-servico`
-- `LDAP_USER_BASE_DN=OU=Usuarios,DC=empresa,DC=local`
-- `LDAP_USER_FILTER=(mail={username})`
-- `LDAP_USER_DN_TEMPLATE=`
-- `LDAP_TIMEOUT_SECONDS=5`
+Módulos de acesso:
 
-Existem dois modos de localizar o usuario:
+- `DASHBOARD`;
+- `ADMISSION`;
+- `DISMISSAL`;
+- `SURVEYS`;
+- `APPROVALS`;
+- `ACCESS_CONTROL`.
 
-- busca + bind: informe `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_USER_BASE_DN` e `LDAP_USER_FILTER`
-- bind direto: informe `LDAP_USER_DN_TEMPLATE`, por exemplo `CN={username},OU=Usuarios,DC=empresa,DC=local`
+## LDAP/Active Directory
 
-Exemplo de `.env` em `backend/.env`:
+O backend pode autenticar usuários de RH via LDAP/Active Directory quando `LDAP_ENABLED=true`. Mesmo nesse modo, o usuário precisa existir no banco para manter papel, status e auditoria.
+
+Exemplo de `backend/.env`:
 
 ```env
 LDAP_ENABLED=true
@@ -144,102 +214,96 @@ LDAP_USER_FILTER=(mail={username})
 LDAP_TIMEOUT_SECONDS=5
 ```
 
-### Primeiras telas do portal administrativo
+## Scripts úteis
 
-O frontend administrativo agora possui uma base real protegida por JWT:
-
-- `/admin`: dashboard inicial com indicadores do ambiente
-- `/admin/surveys`: tela inicial para gerenciar pesquisas
-- formulario real para criar novas pesquisas com versao inicial e dimensoes opcionais
-
-Dados exibidos no portal:
-
-- total de pesquisas
-- versoes publicadas
-- campanhas ativas
-- respostas em rascunho e enviadas
-- listagem de pesquisas com versao atual, perguntas, dimensoes e campanha mais recente
-
-### Rodando o banco localmente
+### Frontend
 
 ```bash
-cd backend
-.venv\Scripts\activate
-python seed.py
-uvicorn app.main:app --reload
-```
-
-O arquivo SQLite será criado em `backend/rh_surveys.db`.
-
-## Frontend
-
-```bash
-cd frontend
-npm install
 npm run dev
+npm run build
+npm run preview
 ```
 
-A interface ficará disponível em `http://127.0.0.1:5173` no ambiente de desenvolvimento e via Traefik no domínio `https://systemrh.wasion.com.br` no deploy.
+### Backend
+
+```bash
+uvicorn app.main:app --reload
+python seed.py
+alembic upgrade head
+```
+
+## Docker
+
+O projeto possui `Dockerfile` e `docker-compose.yml` para execução em container e deploy.
+
+```bash
+docker compose up --build
+```
+
+Em produção, a aplicação é publicada via Docker Swarm e exposta pelo Traefik no domínio:
+
+```text
+https://systemrh.wasion.com.br
+```
 
 ## Deploy via GitHub Actions
 
-O workflow de produção agora faz deploy direto no servidor via SSH e publica a stack com `docker stack deploy`, porque o Traefik está operando com `providers.swarm=true`.
+O workflow de produção faz deploy por SSH e publica a stack com `docker stack deploy`.
 
-## Guia de configuração da chave SSH
+Secrets/variáveis esperados:
 
-1. No servidor de produção, entre no usuário que vai receber o deploy e crie a pasta de SSH se ela ainda não existir:
+- `DEPLOY_PROD_HOST`;
+- `DEPLOY_PROD_USER`;
+- `DEPLOY_PROD_PATH`;
+- `DEPLOY_PROD_SSH_KEY`.
+
+O servidor precisa ter:
+
+- Git;
+- Docker;
+- Docker Swarm ativo;
+- rede externa `apps` criada;
+- Traefik operando no mesmo cluster.
+
+### Chave SSH para deploy
+
+No servidor, autorize a chave pública do usuário de deploy:
 
 ```bash
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
-```
-
-2. Gere um par de chaves. O ideal é fazer isso em uma máquina segura que você controla, como sua máquina local ou um host administrativo:
-
-```bash
-ssh-keygen -t ed25519 -C "github-actions-deploy"
-```
-
-3. Copie a chave pública para o servidor e autorize o acesso do GitHub Actions:
-
-```bash
 cat ~/.ssh/id_ed25519.pub
 ```
 
-Adicione o conteúdo retornado no arquivo `~/.ssh/authorized_keys` do usuário do servidor.
-
-4. Pegue a chave privada gerada no passo anterior e cadastre no GitHub em `Settings > Secrets and variables > Actions > New repository secret`.
-
-5. Crie o secret `DEPLOY_PROD_SSH_KEY` com o conteúdo completo da chave privada.
-
-6. Garanta que os secrets e variáveis do workflow estejam preenchidos:
-
-- `DEPLOY_PROD_HOST`: host do servidor de produção.
-- `DEPLOY_PROD_USER`: usuário SSH do servidor.
-- `DEPLOY_PROD_PATH`: diretório onde o projeto ficará no servidor.
-- `DEPLOY_PROD_SSH_KEY`: chave privada SSH usada pelo deploy.
-
-O servidor precisa ter `git` e `docker compose` disponíveis, além de acesso ao diretório informado em `DEPLOY_PROD_PATH`.
-O acesso público da aplicação é feito pelo Traefik, usando o domínio `systemrh.wasion.com.br` em HTTPS. Sem certificado customizado, o Traefik pode servir o certificado padrão e o navegador pode exibir aviso de segurança.
-
-7. Garanta que o servidor esteja com Swarm ativo e que a rede externa `apps` exista no mesmo cluster onde o Traefik roda.
-
-8. Crie ou ajuste o DNS do domínio `systemrh.wasion.com.br` para apontar para o host onde o Traefik está rodando. Em geral isso é feito com um registro `A` para o IP público do proxy ou um `CNAME` para o hostname que resolve esse proxy.
-
-9. Execute o workflow `Publicação de produção` em `Actions` e confirme que o job de deploy consegue publicar a stack no Swarm.
+Adicione a chave pública em `~/.ssh/authorized_keys`. A chave privada correspondente deve ser cadastrada no GitHub como `DEPLOY_PROD_SSH_KEY`.
 
 ## Depuração no VS Code
 
-Use as configurações em `.vscode/launch.json`:
+O projeto inclui configurações em `.vscode/launch.json`:
 
-- `Backend: FastAPI`: inicia e depura a API.
-- `Frontend: Vite`: sobe o servidor React.
-- `Frontend: Navegador`: abre o app no navegador com suporte a debug.
-- `Full Stack: FastAPI + React`: inicia backend, frontend e navegador juntos.
+- `Backend: FastAPI`;
+- `Frontend: Vite`;
+- `Frontend: Navegador`;
+- `Full Stack: FastAPI + React`.
 
-## Próximos passos
+## Estado atual
 
-1. Adicionar autenticação real com hash seguro e emissão de token.
-2. Criar migrations com Alembic pensando na futura migração para MySQL.
-3. Expor CRUD inicial de pesquisas, campanhas e respostas no backend.
-4. Conectar o frontend aos fluxos reais de login, listagem de campanhas e resposta da pesquisa.
+O sistema já possui uma base funcional para:
+
+- portal administrativo protegido;
+- login com JWT;
+- integração LDAP opcional;
+- solicitações de admissão e demissão;
+- aprovação por etapas;
+- checklists configuráveis;
+- gestão de pesquisas;
+- campanhas públicas;
+- respostas e indicadores administrativos.
+
+Próximas melhorias recomendadas:
+
+- ampliar cobertura de testes automatizados;
+- dividir endpoints administrativos por domínio;
+- consolidar migrations Alembic como fluxo principal de schema;
+- evoluir observabilidade e logs;
+- revisar política de expiração e renovação de sessão.

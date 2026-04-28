@@ -7,8 +7,8 @@ export function AdminLoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, isLoading, signIn } = useAuth()
-  const [login, setLogin] = useState('rh.admin')
-  const [password, setPassword] = useState('AdminRH123!')
+  const [login, setLogin] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -386,19 +386,9 @@ export function AdminLoginPage() {
               borderTop: '1px solid #e2e8f0',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
             }}
           >
-            <code
-              style={{
-                fontSize: 11,
-                color: '#64748b',
-                fontFamily: '"Courier New", monospace',
-              }}
-            >
-              rh.admin / AdminRH123!
-            </code>
-
             <Link
               to="/"
               style={{

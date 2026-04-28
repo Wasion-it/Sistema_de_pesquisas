@@ -23,6 +23,7 @@ O projeto é composto por uma API em FastAPI e uma interface em React + Vite.
 | Backend | FastAPI, Pydantic, SQLAlchemy |
 | Autenticação | JWT, login local e LDAP opcional |
 | Banco local | SQLite |
+| Banco no deploy | PostgreSQL 16 |
 | Migrations | Alembic |
 | Deploy | Docker, Docker Swarm, Traefik, GitHub Actions |
 
@@ -61,6 +62,7 @@ frontend/
 
 - [Documentação do usuário](DOCUMENTACAO_USUARIO.md): guia funcional das telas, perfis e fluxos.
 - [Documentação de arquitetura](DOCUMENTACAO_ARQUITETURA.md): visão técnica da arquitetura, módulos, API e decisões.
+- [Desenho da arquitetura](DESENHO_ARQUITETURA.md): diagramas Mermaid com visão geral, deploy, camadas e fluxos.
 - [Arquitetura resumida](ARCHITECTURE.md): registro arquitetural original do projeto.
 - [Documentação técnica RH](DOCUMENTACAO_TECNICA_RH.md): detalhes técnicos e regras dos fluxos de RH.
 
@@ -131,6 +133,24 @@ O seed inicial inclui:
 - campanha ativa;
 - respostas de exemplo;
 - dados mínimos para fluxos administrativos.
+
+## Banco de dados no deploy
+
+No deploy, o `docker-compose.yml` sobe um serviço PostgreSQL 16 com volume persistente `postgres-data`.
+
+O backend recebe:
+
+```text
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
+```
+
+Antes de iniciar a API, o container executa as migrations:
+
+```bash
+python -m alembic upgrade head
+```
+
+Depois disso, o Uvicorn sobe a aplicação FastAPI.
 
 ## Credenciais de desenvolvimento
 
@@ -240,7 +260,7 @@ O projeto possui `Dockerfile` e `docker-compose.yml` para execução em containe
 docker compose up --build
 ```
 
-Em produção, a aplicação é publicada via Docker Swarm e exposta pelo Traefik no domínio:
+Em produção, a stack inclui frontend, backend e PostgreSQL. A aplicação é publicada via Docker Swarm e exposta pelo Traefik no domínio:
 
 ```text
 https://systemrh.wasion.com.br
@@ -263,7 +283,8 @@ O servidor precisa ter:
 - Docker;
 - Docker Swarm ativo;
 - rede externa `apps` criada;
-- Traefik operando no mesmo cluster.
+- Traefik operando no mesmo cluster;
+- armazenamento persistente para o volume `postgres-data`.
 
 ### Chave SSH para deploy
 
@@ -304,6 +325,6 @@ Próximas melhorias recomendadas:
 
 - ampliar cobertura de testes automatizados;
 - dividir endpoints administrativos por domínio;
-- consolidar migrations Alembic como fluxo principal de schema;
+- manter migrations Alembic como fluxo oficial de schema no deploy;
 - evoluir observabilidade e logs;
 - revisar política de expiração e renovação de sessão.

@@ -14,7 +14,8 @@ Usuário
   -> Frontend React
   -> API REST FastAPI
   -> SQLAlchemy ORM
-  -> Banco SQLite
+  -> SQLite em desenvolvimento local
+  -> PostgreSQL no deploy
 ```
 
 ## 2. Tecnologias principais
@@ -38,9 +39,10 @@ Usuário
 
 ### Banco de dados
 
-- SQLite no ambiente atual;
+- SQLite como padrão de desenvolvimento local;
+- PostgreSQL 16 no deploy via Docker Swarm;
 - modelos ORM centralizados em `backend/app/models`;
-- criação e ajustes de tabelas executados no startup;
+- migrations Alembic aplicadas no startup do backend em produção;
 - seed inicial para ambiente local.
 
 ### Deploy
@@ -48,6 +50,7 @@ Usuário
 - Dockerfile na raiz;
 - `docker-compose.yml`;
 - Nginx para servir frontend em container;
+- PostgreSQL 16 em container com volume persistente;
 - GitHub Actions para deploy em produção;
 - publicação em Docker Swarm com Traefik.
 
@@ -178,7 +181,7 @@ Responsabilidades:
 
 - criar a aplicação FastAPI;
 - configurar CORS;
-- executar inicialização do banco;
+- executar rotinas de inicialização compatíveis com o ambiente;
 - sincronizar usuários LDAP no startup quando configurado;
 - registrar o roteador versionado.
 
@@ -649,15 +652,28 @@ Exemplos de eventos auditados:
 
 ## 13. Persistência e schema
 
-O banco local padrão é SQLite.
+O banco local padrão é SQLite, configurado por `DATABASE_URL` com valor padrão `sqlite:///./rh_surveys.db`.
 
-No startup, o backend executa inicialização de tabelas. O projeto também possui Alembic configurado, com migrations iniciais.
+No deploy, o `docker-compose.yml` sobe um serviço PostgreSQL 16 e configura o backend com:
+
+```text
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@postgres:5432/sistema_de_pesquisas
+```
+
+Antes de iniciar a API em produção, o container do backend executa:
+
+```bash
+python -m alembic upgrade head
+```
+
+Assim, o schema do banco de produção é preparado pelas migrations Alembic antes do Uvicorn subir.
 
 Pontos importantes:
 
 - os modelos ORM são a referência principal do domínio;
 - schemas Pydantic são a referência dos contratos HTTP;
-- a evolução futura deve priorizar migrations versionadas, reduzindo ajustes implícitos no startup.
+- migrations Alembic são o caminho de evolução do schema no deploy;
+- as rotinas de compatibilidade executadas no startup ajudam no ambiente local e em bases legadas, mas não substituem migrations em produção.
 
 ## 14. Integração LDAP
 
@@ -695,7 +711,7 @@ Categorias de configuração:
 - modo debug;
 - prefixo da API;
 - CORS;
-- banco de dados;
+- banco de dados via `DATABASE_URL`;
 - JWT;
 - LDAP.
 
@@ -732,6 +748,8 @@ O fluxo documentado no projeto usa:
 - SSH para servidor;
 - Docker;
 - Docker Swarm;
+- PostgreSQL 16 com volume `postgres-data`;
+- Alembic executado automaticamente antes da API;
 - Traefik;
 - domínio `systemrh.wasion.com.br`.
 
@@ -776,17 +794,20 @@ Trade-off:
 
 - páginas grandes podem acumular estado e regra de apresentação.
 
-### SQLite
+### SQLite local e PostgreSQL no deploy
 
 Motivo:
 
 - simplicidade local;
 - baixa fricção para MVP;
 - fácil seed e depuração.
+- banco PostgreSQL provisionado junto com a stack de produção;
+- migrations Alembic aplicadas automaticamente no deploy.
 
 Trade-off:
 
-- para produção corporativa, recomenda-se avaliar banco mais robusto e governança formal de migrations.
+- o ambiente local continua simples, mas produção depende da saúde do serviço PostgreSQL e do volume persistente;
+- mudanças de schema devem ser refletidas em migrations para manter o deploy reproduzível.
 
 ### JWT
 
@@ -814,7 +835,7 @@ Trade-off:
 
 - `admin.py` concentra muitas responsabilidades;
 - parte da lógica de negócio está próxima dos endpoints;
-- migrations devem substituir ajustes automáticos de schema;
+- rotinas automáticas de compatibilidade ainda existem no startup;
 - páginas administrativas podem crescer e precisar de decomposição;
 - testes automatizados ainda devem ser ampliados para fluxos críticos;
 - estratégia de sessão pode evoluir com refresh token, expiração mais refinada e políticas corporativas.
@@ -826,11 +847,12 @@ Prioridades sugeridas:
 - extrair serviços de aplicação para admissão, demissão e pesquisas;
 - dividir endpoints administrativos por domínio;
 - ampliar cobertura de testes dos fluxos de aprovação;
-- consolidar Alembic como caminho único para evolução de schema;
+- manter Alembic como caminho oficial de evolução de schema no deploy;
+- reduzir gradualmente ajustes automáticos de schema no startup;
 - fortalecer observabilidade com logs estruturados e métricas;
 - documentar contratos de API com exemplos de payload;
 - revisar política de expiração e renovação de sessão;
-- preparar banco relacional corporativo para produção, se o volume justificar.
+- revisar backup, retenção e restauração do volume PostgreSQL de produção.
 
 ## 21. Mapa rápido de responsabilidade
 
@@ -865,4 +887,3 @@ schemas/
 services/
   -> integrações e regras auxiliares
 ```
-

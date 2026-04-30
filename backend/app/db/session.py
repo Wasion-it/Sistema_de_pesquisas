@@ -270,27 +270,15 @@ def _ensure_admission_request_columns() -> None:
 
 
 def _ensure_admission_request_salary_table() -> None:
+    from app.models import AdmissionRequestSalary
+
     inspector = inspect(engine)
     if "admission_requests" not in inspector.get_table_names():
         return
 
-    statements = [
-        "CREATE TABLE IF NOT EXISTS admission_request_salaries ("
-        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-        "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-        "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-        "admission_request_id INTEGER NOT NULL, "
-        "salary_amount NUMERIC(12, 2) NOT NULL, "
-        "currency VARCHAR(3) NOT NULL DEFAULT 'BRL', "
-        "FOREIGN KEY(admission_request_id) REFERENCES admission_requests(id) ON DELETE CASCADE"
-        ")",
-        "CREATE UNIQUE INDEX IF NOT EXISTS ix_admission_request_salaries_admission_request_id "
-        "ON admission_request_salaries(admission_request_id)",
-    ]
-
-    with engine.begin() as connection:
-        for statement in statements:
-            connection.execute(text(statement))
+    AdmissionRequestSalary.__table__.create(bind=engine, checkfirst=True)
+    for index in AdmissionRequestSalary.__table__.indexes:
+        index.create(bind=engine, checkfirst=True)
 
 
 def _normalize_admission_request_statuses() -> None:
@@ -344,39 +332,23 @@ def _ensure_default_dismissal_checklist() -> None:
 
 
 def _ensure_approval_workflow_columns() -> None:
+    from app.models import ApprovalWorkflowStep, ApprovalWorkflowTemplate
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+
+    if "approval_workflow_templates" not in existing_tables:
+        ApprovalWorkflowTemplate.__table__.create(bind=engine, checkfirst=True)
+    if "approval_workflow_steps" not in existing_tables:
+        ApprovalWorkflowStep.__table__.create(bind=engine, checkfirst=True)
+
+    for table in (ApprovalWorkflowTemplate.__table__, ApprovalWorkflowStep.__table__):
+        for index in table.indexes:
+            index.create(bind=engine, checkfirst=True)
+
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
     statements: list[str] = []
-
-    if "approval_workflow_templates" not in existing_tables:
-        statements.append(
-            "CREATE TABLE IF NOT EXISTS approval_workflow_templates ("
-            "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-            "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-            "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-            "code VARCHAR(80) NOT NULL UNIQUE, "
-            "name VARCHAR(180) NOT NULL, "
-            "description TEXT, "
-            "request_kind VARCHAR(20) NOT NULL, "
-            "origin_group VARCHAR(30) NOT NULL, "
-            "is_active BOOLEAN NOT NULL DEFAULT 1"
-            ")"
-        )
-
-    if "approval_workflow_steps" not in existing_tables:
-        statements.append(
-            "CREATE TABLE IF NOT EXISTS approval_workflow_steps ("
-            "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-            "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-            "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-            "workflow_template_id INTEGER NOT NULL, "
-            "step_order INTEGER NOT NULL, "
-            "approver_role VARCHAR(30) NOT NULL, "
-            "approver_label VARCHAR(150) NOT NULL, "
-            "is_required BOOLEAN NOT NULL DEFAULT 1, "
-            "FOREIGN KEY(workflow_template_id) REFERENCES approval_workflow_templates(id) ON DELETE CASCADE"
-            ")"
-        )
 
     if "admission_requests" in existing_tables:
         existing_columns = {column["name"] for column in inspector.get_columns("admission_requests")}

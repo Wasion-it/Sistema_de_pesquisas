@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
@@ -295,6 +296,8 @@ class AdmissionRequestResponse(BaseModel):
     recruiter_user_id: int | None
     recruiter_user_name: str | None
     recruiter_user_email: str | None
+    vacancy_salary: Decimal | None
+    vacancy_salary_currency: str | None
     cargo: str
     setor: str
     recruitment_scope: RecruitmentScopeEnum
@@ -394,6 +397,8 @@ class ApprovalQueueItemResponse(BaseModel):
     recruiter_user_id: int | None
     recruiter_user_name: str | None
     recruiter_user_email: str | None
+    vacancy_salary: Decimal | None = None
+    vacancy_salary_currency: str | None = None
     post_approval_rejection_reason: str | None = None
     post_approval_rejected_at: datetime | None = None
     submitted_at: datetime | None
@@ -411,6 +416,7 @@ class ApprovalQueueListResponse(BaseModel):
 class ApprovalActionRequest(BaseModel):
     comments: str | None = Field(default=None, max_length=2000)
     recruiter_user_id: int | None = None
+    vacancy_salary: Decimal | None = Field(default=None, gt=0)
 
 
 class AdminActionResponse(BaseModel):

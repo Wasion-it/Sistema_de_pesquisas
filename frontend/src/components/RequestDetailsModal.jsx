@@ -16,6 +16,14 @@ function formatDateOnly(value) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date(value))
 }
 
+function formatCurrency(value, currency = 'BRL') {
+  if (value === null || value === undefined || value === '') return 'Não informado'
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency,
+  }).format(Number(value))
+}
+
 const STATUS_CONFIG = {
   PENDING:      { label: 'Pendente',    color: '#d97706', bg: '#fffbeb', border: '#fde68a', dot: '#f59e0b' },
   UNDER_REVIEW: { label: 'Em análise',  color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', dot: '#3b82f6' },
@@ -394,6 +402,11 @@ export function RequestDetailsModal({ request, token, onClose }) {
                       value={CONTRACT_REGIME_LABELS[fullRequest.contract_regime] ?? fullRequest.contract_regime}
                     />
                     <InfoChip label="Quantidade de vagas" value={fullRequest.quantity_people} />
+                    <InfoChip
+                      label="Salário da vaga"
+                      value={formatCurrency(fullRequest.vacancy_salary, fullRequest.vacancy_salary_currency ?? 'BRL')}
+                      accent="#16a34a"
+                    />
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>

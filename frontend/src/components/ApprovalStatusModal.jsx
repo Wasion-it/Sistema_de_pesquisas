@@ -17,6 +17,14 @@ function formatDateOnly(value) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value))
 }
 
+function formatCurrency(value, currency = 'BRL') {
+  if (value === null || value === undefined || value === '') return '—'
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency,
+  }).format(Number(value))
+}
+
 const STATUS_META = {
   PENDING: {
     label: 'Pendente',
@@ -689,7 +697,10 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
                     sub: `Criado em ${formatDateTime(fullRequest.created_at)}`,
                   },
                   ...(request?.request_kind === 'ADMISSION'
-                    ? [{ label: 'Recrutador', value: fullRequest.recruiter_user_name ?? 'Ainda não definido' }]
+                    ? [
+                        { label: 'Recrutador', value: fullRequest.recruiter_user_name ?? 'Ainda não definido' },
+                        { label: 'Salário da vaga', value: formatCurrency(fullRequest.vacancy_salary, fullRequest.vacancy_salary_currency ?? 'BRL') },
+                      ]
                     : []),
                 ].filter((f) => f.value).map((f, i) => (
                   <div

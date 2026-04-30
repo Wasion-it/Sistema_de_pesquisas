@@ -269,6 +269,30 @@ def _ensure_admission_request_columns() -> None:
         )
 
 
+def _ensure_admission_request_salary_table() -> None:
+    inspector = inspect(engine)
+    if "admission_requests" not in inspector.get_table_names():
+        return
+
+    statements = [
+        "CREATE TABLE IF NOT EXISTS admission_request_salaries ("
+        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+        "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+        "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+        "admission_request_id INTEGER NOT NULL, "
+        "salary_amount NUMERIC(12, 2) NOT NULL, "
+        "currency VARCHAR(3) NOT NULL DEFAULT 'BRL', "
+        "FOREIGN KEY(admission_request_id) REFERENCES admission_requests(id) ON DELETE CASCADE"
+        ")",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_admission_request_salaries_admission_request_id "
+        "ON admission_request_salaries(admission_request_id)",
+    ]
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
 def _normalize_admission_request_statuses() -> None:
     inspector = inspect(engine)
     if "admission_requests" not in inspector.get_table_names():
@@ -553,6 +577,7 @@ def create_tables() -> None:
     _ensure_employee_columns()
     _ensure_admission_request_candidate_columns()
     _ensure_admission_request_columns()
+    _ensure_admission_request_salary_table()
     _normalize_admission_request_statuses()
     _ensure_default_admission_checklist()
     _ensure_default_dismissal_checklist()

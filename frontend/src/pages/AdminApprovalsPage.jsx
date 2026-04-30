@@ -57,6 +57,14 @@ function formatDateTime(value) {
   }).format(new Date(value))
 }
 
+function formatCurrency(value, currency = 'BRL') {
+  if (value === null || value === undefined || value === '') return 'Não informado'
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency,
+  }).format(Number(value))
+}
+
 function normalizeRequestKind(kind) {
   return String(kind ?? '').toLowerCase()
 }
@@ -138,7 +146,9 @@ function RecruiterApprovalModal({
   request,
   recruiterOptions,
   selectedRecruiterId,
+  vacancySalary,
   onChangeRecruiterId,
+  onChangeVacancySalary,
   onClose,
   onConfirm,
   isLoading,
@@ -148,6 +158,9 @@ function RecruiterApprovalModal({
   if (!request) {
     return null
   }
+
+  const requestKind = normalizeRequestKind(request.request_kind)
+  const isAdmission = requestKind === 'admission'
 
   return (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
@@ -178,28 +191,52 @@ function RecruiterApprovalModal({
           {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
 
           {!isLoading ? (
-            <label className="field-group">
-              <span>Selecione o recrutador</span>
-              <select value={selectedRecruiterId} onChange={(event) => onChangeRecruiterId(event.target.value)}>
-                <option value="">Selecione</option>
-                {recruiterOptions.map((recruiter) => (
-                  <option key={recruiter.id} value={recruiter.id}>
-                    {recruiter.full_name} • {recruiter.email}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <label className="field-group">
+                <span>Selecione o recrutador</span>
+                <select value={selectedRecruiterId} onChange={(event) => onChangeRecruiterId(event.target.value)}>
+                  <option value="">Selecione</option>
+                  {recruiterOptions.map((recruiter) => (
+                    <option key={recruiter.id} value={recruiter.id}>
+                      {recruiter.full_name} • {recruiter.email}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {isAdmission ? (
+                <label className="field-group">
+                  <span>Salário da vaga</span>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="Ex: 3500,00"
+                    value={vacancySalary}
+                    onChange={(event) => onChangeVacancySalary(event.target.value)}
+                  />
+                </label>
+              ) : null}
+            </div>
           ) : null}
 
           <p className="request-modal-helper-text">
-            A solicitação só será aprovada quando um recrutador ativo for vinculado.
+            {isAdmission
+              ? 'A solicitação só será aprovada quando um recrutador ativo e o salário da vaga forem informados.'
+              : 'A solicitação só será aprovada quando um recrutador ativo for vinculado.'}
           </p>
 
           <div className="request-modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={isSubmitting}>
               Cancelar
             </button>
-            <button className="primary-button" type="button" onClick={onConfirm} disabled={isSubmitting || !selectedRecruiterId || isLoading}>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={onConfirm}
+              disabled={isSubmitting || !selectedRecruiterId || (isAdmission && !vacancySalary) || isLoading}
+            >
               {isSubmitting ? 'Aprovando...' : 'Confirmar aprovação'}
             </button>
           </div>
@@ -222,6 +259,7 @@ export function AdminApprovalsPage() {
   const [recruiterOptions, setRecruiterOptions] = useState([])
   const [isLoadingRecruiters, setIsLoadingRecruiters] = useState(false)
   const [selectedRecruiterId, setSelectedRecruiterId] = useState('')
+  const [vacancySalary, setVacancySalary] = useState('')
   const [recruiterErrorMessage, setRecruiterErrorMessage] = useState('')
 
   async function loadQueues() {
@@ -359,6 +397,7 @@ export function AdminApprovalsPage() {
     if (requiresRecruiterSelection(item)) {
       setRecruiterApprovalRequest(item)
       setSelectedRecruiterId('')
+      setVacancySalary('')
       setRecruiterErrorMessage('')
       return
     }
@@ -369,6 +408,7 @@ export function AdminApprovalsPage() {
   function closeRecruiterModal() {
     setRecruiterApprovalRequest(null)
     setSelectedRecruiterId('')
+    setVacancySalary('')
     setRecruiterErrorMessage('')
   }
 
@@ -379,15 +419,24 @@ export function AdminApprovalsPage() {
     }
 
     const normalizedKind = normalizeRequestKind(recruiterApprovalRequest.request_kind)
+    const normalizedSalary = String(vacancySalary).replace(',', '.')
+    const parsedSalary = Number(normalizedSalary)
+    if (normalizedKind === 'admission' && (!Number.isFinite(parsedSalary) || parsedSalary <= 0)) {
+      setRecruiterErrorMessage('Informe um salário válido para a vaga.')
+      return
+    }
+
     setActionState({ kind: normalizedKind, requestId: recruiterApprovalRequest.request_id, action: 'approve' })
     setRecruiterErrorMessage('')
 
     try {
       await approveAdminApprovalRequest(token, normalizedKind, recruiterApprovalRequest.request_id, {
         recruiter_user_id: Number(selectedRecruiterId),
+        ...(normalizedKind === 'admission' ? { vacancy_salary: parsedSalary } : {}),
       })
       setRecruiterApprovalRequest(null)
       setSelectedRecruiterId('')
+      setVacancySalary('')
       await loadQueues()
     } catch (error) {
       setRecruiterErrorMessage(error.message)
@@ -639,6 +688,13 @@ export function AdminApprovalsPage() {
                           <strong>{item.workflow_name}</strong>
                           <small>Etapa atual: {item.current_step_label ?? 'Concluída'}</small>
                         </div>
+                        {requestKind === 'admission' ? (
+                          <div>
+                            <span>Salário da vaga</span>
+                            <strong>{formatCurrency(item.vacancy_salary, item.vacancy_salary_currency ?? 'BRL')}</strong>
+                            <small>Definido pelo Gerente de RH</small>
+                          </div>
+                        ) : null}
                         <div>
                           <span>Atualizado em</span>
                           <strong>{formatDateTime(item.created_at)}</strong>
@@ -695,11 +751,13 @@ export function AdminApprovalsPage() {
           request={recruiterApprovalRequest}
           recruiterOptions={recruiterOptions}
           selectedRecruiterId={selectedRecruiterId}
+          vacancySalary={vacancySalary}
           onChangeRecruiterId={setSelectedRecruiterId}
+          onChangeVacancySalary={setVacancySalary}
           onClose={closeRecruiterModal}
           onConfirm={confirmRecruiterApproval}
           isLoading={isLoadingRecruiters}
-          isSubmitting={actionState.kind === 'admission' && actionState.requestId === recruiterApprovalRequest?.request_id && actionState.action === 'approve'}
+          isSubmitting={actionState.requestId === recruiterApprovalRequest?.request_id && actionState.action === 'approve'}
           errorMessage={recruiterErrorMessage}
         />
       </div>

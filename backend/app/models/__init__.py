@@ -3,6 +3,7 @@ from app.models.admission_checklist_step import AdmissionChecklistStep
 from app.models.admission_request import AdmissionRequest
 from app.models.admission_request_candidate import AdmissionRequestCandidate
 from app.models.admission_request_approval import AdmissionRequestApproval
+from app.models.admission_request_salary import AdmissionRequestSalary
 from app.models.approval_workflow_step import ApprovalWorkflowStep
 from app.models.approval_workflow_template import ApprovalWorkflowTemplate
 from app.models.campaign import Campaign
@@ -52,6 +53,7 @@ __all__ = [
     "AdmissionRequestApproval",
     "AdmissionRequest",
     "AdmissionRequestCandidate",
+    "AdmissionRequestSalary",
     "AdmissionRequestStatusEnum",
     "AdmissionRequestTypeEnum",
     "ApprovalOriginGroupEnum",

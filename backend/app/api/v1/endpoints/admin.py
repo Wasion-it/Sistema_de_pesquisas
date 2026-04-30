@@ -18,6 +18,7 @@ from app.models import (
     AdmissionRequest,
     AdmissionRequestCandidate,
     AdmissionChecklistStep,
+    AdmissionRequestSalary,
     DismissalChecklistStep,
     AdmissionRequestStatusEnum,
     ApprovalOriginGroupEnum,
@@ -301,6 +302,8 @@ def _serialize_admission_request(item: AdmissionRequest) -> AdmissionRequestResp
         recruiter_user_id=item.recruiter_user_id,
         recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
         recruiter_user_email=item.recruiter_user.email if item.recruiter_user else None,
+        vacancy_salary=item.salary_info.salary_amount if item.salary_info else None,
+        vacancy_salary_currency=item.salary_info.currency if item.salary_info else None,
         cargo=item.cargo,
         setor=item.setor,
         recruitment_scope=item.recruitment_scope,
@@ -403,6 +406,8 @@ def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> Approval
         recruiter_user_id=item.recruiter_user_id,
         recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
         recruiter_user_email=item.recruiter_user.email if item.recruiter_user else None,
+        vacancy_salary=item.salary_info.salary_amount if item.salary_info else None,
+        vacancy_salary_currency=item.salary_info.currency if item.salary_info else None,
         submitted_at=item.submitted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -430,6 +435,8 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         recruiter_user_id=item.recruiter_user_id,
         recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
         recruiter_user_email=item.recruiter_user.email if item.recruiter_user else None,
+        vacancy_salary=None,
+        vacancy_salary_currency=None,
         post_approval_rejection_reason=item.post_approval_rejection_reason,
         post_approval_rejected_at=item.post_approval_rejected_at,
         submitted_at=item.submitted_at,
@@ -459,6 +466,23 @@ def _can_user_view_dismissal_request(user: User, request_item: DismissalRequest)
         return True
 
     return user.role == RoleEnum.RH_ANALISTA and request_item.recruiter_user_id == user.id
+
+
+def _upsert_admission_request_salary(
+    db: Session,
+    request_item: AdmissionRequest,
+    salary_amount,
+) -> None:
+    if request_item.salary_info is None:
+        request_item.salary_info = AdmissionRequestSalary(
+            admission_request_id=request_item.id,
+            salary_amount=salary_amount,
+            currency="BRL",
+        )
+        return
+
+    request_item.salary_info.salary_amount = salary_amount
+    request_item.salary_info.currency = "BRL"
 
 
 def _require_recruiter_access(user: User) -> None:
@@ -906,6 +930,7 @@ def read_admin_admission_approval_queue(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -960,6 +985,7 @@ def read_my_requests(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -1004,6 +1030,7 @@ def approve_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -1024,6 +1051,9 @@ def approve_admin_admission_request(
         if recruiter_user_id is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is required for RH manager approval")
 
+        if payload.vacancy_salary is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vacancy salary is required for RH manager approval")
+
         recruiter_user = db.scalar(
             select(User)
             .where(User.id == recruiter_user_id)
@@ -1034,8 +1064,11 @@ def approve_admin_admission_request(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected recruiter is not available")
 
         request_item.recruiter_user_id = recruiter_user.id
+        _upsert_admission_request_salary(db, request_item, payload.vacancy_salary)
     elif payload.recruiter_user_id is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is only allowed for RH manager approval")
+    elif payload.vacancy_salary is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vacancy salary is only allowed for RH manager approval")
 
     _mark_request_approval_progress(
         db,
@@ -1066,6 +1099,7 @@ def reject_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
@@ -1787,6 +1821,7 @@ def read_admin_admission_requests(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.approval_steps),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
@@ -1813,6 +1848,7 @@ def read_admin_admission_request_detail(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.approval_steps),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
@@ -1898,6 +1934,7 @@ def create_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1923,6 +1960,7 @@ def update_admin_admission_request_checklist_progress(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -1954,6 +1992,7 @@ def update_admin_admission_request_checklist_progress(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -2031,6 +2070,7 @@ def hire_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -2155,6 +2195,7 @@ def hire_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -2179,6 +2220,7 @@ def finalize_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -2239,6 +2281,7 @@ def finalize_admin_admission_request(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.department),
             selectinload(AdmissionRequest.hired_employees).selectinload(Employee.job_title),
         )
@@ -2263,6 +2306,7 @@ def read_admin_admission_request_approval_status(
         .options(
             selectinload(AdmissionRequest.created_by_user),
             selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
             selectinload(AdmissionRequest.approval_workflow_template),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
             selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),

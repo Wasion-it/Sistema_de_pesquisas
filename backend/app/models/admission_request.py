@@ -17,6 +17,7 @@ from app.models.enums import (
 
 if TYPE_CHECKING:
     from app.models.admission_request_candidate import AdmissionRequestCandidate
+    from app.models.admission_request_salary import AdmissionRequestSalary
     from app.models.approval_workflow_template import ApprovalWorkflowTemplate
     from app.models.admission_request_approval import AdmissionRequestApproval
     from app.models.employee import Employee
@@ -76,6 +77,12 @@ class AdmissionRequest(BaseModel):
 
     created_by_user = relationship("User", back_populates="admission_requests", foreign_keys=[created_by_user_id])
     recruiter_user = relationship("User", foreign_keys=[recruiter_user_id])
+    salary_info: Mapped[AdmissionRequestSalary | None] = relationship(
+        "AdmissionRequestSalary",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
     approval_workflow_template = relationship("ApprovalWorkflowTemplate", back_populates="admission_requests")
     candidates = relationship(
         "AdmissionRequestCandidate",

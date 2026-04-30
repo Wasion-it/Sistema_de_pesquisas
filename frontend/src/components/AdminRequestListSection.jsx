@@ -71,6 +71,8 @@ const REQUEST_TAB_PATHS = {
   dismissal: '/admin/dismissal-requests',
 }
 
+const SALARY_REQUIRED_POSITIONS = new Set(['PUBLIC_ADMINISTRATIVE', 'PUBLIC_LEADERSHIP'])
+
 function formatDateTime(value) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
@@ -87,6 +89,10 @@ function formatCurrency(value, currency = 'BRL') {
     style: 'currency',
     currency,
   }).format(Number(value))
+}
+
+function requiresVacancySalary(item) {
+  return SALARY_REQUIRED_POSITIONS.has(item?.posicao_vaga)
 }
 
 function getSummary(requests) {
@@ -147,6 +153,7 @@ function AdmissionCard({ item, actions, user }) {
   const statusMeta = ADMISSION_STATUS_META[item.status] ?? ADMISSION_STATUS_META.PENDING
   const hiredCount = item.hired_employee_count ?? 0
   const quantityPeople = item.quantity_people ?? 0
+  const shouldShowSalary = requiresVacancySalary(item)
   const salaryLabel = formatCurrency(item.vacancy_salary, item.vacancy_salary_currency ?? 'BRL')
   const isFinalized = item.status === 'FINALIZED'
   const canFinalizeAdmission = item.status === 'APPROVED' && quantityPeople > 0 && hiredCount >= quantityPeople
@@ -215,7 +222,7 @@ function AdmissionCard({ item, actions, user }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(160px, .8fr)', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: shouldShowSalary ? 'minmax(0, 1.2fr) minmax(160px, .8fr)' : '1fr', gap: 10 }}>
           <div style={{ padding: '12px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #f1f5f9' }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
               Contratações
@@ -223,32 +230,34 @@ function AdmissionCard({ item, actions, user }) {
             <HireProgressBar hired={hiredCount} total={quantityPeople} />
           </div>
 
-          <div style={{
-            padding: '12px 14px',
-            borderRadius: 10,
-            background: item.vacancy_salary ? '#f0fdf4' : '#f8fafc',
-            border: `1px solid ${item.vacancy_salary ? '#bbf7d0' : '#f1f5f9'}`,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            minWidth: 0,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: item.vacancy_salary ? '#15803d' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 5 }}>
-              Salário
-            </div>
-            <strong style={{
-              fontSize: 15,
-              fontWeight: 800,
-              color: item.vacancy_salary ? '#166534' : '#64748b',
-              lineHeight: 1.2,
-              overflowWrap: 'anywhere',
+          {shouldShowSalary ? (
+            <div style={{
+              padding: '12px 14px',
+              borderRadius: 10,
+              background: item.vacancy_salary ? '#f0fdf4' : '#f8fafc',
+              border: `1px solid ${item.vacancy_salary ? '#bbf7d0' : '#f1f5f9'}`,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              minWidth: 0,
             }}>
-              {salaryLabel}
-            </strong>
-            <span style={{ marginTop: 3, fontSize: 11, color: item.vacancy_salary ? '#16a34a' : '#94a3b8' }}>
-              Gerente de RH
-            </span>
-          </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: item.vacancy_salary ? '#15803d' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 5 }}>
+                Salário
+              </div>
+              <strong style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: item.vacancy_salary ? '#166534' : '#64748b',
+                lineHeight: 1.2,
+                overflowWrap: 'anywhere',
+              }}>
+                {salaryLabel}
+              </strong>
+              <span style={{ marginTop: 3, fontSize: 11, color: item.vacancy_salary ? '#16a34a' : '#94a3b8' }}>
+                Gerente de RH
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -509,8 +518,9 @@ const REQUEST_TABS_CONFIG = {
     searchPlaceholder: 'Cargo, setor, tipo ou solicitante...',
     fetcher: getAdminAdmissionRequests,
     getSearchValues(item) {
-      const salaryValue = item.vacancy_salary ? String(item.vacancy_salary) : ''
-      const salaryFormatted = item.vacancy_salary
+      const shouldSearchSalary = requiresVacancySalary(item)
+      const salaryValue = shouldSearchSalary && item.vacancy_salary ? String(item.vacancy_salary) : ''
+      const salaryFormatted = shouldSearchSalary && item.vacancy_salary
         ? formatCurrency(item.vacancy_salary, item.vacancy_salary_currency ?? 'BRL')
         : ''
       return [

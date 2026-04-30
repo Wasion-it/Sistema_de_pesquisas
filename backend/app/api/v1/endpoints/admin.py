@@ -397,6 +397,7 @@ def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> Approval
         request_title=item.cargo,
         request_subtitle=f"{item.setor} • {item.turno}",
         request_status=item.status.value,
+        posicao_vaga=item.posicao_vaga,
         requester_name=item.created_by_user.full_name,
         requester_email=item.created_by_user.email,
         workflow_name=item.approval_workflow_template.name if item.approval_workflow_template else "Fluxo padrão",
@@ -426,6 +427,7 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         request_title=item.employee_name,
         request_subtitle=f"{item.cargo} • {item.departamento}",
         request_status=item.status.value,
+        posicao_vaga=None,
         requester_name=item.created_by_user.full_name,
         requester_email=item.created_by_user.email,
         workflow_name=item.approval_workflow_template.name if item.approval_workflow_template else "Fluxo padrão",
@@ -483,6 +485,13 @@ def _upsert_admission_request_salary(
 
     request_item.salary_info.salary_amount = salary_amount
     request_item.salary_info.currency = "BRL"
+
+
+def _requires_admission_salary(request_item: AdmissionRequest) -> bool:
+    return request_item.posicao_vaga in {
+        AdmissionPositionEnum.PUBLIC_ADMINISTRATIVE,
+        AdmissionPositionEnum.PUBLIC_LEADERSHIP,
+    }
 
 
 def _require_recruiter_access(user: User) -> None:
@@ -1051,8 +1060,11 @@ def approve_admin_admission_request(
         if recruiter_user_id is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is required for RH manager approval")
 
-        if payload.vacancy_salary is None:
+        requires_salary = _requires_admission_salary(request_item)
+        if requires_salary and payload.vacancy_salary is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vacancy salary is required for RH manager approval")
+        if not requires_salary and payload.vacancy_salary is not None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vacancy salary is only allowed for administrative or leadership positions")
 
         recruiter_user = db.scalar(
             select(User)
@@ -1064,7 +1076,8 @@ def approve_admin_admission_request(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected recruiter is not available")
 
         request_item.recruiter_user_id = recruiter_user.id
-        _upsert_admission_request_salary(db, request_item, payload.vacancy_salary)
+        if requires_salary:
+            _upsert_admission_request_salary(db, request_item, payload.vacancy_salary)
     elif payload.recruiter_user_id is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recruiter selection is only allowed for RH manager approval")
     elif payload.vacancy_salary is not None:

@@ -388,6 +388,7 @@ class ApprovalQueueItemResponse(BaseModel):
     request_title: str
     request_subtitle: str
     request_status: str
+    posicao_vaga: AdmissionPositionEnum | None = None
     requester_name: str
     requester_email: str
     workflow_name: str

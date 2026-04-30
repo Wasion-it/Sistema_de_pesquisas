@@ -57,6 +57,8 @@ function formatDateTime(value) {
   }).format(new Date(value))
 }
 
+const SALARY_REQUIRED_POSITIONS = new Set(['PUBLIC_ADMINISTRATIVE', 'PUBLIC_LEADERSHIP'])
+
 function formatCurrency(value, currency = 'BRL') {
   if (value === null || value === undefined || value === '') return 'Não informado'
   return new Intl.NumberFormat('pt-BR', {
@@ -67,6 +69,10 @@ function formatCurrency(value, currency = 'BRL') {
 
 function normalizeRequestKind(kind) {
   return String(kind ?? '').toLowerCase()
+}
+
+function requiresVacancySalary(request) {
+  return normalizeRequestKind(request?.request_kind) === 'admission' && SALARY_REQUIRED_POSITIONS.has(request?.posicao_vaga)
 }
 
 function getApprovalProgress(steps = []) {
@@ -161,6 +167,7 @@ function RecruiterApprovalModal({
 
   const requestKind = normalizeRequestKind(request.request_kind)
   const isAdmission = requestKind === 'admission'
+  const shouldRequestSalary = requiresVacancySalary(request)
 
   return (
     <div className="request-modal-backdrop" role="presentation" onClick={onClose}>
@@ -204,7 +211,7 @@ function RecruiterApprovalModal({
                 </select>
               </label>
 
-              {isAdmission ? (
+              {shouldRequestSalary ? (
                 <label className="field-group">
                   <span>Salário da vaga</span>
                   <input
@@ -223,7 +230,9 @@ function RecruiterApprovalModal({
 
           <p className="request-modal-helper-text">
             {isAdmission
-              ? 'A solicitação só será aprovada quando um recrutador ativo e o salário da vaga forem informados.'
+              ? shouldRequestSalary
+                ? 'A solicitação só será aprovada quando um recrutador ativo e o salário da vaga forem informados.'
+                : 'A solicitação só será aprovada quando um recrutador ativo for vinculado.'
               : 'A solicitação só será aprovada quando um recrutador ativo for vinculado.'}
           </p>
 
@@ -235,7 +244,7 @@ function RecruiterApprovalModal({
               className="primary-button"
               type="button"
               onClick={onConfirm}
-              disabled={isSubmitting || !selectedRecruiterId || (isAdmission && !vacancySalary) || isLoading}
+              disabled={isSubmitting || !selectedRecruiterId || (shouldRequestSalary && !vacancySalary) || isLoading}
             >
               {isSubmitting ? 'Aprovando...' : 'Confirmar aprovação'}
             </button>
@@ -419,9 +428,10 @@ export function AdminApprovalsPage() {
     }
 
     const normalizedKind = normalizeRequestKind(recruiterApprovalRequest.request_kind)
+    const shouldSendSalary = requiresVacancySalary(recruiterApprovalRequest)
     const normalizedSalary = String(vacancySalary).replace(',', '.')
     const parsedSalary = Number(normalizedSalary)
-    if (normalizedKind === 'admission' && (!Number.isFinite(parsedSalary) || parsedSalary <= 0)) {
+    if (shouldSendSalary && (!Number.isFinite(parsedSalary) || parsedSalary <= 0)) {
       setRecruiterErrorMessage('Informe um salário válido para a vaga.')
       return
     }
@@ -432,7 +442,7 @@ export function AdminApprovalsPage() {
     try {
       await approveAdminApprovalRequest(token, normalizedKind, recruiterApprovalRequest.request_id, {
         recruiter_user_id: Number(selectedRecruiterId),
-        ...(normalizedKind === 'admission' ? { vacancy_salary: parsedSalary } : {}),
+        ...(shouldSendSalary ? { vacancy_salary: parsedSalary } : {}),
       })
       setRecruiterApprovalRequest(null)
       setSelectedRecruiterId('')
@@ -688,7 +698,7 @@ export function AdminApprovalsPage() {
                           <strong>{item.workflow_name}</strong>
                           <small>Etapa atual: {item.current_step_label ?? 'Concluída'}</small>
                         </div>
-                        {requestKind === 'admission' ? (
+                        {requiresVacancySalary(item) ? (
                           <div>
                             <span>Salário da vaga</span>
                             <strong>{formatCurrency(item.vacancy_salary, item.vacancy_salary_currency ?? 'BRL')}</strong>

@@ -377,6 +377,7 @@ class ApprovalStepResponse(BaseModel):
     approver_role: ApprovalRoleEnum
     approver_label: str
     status: ApprovalStepStatusEnum
+    decided_by_user_id: int | None
     decided_by_user_name: str | None
     decided_at: datetime | None
     comments: str | None

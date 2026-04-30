@@ -382,6 +382,7 @@ def _serialize_approval_step(step) -> ApprovalStepResponse:
         approver_role=step.approver_role,
         approver_label=step.workflow_step.approver_label if step.workflow_step else step.approver_role.value,
         status=step.status,
+        decided_by_user_id=step.decided_by_user_id,
         decided_by_user_name=step.decided_by_user.full_name if step.decided_by_user else None,
         decided_at=step.decided_at,
         comments=step.comments,
@@ -950,6 +951,29 @@ def read_admin_admission_approval_queue(
     return ApprovalQueueListResponse(items=[_serialize_admission_approval_queue_item(item) for item in items])
 
 
+@router.get("/hr/approvals/admission/history", response_model=ApprovalQueueListResponse)
+def read_admin_admission_approval_history(
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueListResponse:
+    items = db.scalars(
+        select(AdmissionRequest)
+        .join(AdmissionRequestApproval, AdmissionRequestApproval.admission_request_id == AdmissionRequest.id)
+        .options(
+            selectinload(AdmissionRequest.created_by_user),
+            selectinload(AdmissionRequest.recruiter_user),
+            selectinload(AdmissionRequest.salary_info),
+            selectinload(AdmissionRequest.approval_workflow_template),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.workflow_step),
+            selectinload(AdmissionRequest.approval_steps).selectinload(AdmissionRequestApproval.decided_by_user),
+        )
+        .where(AdmissionRequestApproval.decided_by_user_id == user.id)
+        .where(AdmissionRequestApproval.status == ApprovalStepStatusEnum.APPROVED)
+        .order_by(AdmissionRequestApproval.decided_at.desc().nullslast(), AdmissionRequest.created_at.desc())
+    ).unique().all()
+    return ApprovalQueueListResponse(items=[_serialize_admission_approval_queue_item(item) for item in items])
+
+
 @router.get("/hr/recruiters", response_model=RecruiterOptionListResponse)
 def read_admin_recruiters(
     _: Annotated[User, Depends(get_current_admin_user)],
@@ -981,6 +1005,28 @@ def read_admin_dismissal_approval_queue(
         .where(DismissalRequest.status.in_([DismissalRequestStatusEnum.PENDING, DismissalRequestStatusEnum.UNDER_REVIEW]))
         .order_by(DismissalRequest.submitted_at.desc().nullslast(), DismissalRequest.created_at.desc())
     ).all()
+    return ApprovalQueueListResponse(items=[_serialize_dismissal_approval_queue_item(item) for item in items])
+
+
+@router.get("/hr/approvals/dismissal/history", response_model=ApprovalQueueListResponse)
+def read_admin_dismissal_approval_history(
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalQueueListResponse:
+    items = db.scalars(
+        select(DismissalRequest)
+        .join(DismissalRequestApproval, DismissalRequestApproval.dismissal_request_id == DismissalRequest.id)
+        .options(
+            selectinload(DismissalRequest.created_by_user),
+            selectinload(DismissalRequest.recruiter_user),
+            selectinload(DismissalRequest.approval_workflow_template),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.workflow_step),
+            selectinload(DismissalRequest.approval_steps).selectinload(DismissalRequestApproval.decided_by_user),
+        )
+        .where(DismissalRequestApproval.decided_by_user_id == user.id)
+        .where(DismissalRequestApproval.status == ApprovalStepStatusEnum.APPROVED)
+        .order_by(DismissalRequestApproval.decided_at.desc().nullslast(), DismissalRequest.created_at.desc())
+    ).unique().all()
     return ApprovalQueueListResponse(items=[_serialize_dismissal_approval_queue_item(item) for item in items])
 
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { RequestDetailsModal } from '../components/RequestDetailsModal'
-import { approveAdminApprovalRequest, getAdminApprovalQueue, getAdminRecruiters, rejectAdminApprovalRequest } from '../services/admin'
+import { approveAdminApprovalRequest, getAdminApprovalHistory, getAdminApprovalQueue, getAdminRecruiters, rejectAdminApprovalRequest } from '../services/admin'
 
 const REQUEST_KIND_TABS = {
   admission: {
@@ -15,6 +15,18 @@ const REQUEST_KIND_TABS = {
     label: 'Demissão',
     title: 'Fila de aprovação de demissão',
     emptyText: 'Não há solicitações de demissão aguardando aprovação.',
+  },
+}
+
+const APPROVAL_VIEW_MODES = {
+  pending: {
+    label: 'Pendentes',
+    titlePrefix: 'Fila de aprovação',
+  },
+  history: {
+    label: 'Meu histórico',
+    titlePrefix: 'Histórico de aprovações',
+    emptyText: 'Você ainda não aprovou solicitações deste tipo.',
   },
 }
 
@@ -258,7 +270,9 @@ function RecruiterApprovalModal({
 export function AdminApprovalsPage() {
   const { token, user } = useAuth()
   const [activeTab, setActiveTab] = useState('admission')
+  const [activeViewMode, setActiveViewMode] = useState('pending')
   const [queuesByKind, setQueuesByKind] = useState({ admission: [], dismissal: [] })
+  const [historiesByKind, setHistoriesByKind] = useState({ admission: [], dismissal: [] })
   const [isLoading, setIsLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [errorMessages, setErrorMessages] = useState({ admission: '', dismissal: '' })
@@ -278,8 +292,13 @@ export function AdminApprovalsPage() {
         getAdminApprovalQueue(token, 'admission'),
         getAdminApprovalQueue(token, 'dismissal'),
       ])
+      const [admissionHistoryResult, dismissalHistoryResult] = await Promise.allSettled([
+        getAdminApprovalHistory(token, 'admission'),
+        getAdminApprovalHistory(token, 'dismissal'),
+      ])
 
       const nextQueues = { admission: [], dismissal: [] }
+      const nextHistories = { admission: [], dismissal: [] }
       const nextErrors = { admission: '', dismissal: '' }
 
       if (admissionResult.status === 'fulfilled') {
@@ -294,7 +313,20 @@ export function AdminApprovalsPage() {
         nextErrors.dismissal = dismissalResult.reason?.message ?? 'Erro ao carregar aprovações de demissão.'
       }
 
+      if (admissionHistoryResult.status === 'fulfilled') {
+        nextHistories.admission = admissionHistoryResult.value.items ?? []
+      } else {
+        nextErrors.admission = nextErrors.admission || admissionHistoryResult.reason?.message || 'Erro ao carregar histórico de admissão.'
+      }
+
+      if (dismissalHistoryResult.status === 'fulfilled') {
+        nextHistories.dismissal = dismissalHistoryResult.value.items ?? []
+      } else {
+        nextErrors.dismissal = nextErrors.dismissal || dismissalHistoryResult.reason?.message || 'Erro ao carregar histórico de demissão.'
+      }
+
       setQueuesByKind(nextQueues)
+      setHistoriesByKind(nextHistories)
       setErrorMessages(nextErrors)
     } finally {
       setIsLoading(false)
@@ -340,8 +372,9 @@ export function AdminApprovalsPage() {
     }
   }, [recruiterApprovalRequest, token])
 
-  const activeQueue = queuesByKind[activeTab]
   const activeConfig = REQUEST_KIND_TABS[activeTab]
+  const activeViewConfig = APPROVAL_VIEW_MODES[activeViewMode]
+  const activeQueue = activeViewMode === 'history' ? historiesByKind[activeTab] : queuesByKind[activeTab]
   const activeQueueStatusKey = activeTab === 'admission' ? 'PENDING' : 'UNDER_REVIEW'
 
   const visibleQueue = useMemo(() => {
@@ -376,7 +409,12 @@ export function AdminApprovalsPage() {
 
   const allowedApprovalRoles = ROLE_TO_APPROVAL_ROLES[user?.role] ?? new Set()
 
+  function getUserApprovedStep(item) {
+    return item.steps?.find((step) => step.status === 'APPROVED' && step.decided_by_user_id === user?.id) ?? null
+  }
+
   function canActOnItem(item) {
+    if (activeViewMode === 'history') return false
     return Boolean(item.steps?.some((step) => step.status === 'PENDING' && allowedApprovalRoles.has(step.approver_role)))
   }
 
@@ -496,7 +534,15 @@ export function AdminApprovalsPage() {
     setQuery('')
   }
 
+  function handleViewModeChange(nextMode) {
+    setActiveViewMode(nextMode)
+    setQuery('')
+  }
+
   const firstName = user?.full_name?.split(' ')[0] ?? 'usuário'
+  const pageTitle = activeViewMode === 'history'
+    ? `${activeViewConfig.titlePrefix} de ${activeConfig.label.toLowerCase()}`
+    : activeConfig.title
 
   return (
     <main className="page-shell" style={{ background: 'linear-gradient(150deg, var(--slate-50) 0%, var(--blue-50) 50%, #eef2ff 100%)' }}>
@@ -504,7 +550,7 @@ export function AdminApprovalsPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, paddingBottom: 8 }}>
           <div>
             <span className="eyebrow">Solicitações RH</span>
-            <h2 style={{ margin: '4px 0 6px', fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', letterSpacing: '-.02em' }}>{activeConfig.title}</h2>
+            <h2 style={{ margin: '4px 0 6px', fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', letterSpacing: '-.02em' }}>{pageTitle}</h2>
             <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -527,7 +573,7 @@ export function AdminApprovalsPage() {
         {!isLoading && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
             <article className="stat-card">
-              <span>Total</span>
+              <span>{activeViewMode === 'history' ? 'No histórico' : 'Total'}</span>
               <strong>{summary.total}</strong>
             </article>
             <article className="stat-card">
@@ -547,8 +593,53 @@ export function AdminApprovalsPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '16px 20px', borderRadius: 16, background: '#fff', border: '1px solid var(--slate-200)', boxShadow: '0 1px 3px rgba(15,23,42,.04)' }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {Object.entries(APPROVAL_VIEW_MODES).map(([mode, config]) => {
+              const isActive = mode === activeViewMode
+              const modeCount = mode === 'history'
+                ? historiesByKind[activeTab].length
+                : queuesByKind[activeTab].length
+
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => handleViewModeChange(mode)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 9,
+                    padding: '11px 18px',
+                    borderRadius: 12,
+                    border: isActive ? '1.5px solid var(--blue-300)' : '1.5px solid var(--slate-200)',
+                    background: isActive ? 'linear-gradient(180deg, var(--blue-50) 0%, #fff 100%)' : 'linear-gradient(180deg, #fff 0%, var(--slate-50) 100%)',
+                    color: isActive ? 'var(--blue-800)' : 'var(--slate-600)',
+                    fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 140ms',
+                    boxShadow: isActive ? '0 4px 12px rgba(37,99,235,.1)' : 'none',
+                  }}
+                >
+                  <span>{config.label}</span>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    minWidth: 24, height: 24, padding: '0 7px',
+                    borderRadius: 999,
+                    background: isActive ? 'var(--blue-600)' : 'var(--slate-200)',
+                    color: isActive ? '#fff' : 'var(--slate-600)',
+                    fontSize: 11, fontWeight: 700,
+                  }}>
+                    {modeCount}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {Object.entries(REQUEST_KIND_TABS).map(([kind, config]) => {
               const isActive = kind === activeTab
+              const tabCount = activeViewMode === 'history'
+                ? historiesByKind[kind].length
+                : queuesByKind[kind].length
+
               return (
                 <button
                   key={kind}
@@ -576,7 +667,7 @@ export function AdminApprovalsPage() {
                     color: isActive ? '#fff' : 'var(--slate-600)',
                     fontSize: 11, fontWeight: 700,
                   }}>
-                    {queuesByKind[kind].length}
+                    {tabCount}
                   </span>
                 </button>
               )
@@ -660,7 +751,9 @@ export function AdminApprovalsPage() {
                 </svg>
               </div>
               <strong style={{ fontSize: 16, color: 'var(--slate-700)', fontWeight: 600 }}>Nenhuma aprovação encontrada</strong>
-              <span style={{ fontSize: 14, color: 'var(--slate-400)', maxWidth: 300, lineHeight: 1.65 }}>{activeConfig.emptyText}</span>
+              <span style={{ fontSize: 14, color: 'var(--slate-400)', maxWidth: 300, lineHeight: 1.65 }}>
+                {activeViewMode === 'history' ? activeViewConfig.emptyText : activeConfig.emptyText}
+              </span>
               {query && (
                 <button type="button" onClick={() => setQuery('')} className="secondary-button" style={{ marginTop: 8 }}>
                   Limpar busca
@@ -674,6 +767,7 @@ export function AdminApprovalsPage() {
               <article className="approval-request-card" key={`${item.request_kind}-${item.request_id}`}>
                 {(() => {
                   const requestKind = normalizeRequestKind(item.request_kind)
+                  const approvedStep = getUserApprovedStep(item)
                   return (
                     <>
                       <div className="approval-request-top">
@@ -683,7 +777,9 @@ export function AdminApprovalsPage() {
                           <p>{item.request_subtitle}</p>
                         </div>
                         <span className={`status-pill ${item.request_status === activeQueueStatusKey ? 'active' : 'inactive'}`}>
-                          {item.request_status === activeQueueStatusKey ? (activeTab === 'admission' ? 'Pendente' : 'Em análise') : 'Pendente'}
+                          {activeViewMode === 'history'
+                            ? 'Aprovada por você'
+                            : item.request_status === activeQueueStatusKey ? (activeTab === 'admission' ? 'Pendente' : 'Em análise') : 'Pendente'}
                         </span>
                       </div>
 
@@ -706,8 +802,8 @@ export function AdminApprovalsPage() {
                           </div>
                         ) : null}
                         <div>
-                          <span>Atualizado em</span>
-                          <strong>{formatDateTime(item.created_at)}</strong>
+                          <span>{activeViewMode === 'history' ? 'Sua aprovação' : 'Atualizado em'}</span>
+                          <strong>{formatDateTime(activeViewMode === 'history' ? approvedStep?.decided_at : item.updated_at)}</strong>
                           <small>Submetido em {formatDateTime(item.submitted_at)}</small>
                         </div>
                       </div>
@@ -715,7 +811,11 @@ export function AdminApprovalsPage() {
                       <ApprovalStepTracker steps={item.steps} />
 
                       <div className="approval-request-actions">
-                        {!canActOnItem(item) ? (
+                        {activeViewMode === 'history' ? (
+                          <div className="approval-locked-note">
+                            Etapa aprovada: {approvedStep?.approver_label ?? 'aprovação registrada'}.
+                          </div>
+                        ) : !canActOnItem(item) ? (
                           <div className="approval-locked-note">
                             Apenas {getActionableStepLabel(item)} pode executar esta etapa.
                           </div>

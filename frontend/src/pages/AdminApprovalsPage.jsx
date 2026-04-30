@@ -179,6 +179,9 @@ function RecruiterApprovalModal({
 
   const requestKind = normalizeRequestKind(request.request_kind)
   const isAdmission = requestKind === 'admission'
+  const assigneeLabel = isAdmission ? 'recrutador' : 'analista de RH'
+  const assigneeTitle = isAdmission ? 'Selecionar recrutador' : 'Selecionar analista de RH'
+  const assigneeSectionTitle = isAdmission ? 'Recrutador responsável' : 'Analista de RH responsável'
   const shouldRequestSalary = requiresVacancySalary(request)
 
   return (
@@ -186,8 +189,8 @@ function RecruiterApprovalModal({
       <div className="request-modal" role="dialog" aria-modal="true" aria-labelledby="recruiter-approval-title" onClick={(event) => event.stopPropagation()}>
         <div className="request-modal-header">
           <div>
-            <span className="eyebrow">Aprovação com recrutador</span>
-            <h3 id="recruiter-approval-title">Selecionar recrutador</h3>
+            <span className="eyebrow">Aprovação com {assigneeLabel}</span>
+            <h3 id="recruiter-approval-title">{assigneeTitle}</h3>
             <p>{request.request_title}</p>
           </div>
           <button className="secondary-button" type="button" onClick={onClose}>
@@ -197,7 +200,7 @@ function RecruiterApprovalModal({
 
         <div className="request-modal-section">
           <div className="request-modal-section-header">
-            <h4>Recrutador responsável</h4>
+            <h4>{assigneeSectionTitle}</h4>
             <span>{request.current_step_label ?? 'Gerente de RH'}</span>
           </div>
 
@@ -212,7 +215,7 @@ function RecruiterApprovalModal({
           {!isLoading ? (
             <div style={{ display: 'grid', gap: 12 }}>
               <label className="field-group">
-                <span>Selecione o recrutador</span>
+                <span>Selecione o {assigneeLabel}</span>
                 <select value={selectedRecruiterId} onChange={(event) => onChangeRecruiterId(event.target.value)}>
                   <option value="">Selecione</option>
                   {recruiterOptions.map((recruiter) => (
@@ -245,7 +248,7 @@ function RecruiterApprovalModal({
               ? shouldRequestSalary
                 ? 'A solicitação só será aprovada quando um recrutador ativo e o salário da vaga forem informados.'
                 : 'A solicitação só será aprovada quando um recrutador ativo for vinculado.'
-              : 'A solicitação só será aprovada quando um recrutador ativo for vinculado.'}
+              : 'A solicitação só será aprovada quando um analista de RH ativo for vinculado.'}
           </p>
 
           <div className="request-modal-actions">

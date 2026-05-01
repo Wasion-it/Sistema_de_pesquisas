@@ -39,6 +39,17 @@ const ADMISSION_STATUS_FILTERS = [
   ...Object.entries(ADMISSION_STATUS_META).map(([value, meta]) => ({ value, label: meta.label })),
 ]
 
+const ADMISSION_POSITION_LABELS = {
+  PUBLIC_ADMINISTRATIVE: 'Administrativo',
+  PUBLIC_OPERATIONAL: 'Operacional',
+  PUBLIC_LEADERSHIP: 'Liderança',
+}
+
+const ADMISSION_POSITION_FILTERS = [
+  { value: 'all', label: 'Todas as posições' },
+  ...Object.entries(ADMISSION_POSITION_LABELS).map(([value, label]) => ({ value, label })),
+]
+
 const REQUEST_TYPE_LABELS = {
   GROWTH:      'Aumento de quadro',
   REPLACEMENT: 'Substituição',
@@ -587,6 +598,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
   const [requestsByTab, setRequestsByTab] = useState({ admission: [], dismissal: [] })
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [positionFilter, setPositionFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessages, setErrorMessages] = useState({ admission: '', dismissal: '' })
   const [selectedApprovalRequest, setSelectedApprovalRequest] = useState(null)
@@ -655,17 +667,19 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     const normalizedQuery = query.trim().toLowerCase()
     return visibleRequests.filter((item) => {
       const matchesStatus = activeTab !== 'admission' || statusFilter === 'all' || item.status === statusFilter
+      const matchesPosition = activeTab !== 'admission' || positionFilter === 'all' || item.posicao_vaga === positionFilter
       const matchesQuery = !normalizedQuery || activeConfig.getSearchValues(item)
         .filter(Boolean).some((v) => v.toLowerCase().includes(normalizedQuery))
-      return matchesStatus && matchesQuery
+      return matchesStatus && matchesPosition && matchesQuery
     })
-  }, [activeConfig, activeTab, query, statusFilter, visibleRequests])
+  }, [activeConfig, activeTab, positionFilter, query, statusFilter, visibleRequests])
 
   const summary = getSummary(filteredRequests)
 
   function handleTabChange(tabKey) {
     setQuery('')
     setStatusFilter('all')
+    setPositionFilter('all')
     setSelectedApprovalRequest(null)
     setSelectedDetailsRequest(null)
     setSelectedHireRequest(null)
@@ -809,7 +823,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: activeTab === 'admission' ? '1fr auto' : '1fr',
+        gridTemplateColumns: activeTab === 'admission' ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr',
         gap: 12,
         padding: '14px 18px',
         borderRadius: 14,
@@ -838,33 +852,49 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
         </label>
 
         {activeTab === 'admission' && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {ADMISSION_STATUS_FILTERS.map((opt) => {
-              const isSelected = statusFilter === opt.value
-              const meta = ADMISSION_STATUS_META[opt.value]
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => setStatusFilter(opt.value)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    padding: '8px 13px', borderRadius: 8,
-                    border: `1.5px solid ${isSelected ? (meta?.border ?? '#bfdbfe') : '#e2e8f0'}`,
-                    background: isSelected ? (meta?.bg ?? '#eff6ff') : '#f8fafc',
-                    color: isSelected ? (meta?.color ?? '#1d4ed8') : '#64748b',
-                    fontSize: 12, fontWeight: 600,
-                    cursor: 'pointer', transition: 'all 140ms ease',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {meta && (
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: meta.dot }} />
-                  )}
-                  {opt.label}
-                </button>
-              )
-            })}
-          </div>
+          <>
+            <label style={{ display: 'grid', gap: 7, fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+              <span>Status</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  padding: '10px 14px',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: 10,
+                  background: '#f8fafc',
+                  color: '#0f172a',
+                  fontSize: 14,
+                  outline: 'none',
+                }}
+              >
+                {ADMISSION_STATUS_FILTERS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: 'grid', gap: 7, fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+              <span>Posição da vaga</span>
+              <select
+                value={positionFilter}
+                onChange={(e) => setPositionFilter(e.target.value)}
+                style={{
+                  padding: '10px 14px',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: 10,
+                  background: '#f8fafc',
+                  color: '#0f172a',
+                  fontSize: 14,
+                  outline: 'none',
+                }}
+              >
+                {ADMISSION_POSITION_FILTERS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </label>
+          </>
         )}
       </div>
 
@@ -898,9 +928,9 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
           <span style={{ fontSize: 14, color: '#94a3b8', maxWidth: 320, lineHeight: 1.65 }}>
             {activeConfig.emptyText}
           </span>
-          {(query || statusFilter !== 'all') && (
+          {(query || statusFilter !== 'all' || positionFilter !== 'all') && (
             <button
-              onClick={() => { setQuery(''); setStatusFilter('all') }}
+              onClick={() => { setQuery(''); setStatusFilter('all'); setPositionFilter('all') }}
               style={{ ...btnStyle('ghost'), marginTop: 8 }}
             >
               Limpar filtros
@@ -949,7 +979,7 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
       )}
 
       <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500, textAlign: 'right' }}>
-        {filteredRequests.length} de {visibleRequests.length} solicitaç{visibleRequests.length !== 1 ? 'ões' : 'ão'} {query || statusFilter !== 'all' ? 'filtrada' + (filteredRequests.length !== 1 ? 's' : '') : ''}
+        {filteredRequests.length} de {visibleRequests.length} solicitaç{visibleRequests.length !== 1 ? 'ões' : 'ão'} {query || statusFilter !== 'all' || positionFilter !== 'all' ? 'filtrada' + (filteredRequests.length !== 1 ? 's' : '') : ''}
       </div>
 
       <ApprovalStatusModal

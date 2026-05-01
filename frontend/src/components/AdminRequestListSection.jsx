@@ -161,6 +161,373 @@ function HireProgressBar({ hired, total }) {
   )
 }
 
+const admissionListColumns = '112px minmax(250px, 1.45fr) 150px 92px 150px 160px 190px minmax(250px, .95fr)'
+
+function AdmissionRequestRow({ item, actions }) {
+  const statusMeta = ADMISSION_STATUS_META[item.status] ?? ADMISSION_STATUS_META.PENDING
+  const hiredCount = item.hired_employee_count ?? 0
+  const quantityPeople = item.quantity_people ?? 0
+  const shouldShowSalary = requiresVacancySalary(item)
+  const salaryLabel = formatCurrency(item.vacancy_salary, item.vacancy_salary_currency ?? 'BRL')
+  const isFinalized = item.status === 'FINALIZED'
+  const canFinalizeAdmission = item.status === 'APPROVED' && quantityPeople > 0 && hiredCount >= quantityPeople
+  const canRegisterHire = item.status === 'APPROVED'
+  const isApproved = item.status === 'APPROVED'
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: admissionListColumns,
+      gap: 16,
+      alignItems: 'center',
+      minWidth: 1320,
+      padding: '14px 16px',
+      background: '#fff',
+      borderBottom: '1px solid #e2e8f0',
+      borderLeft: `4px solid ${statusMeta.dot}`,
+      boxShadow: isApproved ? 'inset 0 0 0 1px #bfdbfe' : 'none',
+    }}>
+      <div>
+        <StatusPill status={item.status} meta={statusMeta} />
+        <div style={{ marginTop: 8, fontSize: 11, fontWeight: 800, color: '#475569' }}>ID #{item.id}</div>
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0f172a', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.cargo}
+        </h3>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.setor} · {item.turno} · {RECRUITMENT_SCOPE_LABELS[item.recruitment_scope] ?? item.recruitment_scope}
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gap: 6 }}>
+        <span style={{ justifySelf: 'start', padding: '4px 8px', borderRadius: 7, background: '#f1f5f9', color: '#475569', fontSize: 11, fontWeight: 700 }}>
+          {REQUEST_TYPE_LABELS[item.request_type] ?? item.request_type}
+        </span>
+        <span style={{ justifySelf: 'start', padding: '4px 8px', borderRadius: 7, background: '#eef2ff', color: '#3730a3', fontSize: 11, fontWeight: 700 }}>
+          {CONTRACT_REGIME_LABELS[item.contract_regime] ?? item.contract_regime}
+        </span>
+      </div>
+
+      <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
+        <strong style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{quantityPeople}</strong>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>vaga{quantityPeople !== 1 ? 's' : ''}</span>
+      </div>
+
+      <HireProgressBar hired={hiredCount} total={quantityPeople} />
+
+      <div style={{
+        display: 'grid',
+        gap: 3,
+        padding: '8px 10px',
+        borderRadius: 8,
+        background: shouldShowSalary && item.vacancy_salary ? '#f0fdf4' : '#f8fafc',
+        border: `1px solid ${shouldShowSalary && item.vacancy_salary ? '#bbf7d0' : '#e2e8f0'}`,
+      }}>
+        <strong style={{ fontSize: 13, fontWeight: 800, color: shouldShowSalary && item.vacancy_salary ? '#166534' : '#64748b', overflowWrap: 'anywhere' }}>
+          {shouldShowSalary ? salaryLabel : 'Não se aplica'}
+        </strong>
+        <span style={{ fontSize: 11, color: shouldShowSalary && item.vacancy_salary ? '#16a34a' : '#94a3b8' }}>
+          {shouldShowSalary ? 'Gerente de RH' : ADMISSION_POSITION_LABELS[item.posicao_vaga] ?? item.posicao_vaga}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0,
+        }}>
+          {(item.created_by_user_name ?? '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.created_by_user_name ?? 'Desconhecido'}
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8' }}>
+            {isFinalized && item.finalized_at ? `Finalizada ${formatDateShort(item.finalized_at)}` : formatDateShort(item.created_at)}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 7 }}>
+        <button onClick={actions.onViewApprovalStatus} style={btnStyle('ghost')}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          Aprovações
+        </button>
+        <button onClick={actions.onViewDetails} style={btnStyle('ghost')}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          Detalhes
+        </button>
+        {actions.onViewChecklist && (
+          <button onClick={actions.onViewChecklist} style={btnStyle('ghost')}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            Checklist
+          </button>
+        )}
+        {canFinalizeAdmission && !isFinalized && (
+          <button onClick={actions.onFinalizeAdmission} style={btnStyle('success')}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            Finalizar
+          </button>
+        )}
+        <button
+          onClick={actions.onRegisterHire}
+          disabled={!canRegisterHire}
+          title={!canRegisterHire ? 'Aguardando aprovação' : undefined}
+          style={btnStyle(canRegisterHire ? 'primary' : 'disabled')}
+        >
+          {isFinalized ? (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+              Finalizada
+            </>
+          ) : canRegisterHire ? (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/>
+              </svg>
+              Candidatos
+            </>
+          ) : (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Aguardando
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AdmissionRequestList({ items, getActions }) {
+  return (
+    <div style={{
+      borderRadius: 14,
+      background: '#fff',
+      border: '1px solid #e2e8f0',
+      boxShadow: '0 1px 4px rgba(15,23,42,.04)',
+      overflow: 'hidden',
+    }}>
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: admissionListColumns,
+          gap: 16,
+          alignItems: 'center',
+          minWidth: 1320,
+          padding: '12px 16px',
+          borderLeft: '4px solid transparent',
+          background: '#f8fafc',
+          borderBottom: '1px solid #e2e8f0',
+          color: '#64748b',
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '.06em',
+        }}>
+          <span>Status</span>
+          <span>Solicitação</span>
+          <span>Tipo</span>
+          <span>Vagas</span>
+          <span>Contratações</span>
+          <span>Salário</span>
+          <span>Solicitante</span>
+          <span style={{ textAlign: 'right' }}>Ações</span>
+        </div>
+        {items.map((item) => (
+          <AdmissionRequestRow key={item.id} item={item} actions={getActions(item)} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const dismissalListColumns = '112px minmax(280px, 1.5fr) 170px 130px minmax(230px, 1fr) 118px minmax(270px, .95fr)'
+
+function DismissalRequestRow({ item, actions }) {
+  const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
+  const canRejectDismissal = actions.canRejectDismissal && item.status === 'APPROVED'
+  const canFinalizeDismissal = actions.canFinalizeDismissal && item.status === 'APPROVED'
+  const isFinalized = item.status === 'FINALIZED'
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: dismissalListColumns,
+      gap: 16,
+      alignItems: 'center',
+      minWidth: 1280,
+      padding: '14px 16px',
+      background: '#fff',
+      borderBottom: '1px solid #e2e8f0',
+      borderLeft: `4px solid ${statusMeta.dot}`,
+      boxShadow: item.status === 'APPROVED' ? 'inset 0 0 0 1px #bfdbfe' : 'none',
+    }}>
+      <div>
+        <StatusPill status={item.status} meta={statusMeta} />
+        <div style={{ marginTop: 8, fontSize: 11, fontWeight: 800, color: '#475569' }}>ID #{item.id}</div>
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0f172a', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.employee_name}
+        </h3>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.cargo} · {item.departamento}
+        </p>
+      </div>
+
+      <span style={{
+        justifySelf: 'start',
+        padding: '5px 9px',
+        borderRadius: 7,
+        background: '#fef3c7',
+        color: '#92400e',
+        fontSize: 11,
+        fontWeight: 800,
+      }}>
+        {DISMISSAL_TYPE_LABELS[item.dismissal_type] ?? item.dismissal_type}
+      </span>
+
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 86,
+        padding: '7px 10px',
+        borderRadius: 8,
+        background: item.has_replacement ? '#f0fdf4' : '#f8fafc',
+        border: `1px solid ${item.has_replacement ? '#bbf7d0' : '#e2e8f0'}`,
+        color: item.has_replacement ? '#166534' : '#64748b',
+        fontSize: 12,
+        fontWeight: 800,
+      }}>
+        {item.has_replacement ? 'Sim' : 'Não'}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0,
+        }}>
+          {(item.created_by_user_name ?? '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.created_by_user_name ?? 'Desconhecido'}
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.created_by_user_email}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>
+        {isFinalized && item.finalized_at ? formatDateShort(item.finalized_at) : formatDateShort(item.created_at)}
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 7 }}>
+        <button onClick={actions.onViewApprovalStatus} style={btnStyle('ghost')}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          Aprovações
+        </button>
+        <button onClick={actions.onViewChecklist} style={btnStyle('ghost')}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          Checklist
+        </button>
+        <button onClick={actions.onViewDetails} style={btnStyle('ghost')}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          Detalhes
+        </button>
+        {canRejectDismissal && (
+          <button onClick={actions.onRejectDismissal} style={btnStyle('danger')}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Recusar
+          </button>
+        )}
+        <button
+          onClick={canFinalizeDismissal ? actions.onFinalizeDismissal : undefined}
+          disabled={!canFinalizeDismissal}
+          style={btnStyle(canFinalizeDismissal || isFinalized ? 'success' : 'disabled')}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          {isFinalized ? 'Finalizada' : 'Finalizar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function DismissalRequestList({ items, getActions }) {
+  return (
+    <div style={{
+      borderRadius: 14,
+      background: '#fff',
+      border: '1px solid #e2e8f0',
+      boxShadow: '0 1px 4px rgba(15,23,42,.04)',
+      overflow: 'hidden',
+    }}>
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: dismissalListColumns,
+          gap: 16,
+          alignItems: 'center',
+          minWidth: 1280,
+          padding: '12px 16px',
+          borderLeft: '4px solid transparent',
+          background: '#f8fafc',
+          borderBottom: '1px solid #e2e8f0',
+          color: '#64748b',
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '.06em',
+        }}>
+          <span>Status</span>
+          <span>Colaborador</span>
+          <span>Tipo</span>
+          <span>Substituição</span>
+          <span>Solicitante</span>
+          <span>Data</span>
+          <span style={{ textAlign: 'right' }}>Ações</span>
+        </div>
+        {items.map((item) => (
+          <DismissalRequestRow key={item.id} item={item} actions={getActions(item)} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function AdmissionCard({ item, actions, user }) {
   const statusMeta = ADMISSION_STATUS_META[item.status] ?? ADMISSION_STATUS_META.PENDING
   const hiredCount = item.hired_employee_count ?? 0
@@ -938,44 +1305,31 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
           )}
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-          gap: 14,
-        }}>
-          {activeTab === 'admission'
-            ? filteredRequests.map((item) => (
-                <AdmissionCard
-                  key={item.id}
-                  item={item}
-                  user={user}
-                  actions={{
+        activeTab === 'admission' ? (
+          <AdmissionRequestList
+            items={filteredRequests}
+            getActions={(item) => ({
                     onViewApprovalStatus: () => openApprovalStatus(item),
                     onViewDetails: () => openDetailsModal(item),
                     onViewChecklist: () => setSelectedChecklistRequest(item),
                     onFinalizeAdmission: () => finalizeAdmissionRequest(item),
                     onRegisterHire: () => setSelectedHireRequest(item),
-                  }}
-                />
-              ))
-            : filteredRequests.map((item) => (
-                <DismissalCard
-                  key={item.id}
-                  item={item}
-                  user={user}
-                  actions={{
-                    onViewApprovalStatus: () => openApprovalStatus(item),
-                    onViewChecklist: () => setSelectedDismissalChecklistRequest(item),
-                    onViewDetails: () => openDetailsModal(item),
-                    onRejectDismissal: () => openDismissalRejectionModal(item),
-                    canRejectDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
-                    onFinalizeDismissal: () => finalizeDismissalRequest(item),
-                    canFinalizeDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
-                  }}
-                />
-              ))
-          }
-        </div>
+                  })}
+          />
+        ) : (
+          <DismissalRequestList
+            items={filteredRequests}
+            getActions={(item) => ({
+              onViewApprovalStatus: () => openApprovalStatus(item),
+              onViewChecklist: () => setSelectedDismissalChecklistRequest(item),
+              onViewDetails: () => openDetailsModal(item),
+              onRejectDismissal: () => openDismissalRejectionModal(item),
+              canRejectDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
+              onFinalizeDismissal: () => finalizeDismissalRequest(item),
+              canFinalizeDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
+            })}
+          />
+        )
       )}
 
       <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500, textAlign: 'right' }}>

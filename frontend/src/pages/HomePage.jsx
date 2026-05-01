@@ -8,12 +8,12 @@ function TimeGreeting() {
 }
 
 const BRAND = {
-  blue: '#1F4E99',
-  orange: '#F28C1B',
-  orangeLight: '#FEF3E2',
-  orangeBorder: '#FAD49A',
-  blueLight: '#EBF1FB',
-  blueBorder: '#AABFDE',
+  blue: '#174a97',
+  orange: '#f59a17',
+  orangeLight: '#fff3df',
+  orangeBorder: '#f8cf8f',
+  blueLight: '#ebf3ff',
+  blueBorder: '#a9c3e8',
 }
 
 const MODULES = [
@@ -65,8 +65,7 @@ export function HomePage() {
       <header className="home-header">
         <div className="home-header-inner">
           <span className="home-brand">
-            <img src="/wasion-logo.png" alt="Wasion América" />
-            <span>Recursos Humanos</span>
+            <img src="/wasion-america-logo.png" alt="Wasion América" />
           </span>
           <Link className="home-admin-link" to="/admin/login" state={{ returnTo: '/admin' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

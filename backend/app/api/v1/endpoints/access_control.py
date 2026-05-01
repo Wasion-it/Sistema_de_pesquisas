@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import logging
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_portal_user
 from app.core.config import settings
 from app.db.session import get_db
-from app.models import RoleEnum, User
+from app.models import AuditActionEnum, AuditLog, RoleEnum, User
 from app.models.enums import AuthenticationSourceEnum
 from app.schemas.admin import (
     AccessControlUpdateRequest,
@@ -48,6 +50,18 @@ def list_access_control_users(
     if settings.ldap_enabled and settings.ldap_user_base_dn:
         try:
             sync_directory_users_from_ou(db)
+            db.add(
+                AuditLog(
+                    actor_user_id=user.id,
+                    action=AuditActionEnum.UPDATE,
+                    entity_name="ldap_users",
+                    entity_id="sync",
+                    description="LDAP users synchronized from access control.",
+                    details_json=json.dumps({"ldap_user_base_dn": settings.ldap_user_base_dn}),
+                    ip_address="127.0.0.1",
+                    created_at=datetime.now(UTC),
+                )
+            )
             db.commit()
         except (LdapAuthenticationError, LdapConfigurationError) as exc:
             db.rollback()
@@ -77,8 +91,29 @@ def update_access_control_user(
     if target_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    previous_role = target_user.role
     if payload.role is not None:
         target_user.role = payload.role
+        if previous_role != target_user.role:
+            db.add(
+                AuditLog(
+                    actor_user_id=user.id,
+                    action=AuditActionEnum.UPDATE,
+                    entity_name="user_access",
+                    entity_id=str(target_user.id),
+                    description="User portal role updated from access control.",
+                    details_json=json.dumps(
+                        {
+                            "target_user_id": target_user.id,
+                            "target_email": target_user.email,
+                            "previous_role": previous_role.value,
+                            "new_role": target_user.role.value,
+                        }
+                    ),
+                    ip_address="127.0.0.1",
+                    created_at=datetime.now(UTC),
+                )
+            )
     db.commit()
     db.refresh(target_user)
     return _serialize_user(target_user, db)

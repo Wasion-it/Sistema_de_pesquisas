@@ -515,6 +515,7 @@ def _mark_request_approval_progress(
     request_item,
     approval_steps,
     *,
+    entity_name: str,
     target_step=None,
     approve: bool,
     user: User,
@@ -529,8 +530,35 @@ def _mark_request_approval_progress(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This request no longer has pending approval steps")
 
     now = datetime.now(UTC)
+    previous_status = request_item.status
     first_pending_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
     direct_bypass = first_pending_step is not None and current_step.id != first_pending_step.id
+
+    def add_approval_audit_log() -> None:
+        db.add(
+            AuditLog(
+                actor_user_id=user.id,
+                action=AuditActionEnum.UPDATE,
+                entity_name=entity_name,
+                entity_id=str(request_item.id),
+                description=f"{entity_name.replace('_', ' ').title()} approval step {'approved' if approve else 'rejected'} from administrative portal.",
+                details_json=json.dumps(
+                    {
+                        "request_id": request_item.id,
+                        "approval_step_id": current_step.id,
+                        "step_order": current_step.step_order,
+                        "approver_role": current_step.approver_role.value,
+                        "decision": "APPROVED" if approve else "REJECTED",
+                        "previous_status": previous_status.value,
+                        "new_status": request_item.status.value,
+                        "direct_bypass": direct_bypass,
+                        "comments": comments,
+                    }
+                ),
+                ip_address="127.0.0.1",
+                created_at=now,
+            )
+        )
 
     if approve:
         current_step.status = ApprovalStepStatusEnum.APPROVED
@@ -547,6 +575,7 @@ def _mark_request_approval_progress(
                     approval_step.comments = comments
             request_item.status = approved_status
             request_item.submitted_at = request_item.submitted_at or now
+            add_approval_audit_log()
             return
 
         remaining_pending = [approval_step for approval_step in ordered_steps if approval_step.step_order > current_step.step_order and approval_step.status == ApprovalStepStatusEnum.PENDING]
@@ -555,6 +584,7 @@ def _mark_request_approval_progress(
         else:
             request_item.status = approved_status
             request_item.submitted_at = request_item.submitted_at or now
+        add_approval_audit_log()
         return
 
     current_step.status = ApprovalStepStatusEnum.REJECTED
@@ -570,6 +600,7 @@ def _mark_request_approval_progress(
             approval_step.comments = comments
 
     request_item.status = rejected_status
+    add_approval_audit_log()
 
 
 @router.get("/admission-checklist", response_model=AdmissionChecklistStepListResponse)
@@ -1143,6 +1174,7 @@ def approve_admin_admission_request(
         db,
         request_item,
         request_item.approval_steps,
+        entity_name="admission_request",
         target_step=current_step,
         approve=True,
         user=user,
@@ -1188,6 +1220,7 @@ def reject_admin_admission_request(
         db,
         request_item,
         request_item.approval_steps,
+        entity_name="admission_request",
         target_step=current_step,
         approve=False,
         user=user,
@@ -1250,6 +1283,7 @@ def approve_admin_dismissal_request(
         db,
         request_item,
         request_item.approval_steps,
+        entity_name="dismissal_request",
         target_step=current_step,
         approve=True,
         user=user,
@@ -1322,6 +1356,7 @@ def reject_admin_dismissal_request(
         db,
         request_item,
         request_item.approval_steps,
+        entity_name="dismissal_request",
         target_step=current_step,
         approve=False,
         user=user,
@@ -2216,6 +2251,26 @@ def hire_admin_admission_request(
         )
         db.add(candidate)
         db.flush()
+        db.add(
+            AuditLog(
+                actor_user_id=user.id,
+                action=AuditActionEnum.CREATE,
+                entity_name="admission_request_candidate",
+                entity_id=str(candidate.id),
+                description="Candidate registered for an approved admission request.",
+                details_json=json.dumps(
+                    {
+                        "request_id": request_item.id,
+                        "candidate_id": candidate.id,
+                        "full_name": candidate.full_name,
+                        "email": candidate.email,
+                        "is_hired": candidate.is_hired,
+                    }
+                ),
+                ip_address="127.0.0.1",
+                created_at=datetime.now(UTC),
+            )
+        )
 
         if candidate_payload.is_hired:
             employee_code = f"ADM-{request_item.id}-{candidate.id}"

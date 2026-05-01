@@ -179,6 +179,8 @@ def _list_active_job_titles(db: Session) -> list[JobTitle]:
     }
 
     created_any = False
+    created_job_titles: list[JobTitle] = []
+    updated_job_titles: list[JobTitle] = []
     for code, name in PUBLIC_POSITION_OPTIONS:
         job_title = existing_by_code.get(code)
         if job_title is None:
@@ -186,10 +188,42 @@ def _list_active_job_titles(db: Session) -> list[JobTitle]:
             db.add(job_title)
             db.flush()
             existing_by_code[code] = job_title
+            created_job_titles.append(job_title)
             created_any = True
         else:
+            needs_update = job_title.name != name or not job_title.is_active
             job_title.name = name
             job_title.is_active = True
+            if needs_update:
+                updated_job_titles.append(job_title)
+
+    for job_title in created_job_titles:
+        db.add(
+            AuditLog(
+                actor_user_id=None,
+                action=AuditActionEnum.CREATE,
+                entity_name="job_title",
+                entity_id=str(job_title.id),
+                description="Public participation job title option created automatically.",
+                details_json=json.dumps({"job_title_id": job_title.id, "code": job_title.code, "name": job_title.name}),
+                ip_address="127.0.0.1",
+                created_at=_utc_now_naive(),
+            )
+        )
+
+    for job_title in updated_job_titles:
+        db.add(
+            AuditLog(
+                actor_user_id=None,
+                action=AuditActionEnum.UPDATE,
+                entity_name="job_title",
+                entity_id=str(job_title.id),
+                description="Public participation job title option normalized automatically.",
+                details_json=json.dumps({"job_title_id": job_title.id, "code": job_title.code, "name": job_title.name}),
+                ip_address="127.0.0.1",
+                created_at=_utc_now_naive(),
+            )
+        )
 
     if created_any:
         db.commit()
@@ -417,6 +451,27 @@ def start_public_campaign_participation(
         return _build_transient_participation_payload(campaign, db)
 
     audience, response = _create_anonymous_participation(db, campaign, department, job_title)
+    db.add(
+        AuditLog(
+            actor_user_id=None,
+            action=AuditActionEnum.CREATE,
+            entity_name="public_campaign_participation",
+            entity_id=str(response.id),
+            description="Campaign participation started from public portal.",
+            details_json=json.dumps(
+                {
+                    "campaign_id": campaign.id,
+                    "response_id": response.id,
+                    "audience_id": audience.id,
+                    "employee_id": response.employee_id,
+                    "department_id": department.id,
+                    "job_title_id": job_title.id,
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=response.started_at,
+        )
+    )
 
     db.commit()
 
@@ -510,6 +565,27 @@ def submit_public_campaign_response(
 
         department, job_title = _get_participation_profile(db, payload.department_id, payload.job_title_id)
         audience, response = _create_anonymous_participation(db, campaign, department, job_title)
+        db.add(
+            AuditLog(
+                actor_user_id=None,
+                action=AuditActionEnum.CREATE,
+                entity_name="public_campaign_participation",
+                entity_id=str(response.id),
+                description="Campaign participation created during public response submission.",
+                details_json=json.dumps(
+                    {
+                        "campaign_id": campaign.id,
+                        "response_id": response.id,
+                        "audience_id": audience.id,
+                        "employee_id": response.employee_id,
+                        "department_id": department.id,
+                        "job_title_id": job_title.id,
+                    }
+                ),
+                ip_address="127.0.0.1",
+                created_at=response.started_at,
+            )
+        )
 
     existing_items = {item.question_id: item for item in response.items}
     for question_id, answer in answers_by_question_id.items():

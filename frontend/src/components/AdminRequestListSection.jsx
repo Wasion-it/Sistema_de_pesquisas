@@ -10,6 +10,7 @@ import { DismissalChecklistModal } from './DismissalChecklistModal'
 import { RequestDetailsModal } from './RequestDetailsModal'
 import {
   finalizeAdminAdmissionRequest,
+  finalizeAdminDismissalRequest,
   getAdminAdmissionChecklist,
   getAdminAdmissionRequests,
   getAdminDismissalChecklist,
@@ -370,6 +371,8 @@ function AdmissionCard({ item, actions, user }) {
 function DismissalCard({ item, actions, user }) {
   const statusMeta = STATUS_META[item.status] ?? STATUS_META.PENDING
   const canRejectDismissal = actions.canRejectDismissal && item.status === 'APPROVED'
+  const canFinalizeDismissal = actions.canFinalizeDismissal && item.status === 'APPROVED'
+  const isFinalized = item.status === 'FINALIZED'
 
   return (
     <article style={{
@@ -456,13 +459,23 @@ function DismissalCard({ item, actions, user }) {
             Detalhes
           </button>
           {canRejectDismissal && (
-            <button onClick={actions.onRejectDismissal} style={{ ...btnStyle('danger'), marginLeft: 'auto' }}>
+            <button onClick={actions.onRejectDismissal} style={btnStyle('danger')}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
               Recusar demissão
             </button>
           )}
+          <button
+            onClick={canFinalizeDismissal ? actions.onFinalizeDismissal : undefined}
+            disabled={!canFinalizeDismissal}
+            style={{ ...btnStyle(canFinalizeDismissal || isFinalized ? 'success' : 'disabled'), marginLeft: 'auto' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            {isFinalized ? 'Demissão finalizada' : 'Finalizar demissão'}
+          </button>
         </div>
       </div>
     </article>
@@ -690,6 +703,15 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
     }
   }
 
+  async function finalizeDismissalRequest(item) {
+    try {
+      await finalizeAdminDismissalRequest(token, item.id)
+      setRefreshCounter((v) => v + 1)
+    } catch (error) {
+      setErrorMessages((cur) => ({ ...cur, dismissal: error.message }))
+    }
+  }
+
   return (
     <div className="admin-view">
       <div className="admin-view-header">
@@ -899,6 +921,8 @@ export function AdminRequestListSection({ initialTab = 'admission' }) {
                     onViewDetails: () => openDetailsModal(item),
                     onRejectDismissal: () => openDismissalRejectionModal(item),
                     canRejectDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
+                    onFinalizeDismissal: () => finalizeDismissalRequest(item),
+                    canFinalizeDismissal: user?.role === 'RH_ANALISTA' || user?.role === 'RH_ADMIN',
                   }}
                 />
               ))

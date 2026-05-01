@@ -387,6 +387,10 @@ def _ensure_approval_workflow_columns() -> None:
             statements.append(
                 "ALTER TABLE dismissal_requests ADD COLUMN post_approval_rejected_at DATETIME"
             )
+        if "finalized_at" not in existing_columns:
+            statements.append(
+                "ALTER TABLE dismissal_requests ADD COLUMN finalized_at DATETIME"
+            )
 
     if not statements:
         return

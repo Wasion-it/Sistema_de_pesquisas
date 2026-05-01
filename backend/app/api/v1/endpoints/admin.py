@@ -370,6 +370,7 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
         approval_workflow_template_id=item.approval_workflow_template_id,
         checklist_completed_steps=item.checklist_completed_steps or 0,
         submitted_at=item.submitted_at,
+        finalized_at=item.finalized_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
@@ -2428,6 +2429,71 @@ def read_admin_dismissal_request_detail(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
 
     return _serialize_dismissal_request(item)
+
+
+@router.post("/hr/dismissal-requests/{request_id}/finalize", response_model=DismissalRequestResponse)
+def finalize_admin_dismissal_request(
+    request_id: int,
+    user: Annotated[User, Depends(get_current_admin_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DismissalRequestResponse:
+    _require_recruiter_access(user)
+
+    item = db.scalar(
+        select(DismissalRequest)
+        .options(selectinload(DismissalRequest.created_by_user), selectinload(DismissalRequest.recruiter_user))
+        .where(DismissalRequest.id == request_id)
+    )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+    if not _can_user_view_dismissal_request(user, item):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dismissal request not found")
+
+    if item.status == DismissalRequestStatusEnum.FINALIZED:
+        if item.finalized_at is None:
+            item.finalized_at = item.updated_at or datetime.now(UTC)
+            db.commit()
+            db.refresh(item)
+        return _serialize_dismissal_request(item)
+
+    if item.status != DismissalRequestStatusEnum.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only approved dismissal requests can be finalized",
+        )
+
+    finalized_at = datetime.now(UTC)
+    item.status = DismissalRequestStatusEnum.FINALIZED
+    item.finalized_at = finalized_at
+    db.add(
+        AuditLog(
+            actor_user_id=user.id,
+            action=AuditActionEnum.UPDATE,
+            entity_name="dismissal_request",
+            entity_id=str(item.id),
+            description="Dismissal request finalized from administrative portal.",
+            details_json=json.dumps(
+                {
+                    "request_id": item.id,
+                    "final_status": item.status.value,
+                    "finalized_at": finalized_at.isoformat(),
+                }
+            ),
+            ip_address="127.0.0.1",
+            created_at=finalized_at,
+        )
+    )
+    db.commit()
+
+    loaded_item = db.scalar(
+        select(DismissalRequest)
+        .options(selectinload(DismissalRequest.created_by_user), selectinload(DismissalRequest.recruiter_user))
+        .where(DismissalRequest.id == request_id)
+    )
+    if loaded_item is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Dismissal request was finalized but could not be loaded")
+
+    return _serialize_dismissal_request(loaded_item)
 
 
 @router.get("/hr/dismissal-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)

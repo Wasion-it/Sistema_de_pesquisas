@@ -363,6 +363,7 @@ class DismissalRequestResponse(BaseModel):
     approval_workflow_template_id: int | None
     checklist_completed_steps: int
     submitted_at: datetime | None
+    finalized_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

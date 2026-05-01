@@ -551,6 +551,8 @@ const REQUEST_TABS_CONFIG = {
         ? formatCurrency(item.vacancy_salary, item.vacancy_salary_currency ?? 'BRL')
         : ''
       return [
+        String(item.id),
+        `ID #${item.id}`,
         item.cargo, item.setor, item.created_by_user_name, item.created_by_user_email,
         REQUEST_TYPE_LABELS[item.request_type], RECRUITMENT_SCOPE_LABELS[item.recruitment_scope],
         CONTRACT_REGIME_LABELS[item.contract_regime], item.turno, salaryValue, salaryFormatted,
@@ -566,6 +568,8 @@ const REQUEST_TABS_CONFIG = {
     fetcher: getAdminDismissalRequests,
     getSearchValues(item) {
       return [
+        String(item.id),
+        `ID #${item.id}`,
         item.employee_name, item.cargo, item.departamento,
         item.created_by_user_name, item.created_by_user_email,
         DISMISSAL_TYPE_LABELS[item.dismissal_type], CONTRACT_REGIME_LABELS[item.contract_regime],

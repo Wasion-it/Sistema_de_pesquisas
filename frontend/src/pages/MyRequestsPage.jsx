@@ -540,6 +540,8 @@ export function MyRequestsPage() {
 
     return filteredByKind.filter((item) => {
       const haystack = [
+        String(item.request_id),
+        `ID #${item.request_id}`,
         item.request_title,
         item.request_subtitle,
         item.request_status,

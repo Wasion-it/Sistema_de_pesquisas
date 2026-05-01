@@ -183,6 +183,13 @@ function AdmissionCard({ item, actions, user }) {
               <StatusPill status={item.status} meta={statusMeta} />
               <span style={{
                 padding: '3px 8px', borderRadius: 5,
+                background: '#eef2ff', color: '#3730a3',
+                fontSize: 11, fontWeight: 700,
+              }}>
+                ID #{item.id}
+              </span>
+              <span style={{
+                padding: '3px 8px', borderRadius: 5,
                 background: '#f1f5f9', color: '#64748b',
                 fontSize: 11, fontWeight: 600,
               }}>
@@ -390,6 +397,13 @@ function DismissalCard({ item, actions, user }) {
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
               <StatusPill status={item.status} meta={statusMeta} />
+              <span style={{
+                padding: '3px 8px', borderRadius: 5,
+                background: '#eef2ff', color: '#3730a3',
+                fontSize: 11, fontWeight: 700,
+              }}>
+                ID #{item.id}
+              </span>
               <span style={{
                 padding: '3px 8px', borderRadius: 5,
                 background: '#fef3c7', color: '#92400e',

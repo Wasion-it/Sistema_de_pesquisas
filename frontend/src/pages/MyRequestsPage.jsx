@@ -309,6 +309,14 @@ function RequestCard({ item, onViewDetails }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <KindBadge kind={kindKey} />
               <StatusBadge status={item.request_status} />
+              <span style={{
+                display: 'inline-flex', alignItems: 'center',
+                padding: '4px 10px', borderRadius: 6,
+                background: '#eef2ff', color: '#3730a3',
+                fontSize: 11, fontWeight: 700,
+              }}>
+                ID #{item.request_id}
+              </span>
             </div>
             <h3 style={{ margin: 0, fontSize: '1rem', fontFamily: 'var(--font-display)', color: 'var(--slate-900)', lineHeight: 1.3 }}>
               {item.request_title}

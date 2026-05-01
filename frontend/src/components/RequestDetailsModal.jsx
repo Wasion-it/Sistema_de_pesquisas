@@ -330,6 +330,7 @@ export function RequestDetailsModal({ request, token, onClose }) {
           {!isLoading && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18, position: 'relative', zIndex: 1 }}>
               {[
+                { icon: '#', text: `ID #${fullRequest.request_id ?? fullRequest.id}` },
                 { icon: '🔁', text: fullRequest.workflow_name },
                 { icon: '👤', text: fullRequest.requester_name },
                 { icon: '📅', text: `Criado ${formatDateTime(fullRequest.created_at)}` },

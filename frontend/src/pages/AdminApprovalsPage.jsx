@@ -776,7 +776,19 @@ export function AdminApprovalsPage() {
                     <>
                       <div className="approval-request-top">
                         <div>
-                          <span className="approval-kind">{REQUEST_KIND_TABS[requestKind]?.label ?? item.request_kind}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span className="approval-kind">{REQUEST_KIND_TABS[requestKind]?.label ?? item.request_kind}</span>
+                            <span style={{
+                              padding: '3px 8px',
+                              borderRadius: 5,
+                              background: '#eef2ff',
+                              color: '#3730a3',
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}>
+                              ID #{item.request_id}
+                            </span>
+                          </div>
                           <h3>{item.request_title}</h3>
                           <p>{item.request_subtitle}</p>
                         </div>

@@ -435,7 +435,7 @@ def _ensure_default_approval_workflow() -> None:
 
         expected_steps = [
             (1, ApprovalRoleEnum.MANAGER, "Gerente"),
-            (2, ApprovalRoleEnum.DIRECTOR_RAVI, "Diretor Ravi"),
+            (2, ApprovalRoleEnum.DIRECTOR_RAVI, "General Manager"),
             (3, ApprovalRoleEnum.RH_MANAGER, "Gerente de RH"),
         ]
         existing_steps = {step.step_order: step for step in workflow.steps}

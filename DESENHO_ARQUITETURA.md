@@ -137,7 +137,7 @@ flowchart TB
     create --> workflow[Cria etapas de aprovação]
 
     workflow --> gestor[Gestor aprova]
-    gestor --> diretor[Diretor RAVI aprova]
+    gestor --> diretor[General Manager aprova]
     diretor --> rhManager[Gerente de RH aprova]
 
     rhManager --> approved{Aprovado?}
@@ -159,7 +159,7 @@ flowchart TB
     create --> workflow[Cria etapas de aprovação]
 
     workflow --> gestor[Gestor aprova]
-    gestor --> diretor[Diretor RAVI aprova]
+    gestor --> diretor[General Manager aprova]
     diretor --> rhManager[Gerente de RH aprova]
 
     rhManager --> approved{Aprovado?}
@@ -232,7 +232,7 @@ mindmap
       Minhas solicitações
     Aprovações
       Gestor
-      Diretor RAVI
+      General Manager
       Gerente RH
     Operação RH
       Checklists

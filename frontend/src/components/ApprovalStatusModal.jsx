@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { finalizeAdminAdmissionRequest, getAdminAdmissionApprovalStatus, getAdminDismissalApprovalStatus } from '../services/admin'
+import { formatApprovalLabel } from '../utils/approvalLabels'
 
 function formatDateTime(value) {
   if (!value) return '—'
@@ -179,7 +180,7 @@ function StepNode({ step, isCurrent, totalSteps }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
           <strong style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', lineHeight: 1.3 }}>
-            {step.approver_label}
+            {formatApprovalLabel(step.approver_label)}
           </strong>
           {isCurrent && (
             <span
@@ -689,7 +690,7 @@ export function ApprovalStatusModal({ request, token, onClose, onUpdated }) {
                   { label: 'Solicitante', value: fullRequest.requester_name, sub: fullRequest.requester_email },
                   {
                     label: 'Etapa atual',
-                    value: fullRequest.current_step_label ?? (status === 'APPROVED' || status === 'FINALIZED' ? 'Concluída' : '—'),
+                    value: formatApprovalLabel(fullRequest.current_step_label) ?? (status === 'APPROVED' || status === 'FINALIZED' ? 'Concluída' : '—'),
                   },
                   {
                     label: 'Atualizado',

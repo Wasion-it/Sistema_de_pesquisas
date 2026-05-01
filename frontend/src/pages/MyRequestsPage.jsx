@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { RequestDetailsModal } from '../components/RequestDetailsModal'
 import { getMyRequests } from '../services/admin'
+import { formatApprovalLabel } from '../utils/approvalLabels'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -128,7 +129,7 @@ function getApprovalProgress(steps = []) {
 }
 
 function getCurrentStepLabel(item) {
-  if (item.current_step_label) return item.current_step_label
+  if (item.current_step_label) return formatApprovalLabel(item.current_step_label)
   if (['APPROVED', 'FINALIZED', 'REJECTED', 'CANCELED'].includes(item.request_status)) return 'Concluída'
   return 'Aguardando etapa'
 }
@@ -263,7 +264,7 @@ function ApprovalFlowTracker({ steps }) {
               </div>
               <div style={{ minWidth: 0 }}>
                 <strong style={{ display: 'block', fontSize: 12, fontWeight: 600, color: cfg.color, whiteSpace: 'nowrap' }}>
-                  {step.approver_label}
+                  {formatApprovalLabel(step.approver_label)}
                 </strong>
                 {decisionSummary && (
                   <span style={{ display: 'block', fontSize: 11, color: 'var(--slate-400)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
@@ -536,10 +537,10 @@ export function MyRequestsPage() {
         item.request_status,
         item.request_kind,
         item.workflow_name,
-        item.current_step_label,
+        formatApprovalLabel(item.current_step_label),
         item.requester_name,
         item.requester_email,
-        ...(item.steps ?? []).map((s) => `${s.approver_label} ${s.status}`),
+        ...(item.steps ?? []).map((s) => `${formatApprovalLabel(s.approver_label)} ${s.status}`),
       ].filter(Boolean).join(' ').toLowerCase()
       return haystack.includes(normalizedQuery)
     })

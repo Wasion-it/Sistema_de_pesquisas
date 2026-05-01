@@ -481,7 +481,7 @@ def seed_approval_workflows(session: Session) -> dict[str, ApprovalWorkflowTempl
 
     workflow_steps = [
         (1, ApprovalRoleEnum.MANAGER, "Gerente"),
-        (2, ApprovalRoleEnum.DIRECTOR_RAVI, "Diretor Ravi"),
+        (2, ApprovalRoleEnum.DIRECTOR_RAVI, "General Manager"),
         (3, ApprovalRoleEnum.RH_MANAGER, "Gerente de RH"),
     ]
 

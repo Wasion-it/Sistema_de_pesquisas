@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { RequestDetailsModal } from '../components/RequestDetailsModal'
 import { approveAdminApprovalRequest, getAdminApprovalHistory, getAdminApprovalQueue, getAdminRecruiters, rejectAdminApprovalRequest } from '../services/admin'
+import { formatApprovalLabel } from '../utils/approvalLabels'
 
 const REQUEST_KIND_TABS = {
   admission: {
@@ -32,7 +33,7 @@ const APPROVAL_VIEW_MODES = {
 
 const APPROVAL_ROLE_LABELS = {
   MANAGER: 'Gerente',
-  DIRECTOR_RAVI: 'Diretor Ravi',
+  DIRECTOR_RAVI: 'General Manager',
   RH_MANAGER: 'Gerente de RH',
 }
 
@@ -148,7 +149,7 @@ function ApprovalStepTracker({ steps }) {
             <div className={`approval-step-node ${trackerMeta.className} ${isCurrent ? 'is-current' : ''}`} key={step.step_order}>
               <span className="approval-step-node-index">{step.step_order}</span>
               <div className="approval-step-node-content">
-                <strong>{step.approver_label}</strong>
+                <strong>{formatApprovalLabel(step.approver_label)}</strong>
                 <small>{trackerMeta.title}</small>
                 {decisionSummary ? <small className="approval-step-node-detail">{decisionSummary}</small> : null}
               </div>
@@ -201,7 +202,7 @@ function RecruiterApprovalModal({
         <div className="request-modal-section">
           <div className="request-modal-section-header">
             <h4>{assigneeSectionTitle}</h4>
-            <span>{request.current_step_label ?? 'Gerente de RH'}</span>
+            <span>{formatApprovalLabel(request.current_step_label) ?? 'Gerente de RH'}</span>
           </div>
 
           {isLoading ? (
@@ -391,10 +392,10 @@ export function AdminApprovalsPage() {
         item.request_status,
         item.request_kind,
         item.workflow_name,
-        item.current_step_label,
+        formatApprovalLabel(item.current_step_label),
         item.requester_name,
         item.requester_email,
-        ...(item.steps ?? []).map((step) => `${step.approver_label} ${step.status}`),
+        ...(item.steps ?? []).map((step) => `${formatApprovalLabel(step.approver_label)} ${step.status}`),
       ].filter(Boolean).join(' ').toLowerCase()
 
       return haystack.includes(normalizedQuery)
@@ -795,7 +796,7 @@ export function AdminApprovalsPage() {
                         <div>
                           <span>Fluxo</span>
                           <strong>{item.workflow_name}</strong>
-                          <small>Etapa atual: {item.current_step_label ?? 'Concluída'}</small>
+                          <small>Etapa atual: {formatApprovalLabel(item.current_step_label) ?? 'Concluída'}</small>
                         </div>
                         {requiresVacancySalary(item) ? (
                           <div>
@@ -816,7 +817,7 @@ export function AdminApprovalsPage() {
                       <div className="approval-request-actions">
                         {activeViewMode === 'history' ? (
                           <div className="approval-locked-note">
-                            Etapa aprovada: {approvedStep?.approver_label ?? 'aprovação registrada'}.
+                            Etapa aprovada: {formatApprovalLabel(approvedStep?.approver_label) ?? 'aprovação registrada'}.
                           </div>
                         ) : !canActOnItem(item) ? (
                           <div className="approval-locked-note">

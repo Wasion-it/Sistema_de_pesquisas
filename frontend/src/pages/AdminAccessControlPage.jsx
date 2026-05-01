@@ -34,7 +34,7 @@ const ROLE_OPTIONS = [
   },
   {
     value: 'DIRETOR_RAVI',
-    label: 'Diretor Ravi',
+    label: 'General Manager',
     description: 'Aprovação executiva de solicitações',
     color: '#7c3aed',
     bg: '#f5f3ff',

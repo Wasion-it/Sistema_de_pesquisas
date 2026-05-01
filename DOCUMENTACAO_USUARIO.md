@@ -46,7 +46,7 @@ Esta seção resume, em formato visual, os três fluxos mais importantes do sist
 [Gestor avalia]
       |
       v
-[Diretor RAVI avalia]
+[General Manager avalia]
       |
       v
 [Gerente de RH avalia]
@@ -106,7 +106,7 @@ Resumo do fluxo:
 [Gestor avalia]
       |
       v
-[Diretor RAVI avalia]
+[General Manager avalia]
       |
       v
 [Gerente de RH avalia]
@@ -218,7 +218,7 @@ Usuário que acessa as telas públicas ou protegidas para:
 
 Usuário responsável por aprovar ou recusar solicitações encaminhadas ao seu nível de aprovação.
 
-### Diretor RAVI
+### General Manager
 
 Usuário com acesso focado em etapas de aprovação que exigem decisão da diretoria.
 

@@ -376,11 +376,12 @@ def _serialize_dismissal_request(item: DismissalRequest) -> DismissalRequestResp
 
 
 def _serialize_approval_step(step) -> ApprovalStepResponse:
+    approver_label = step.workflow_step.approver_label if step.workflow_step else step.approver_role.value
     return ApprovalStepResponse(
         id=step.id,
         step_order=step.step_order,
         approver_role=step.approver_role,
-        approver_label=step.workflow_step.approver_label if step.workflow_step else step.approver_role.value,
+        approver_label=_format_approval_label(approver_label),
         status=step.status,
         decided_by_user_id=step.decided_by_user_id,
         decided_by_user_name=step.decided_by_user.full_name if step.decided_by_user else None,
@@ -389,9 +390,16 @@ def _serialize_approval_step(step) -> ApprovalStepResponse:
     )
 
 
+def _format_approval_label(label: str | None) -> str | None:
+    if label in {"Diretor Ravi", "Diretor RAVI", ApprovalRoleEnum.DIRECTOR_RAVI.value}:
+        return "General Manager"
+    return label
+
+
 def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> ApprovalQueueItemResponse:
     ordered_steps = sorted(item.approval_steps, key=lambda approval_step: approval_step.step_order)
     current_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    current_step_label = current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None)
     return ApprovalQueueItemResponse(
         request_kind=ApprovalRequestKindEnum.ADMISSION,
         request_id=item.id,
@@ -403,7 +411,7 @@ def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> Approval
         requester_email=item.created_by_user.email,
         workflow_name=item.approval_workflow_template.name if item.approval_workflow_template else "Fluxo padrão",
         current_step_order=current_step.step_order if current_step else None,
-        current_step_label=current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None),
+        current_step_label=_format_approval_label(current_step_label),
         current_step_role=current_step.approver_role if current_step else None,
         recruiter_user_id=item.recruiter_user_id,
         recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
@@ -422,6 +430,7 @@ def _serialize_admission_approval_queue_item(item: AdmissionRequest) -> Approval
 def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> ApprovalQueueItemResponse:
     ordered_steps = sorted(item.approval_steps, key=lambda approval_step: approval_step.step_order)
     current_step = next((approval_step for approval_step in ordered_steps if approval_step.status == ApprovalStepStatusEnum.PENDING), None)
+    current_step_label = current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None)
     return ApprovalQueueItemResponse(
         request_kind=ApprovalRequestKindEnum.DISMISSAL,
         request_id=item.id,
@@ -433,7 +442,7 @@ def _serialize_dismissal_approval_queue_item(item: DismissalRequest) -> Approval
         requester_email=item.created_by_user.email,
         workflow_name=item.approval_workflow_template.name if item.approval_workflow_template else "Fluxo padrão",
         current_step_order=current_step.step_order if current_step else None,
-        current_step_label=current_step.workflow_step.approver_label if current_step and current_step.workflow_step else (current_step.approver_role.value if current_step else None),
+        current_step_label=_format_approval_label(current_step_label),
         current_step_role=current_step.approver_role if current_step else None,
         recruiter_user_id=item.recruiter_user_id,
         recruiter_user_name=item.recruiter_user.full_name if item.recruiter_user else None,
@@ -1355,7 +1364,7 @@ def _get_standard_approval_workflow(db: Session) -> ApprovalWorkflowTemplate:
 
     expected_steps = [
         (1, ApprovalRoleEnum.MANAGER, "Gerente"),
-        (2, ApprovalRoleEnum.DIRECTOR_RAVI, "Diretor Ravi"),
+        (2, ApprovalRoleEnum.DIRECTOR_RAVI, "General Manager"),
         (3, ApprovalRoleEnum.RH_MANAGER, "Gerente de RH"),
     ]
     existing_steps = {step.step_order: step for step in workflow.steps}

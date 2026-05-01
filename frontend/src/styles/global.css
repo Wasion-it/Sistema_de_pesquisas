@@ -447,26 +447,10 @@ p { color: var(--slate-600); line-height: 1.7; }
   flex-wrap: wrap;
 }
 
-.home-footer span,
-.home-footer a {
+.home-footer span {
   color: var(--slate-400);
   font-size: 12px;
   font-weight: 500;
-}
-
-.home-footer nav {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.home-footer a {
-  transition: color var(--dur) var(--ease);
-}
-
-.home-footer a:hover {
-  color: var(--home-brand-blue);
 }
 
 @keyframes pulse {

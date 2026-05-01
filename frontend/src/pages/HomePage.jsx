@@ -151,12 +151,8 @@ export function HomePage() {
 
       <footer className="home-footer">
         <div className="home-footer-inner">
-          <span>Recursos Humanos</span>
-          <nav aria-label="Links rápidos da home">
-            <Link to="/pesquisas">Pesquisas</Link>
-            <Link to="/solicitacoes">Solicitações</Link>
-            <Link to="/admin/login" state={{ returnTo: '/admin' }}>Área RH</Link>
-          </nav>
+          <span>Manaus, {new Date().getFullYear()}</span>
+          <span>Desenvolvido por: TI Wasion</span>
         </div>
       </footer>
     </main>

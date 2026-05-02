@@ -17,11 +17,8 @@ const ADMIN_MODULES = [
     to: '/admin/approvals',
     accent: 'blue',
     group: 'operation',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 12l4 4L19 6" />
-      </svg>
-    ),
+    code: 'APV',
+    mark: 'approval',
   },
   {
     title: 'Admissão',
@@ -29,13 +26,8 @@ const ADMIN_MODULES = [
     to: '/admin/admission-requests',
     accent: 'amber',
     group: 'operation',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 12H4" />
-        <path d="M20 6H4" />
-        <path d="M20 18H4" />
-      </svg>
-    ),
+    code: 'ADM',
+    mark: 'admission',
   },
   {
     title: 'Demissão',
@@ -43,13 +35,8 @@ const ADMIN_MODULES = [
     to: '/admin/dismissal-requests',
     accent: 'slate',
     group: 'operation',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 12H4" />
-        <path d="M20 6H4" />
-        <path d="M20 18H4" />
-      </svg>
-    ),
+    code: 'DEM',
+    mark: 'dismissal',
   },
   {
     title: 'Pesquisas',
@@ -57,14 +44,8 @@ const ADMIN_MODULES = [
     to: '/admin/surveys',
     accent: 'blue',
     group: 'management',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 4h16v16H4z" />
-        <path d="M8 8h8" />
-        <path d="M8 12h8" />
-        <path d="M8 16h5" />
-      </svg>
-    ),
+    code: 'PESQ',
+    mark: 'survey',
   },
   {
     title: 'Dashboard de pesquisas',
@@ -72,12 +53,8 @@ const ADMIN_MODULES = [
     to: '/admin/dashboard/pesquisas',
     accent: 'blue',
     group: 'indicators',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 13l4-4 4 4 6-6 4 4" />
-        <path d="M21 7v6h-6" />
-      </svg>
-    ),
+    code: 'DASH',
+    mark: 'trend',
   },
   {
     title: 'KPIs de admissão',
@@ -85,12 +62,8 @@ const ADMIN_MODULES = [
     to: '/admin/dashboard/admissao',
     accent: 'amber',
     group: 'indicators',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 6v6l4 2" />
-        <circle cx="12" cy="12" r="9" />
-      </svg>
-    ),
+    code: 'KPI',
+    mark: 'kpi',
   },
   {
     title: 'Departamentos',
@@ -98,16 +71,8 @@ const ADMIN_MODULES = [
     to: '/admin/departments',
     accent: 'slate',
     group: 'settings',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 21h16" />
-        <path d="M6 21V7l6-4 6 4v14" />
-        <path d="M9 10h.01" />
-        <path d="M15 10h.01" />
-        <path d="M9 14h.01" />
-        <path d="M15 14h.01" />
-      </svg>
-    ),
+    code: 'DEP',
+    mark: 'department',
   },
   {
     title: 'Cargos',
@@ -115,13 +80,8 @@ const ADMIN_MODULES = [
     to: '/admin/job-titles',
     accent: 'amber',
     group: 'settings',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 7h16" />
-        <path d="M4 12h16" />
-        <path d="M4 17h10" />
-      </svg>
-    ),
+    code: 'CARGO',
+    mark: 'role',
   },
 ]
 
@@ -158,6 +118,16 @@ function canAccessModule(user, module) {
   if (module.to.startsWith('/admin/approvals')) return hasModuleAccess(user, 'APPROVALS')
   if (module.to.startsWith('/admin/surveys') || module.to.startsWith('/admin/campaigns')) return hasModuleAccess(user, 'SURVEYS')
   return false
+}
+
+function ModuleMark({ mark }) {
+  return (
+    <span className={`admin-home-module-mark mark-${mark}`} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  )
 }
 
 export function AdminHomePage() {
@@ -210,12 +180,13 @@ export function AdminHomePage() {
                     key={module.title}
                     to={module.to}
                   >
-                    <div className="admin-home-module-icon" aria-hidden="true">
-                      {module.icon}
+                    <div className="admin-home-module-head">
+                      <span className="admin-home-module-code">{module.code}</span>
+                      <ModuleMark mark={module.mark} />
                     </div>
 
                     <div className="admin-home-module-body">
-                      <span className="admin-home-module-kicker">Módulo</span>
+                      <span className="admin-home-module-kicker">{group.title}</span>
                       <h4>{module.title}</h4>
                       <p>{module.description}</p>
                     </div>

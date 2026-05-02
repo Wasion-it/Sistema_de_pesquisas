@@ -2490,14 +2490,17 @@ body:has(.admin-shell) { background: var(--slate-100); }
   --admin-module-accent: var(--blue-600);
   --admin-module-light: var(--blue-50);
   --admin-module-border: var(--blue-200);
+  --admin-module-ink: var(--slate-900);
   min-width: 0;
   align-items: stretch;
   flex-direction: column;
-  gap: 14px;
-  padding: 24px 24px 20px;
+  gap: 18px;
+  padding: 18px 20px 18px;
   border: 1.5px solid var(--admin-module-border);
-  border-radius: var(--r-lg);
-  background: #fff;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.96), #fff 52%),
+    linear-gradient(135deg, var(--admin-module-light), transparent 58%);
   box-shadow: 0 2px 12px rgba(15,23,42,.05);
   position: relative;
   overflow: hidden;
@@ -2513,6 +2516,19 @@ body:has(.admin-shell) { background: var(--slate-100); }
   background: var(--admin-module-accent);
 }
 
+.admin-home-module::after {
+  content: '';
+  position: absolute;
+  right: 18px;
+  bottom: 54px;
+  width: 82px;
+  height: 28px;
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-module-accent) 28%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--admin-module-accent) 18%, transparent);
+  opacity: .36;
+  pointer-events: none;
+}
+
 .admin-home-module:hover,
 .admin-home-module:focus-visible {
   transform: translateY(-3px);
@@ -2524,6 +2540,221 @@ body:has(.admin-shell) { background: var(--slate-100); }
   outline: 3px solid rgba(31,78,153,.24);
   outline-offset: 3px;
 }
+
+.admin-home-module-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 42px;
+}
+
+.admin-home-module-code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--admin-module-accent) 30%, #fff);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--admin-module-light) 74%, #fff);
+  color: var(--admin-module-accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+
+.admin-home-module-mark {
+  position: relative;
+  display: grid;
+  width: 46px;
+  height: 36px;
+  color: var(--admin-module-accent);
+}
+
+.admin-home-module-mark span {
+  display: block;
+  background: currentColor;
+}
+
+.mark-approval span:nth-child(1) {
+  width: 30px;
+  height: 18px;
+  align-self: end;
+  justify-self: end;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.mark-approval span:nth-child(2) {
+  width: 22px;
+  height: 9px;
+  align-self: center;
+  justify-self: center;
+  margin: 7px 0 0 5px;
+  border-bottom: 3px solid currentColor;
+  border-left: 3px solid currentColor;
+  background: transparent;
+  transform: rotate(-45deg);
+}
+
+.mark-approval span:nth-child(3) {
+  width: 12px;
+  height: 3px;
+  align-self: start;
+  justify-self: end;
+  margin-top: 4px;
+  border-radius: 999px;
+}
+
+.mark-admission span,
+.mark-dismissal span {
+  position: absolute;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.mark-admission span:nth-child(1),
+.mark-dismissal span:nth-child(1) {
+  right: 3px;
+  top: 9px;
+  width: 29px;
+}
+
+.mark-admission span:nth-child(2),
+.mark-dismissal span:nth-child(2) {
+  right: 3px;
+  top: 18px;
+  width: 37px;
+  opacity: .62;
+}
+
+.mark-admission span:nth-child(3),
+.mark-dismissal span:nth-child(3) {
+  right: 3px;
+  top: 27px;
+  width: 22px;
+  opacity: .42;
+}
+
+.mark-admission::before,
+.mark-dismissal::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+
+.mark-admission::after,
+.mark-dismissal::after {
+  content: '+';
+  position: absolute;
+  left: 13px;
+  top: 18px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mark-dismissal::after {
+  content: '-';
+  top: 17px;
+  font-size: 24px;
+}
+
+.mark-survey {
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 5px;
+}
+
+.mark-survey span {
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.mark-survey span:nth-child(1) { height: 25px; }
+.mark-survey span:nth-child(2) { height: 32px; }
+.mark-survey span:nth-child(3) { height: 19px; }
+
+.mark-trend span {
+  position: absolute;
+  height: 3px;
+  border-radius: 999px;
+  transform-origin: left center;
+}
+
+.mark-trend span:nth-child(1) {
+  left: 3px;
+  bottom: 9px;
+  width: 19px;
+  transform: rotate(-28deg);
+}
+
+.mark-trend span:nth-child(2) {
+  left: 19px;
+  bottom: 17px;
+  width: 17px;
+  transform: rotate(25deg);
+}
+
+.mark-trend span:nth-child(3) {
+  right: 2px;
+  bottom: 15px;
+  width: 19px;
+  transform: rotate(-42deg);
+}
+
+.mark-kpi {
+  align-items: end;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.mark-kpi span {
+  border-radius: 999px 999px 3px 3px;
+}
+
+.mark-kpi span:nth-child(1) { height: 15px; opacity: .45; }
+.mark-kpi span:nth-child(2) { height: 27px; opacity: .72; }
+.mark-kpi span:nth-child(3) { height: 35px; }
+
+.mark-department {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  align-items: end;
+}
+
+.mark-department span {
+  border: 2px solid currentColor;
+  border-bottom-width: 5px;
+  border-radius: 3px 3px 1px 1px;
+  background: transparent;
+}
+
+.mark-department span:nth-child(1) { height: 25px; }
+.mark-department span:nth-child(2) { height: 34px; }
+.mark-department span:nth-child(3) { height: 21px; }
+
+.mark-role span {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.mark-role span:nth-child(1) { top: 9px; }
+.mark-role span:nth-child(2) { top: 18px; opacity: .68; }
+.mark-role span:nth-child(3) { top: 27px; right: 17px; opacity: .42; }
 
 .admin-home-module.module-blue {
   --admin-module-accent: var(--admin-brand-blue);
@@ -2567,6 +2798,8 @@ body:has(.admin-shell) { background: var(--slate-100); }
 }
 
 .admin-home-module-body {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -2591,14 +2824,17 @@ body:has(.admin-shell) { background: var(--slate-100); }
 }
 
 .admin-home-module-action {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  padding: 10px 0 0;
-  border-top: 1px solid var(--admin-module-border);
+  padding: 12px 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--admin-module-border) 72%, transparent);
   border-radius: 0;
   background: transparent;
   color: var(--admin-module-accent);
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   font-size: 12px;
   font-weight: 700;

@@ -70,19 +70,27 @@ def list_audit_logs(
     if entity_name:
         filters.append(AuditLog.entity_name.ilike(f"%{entity_name.strip()}%"))
 
+    should_join_user = False
     if query:
         q = f"%{query.strip()}%"
+        should_join_user = True
         filters.append(
             or_(
                 AuditLog.entity_name.ilike(q),
                 AuditLog.entity_id.ilike(q),
                 AuditLog.description.ilike(q),
                 AuditLog.details_json.ilike(q),
+                User.full_name.ilike(q),
+                User.email.ilike(q),
             )
         )
 
     total_stmt = select(func.count(AuditLog.id))
     list_stmt = select(AuditLog).options(selectinload(AuditLog.actor_user))
+
+    if should_join_user:
+        total_stmt = total_stmt.outerjoin(User, AuditLog.actor_user_id == User.id)
+        list_stmt = list_stmt.outerjoin(User, AuditLog.actor_user_id == User.id)
 
     for condition in filters:
         total_stmt = total_stmt.where(condition)

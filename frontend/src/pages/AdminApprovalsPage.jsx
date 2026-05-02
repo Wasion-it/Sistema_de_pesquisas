@@ -393,7 +393,6 @@ export function AdminApprovalsPage() {
         item.request_subtitle,
         item.request_status,
         item.request_kind,
-        item.workflow_name,
         formatApprovalLabel(item.current_step_label),
         item.requester_name,
         item.requester_email,
@@ -551,13 +550,13 @@ export function AdminApprovalsPage() {
     : activeConfig.title
 
   return (
-    <main className="page-shell" style={{ background: 'linear-gradient(150deg, var(--slate-50) 0%, var(--blue-50) 50%, #eef2ff 100%)' }}>
-      <div className="admin-view admin-home-view" style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, paddingBottom: 8 }}>
+    <main className="page-shell approvals-page-shell">
+      <div className="admin-view admin-home-view approvals-view">
+        <div className="admin-view-header approvals-header">
           <div>
             <span className="eyebrow">Solicitações RH</span>
-            <h2 style={{ margin: '4px 0 6px', fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', letterSpacing: '-.02em' }}>{pageTitle}</h2>
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <h2>{pageTitle}</h2>
+            <p className="approvals-header-copy">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
               </svg>
@@ -577,7 +576,7 @@ export function AdminApprovalsPage() {
         )}
 
         {!isLoading && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+          <div className="dashboard-stats-grid approvals-stats-grid">
             <article className="stat-card">
               <span>{activeViewMode === 'history' ? 'No histórico' : 'Total'}</span>
               <strong>{summary.total}</strong>
@@ -597,8 +596,8 @@ export function AdminApprovalsPage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '16px 20px', borderRadius: 16, background: '#fff', border: '1px solid var(--slate-200)', boxShadow: '0 1px 3px rgba(15,23,42,.04)' }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="admin-toolbar-card approvals-toolbar">
+          <div className="admin-request-tabs-row approvals-tabs-group" aria-label="Visao de aprovacoes">
             {Object.entries(APPROVAL_VIEW_MODES).map(([mode, config]) => {
               const isActive = mode === activeViewMode
               const modeCount = mode === 'history'
@@ -610,36 +609,16 @@ export function AdminApprovalsPage() {
                   key={mode}
                   type="button"
                   onClick={() => handleViewModeChange(mode)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 9,
-                    padding: '11px 18px',
-                    borderRadius: 12,
-                    border: isActive ? '1.5px solid var(--blue-300)' : '1.5px solid var(--slate-200)',
-                    background: isActive ? 'linear-gradient(180deg, var(--blue-50) 0%, #fff 100%)' : 'linear-gradient(180deg, #fff 0%, var(--slate-50) 100%)',
-                    color: isActive ? 'var(--blue-800)' : 'var(--slate-600)',
-                    fontSize: 13, fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 140ms',
-                    boxShadow: isActive ? '0 4px 12px rgba(37,99,235,.1)' : 'none',
-                  }}
+                  className={`admin-request-tab approvals-filter-tab ${isActive ? 'active' : ''}`}
                 >
                   <span>{config.label}</span>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    minWidth: 24, height: 24, padding: '0 7px',
-                    borderRadius: 999,
-                    background: isActive ? 'var(--blue-600)' : 'var(--slate-200)',
-                    color: isActive ? '#fff' : 'var(--slate-600)',
-                    fontSize: 11, fontWeight: 700,
-                  }}>
-                    {modeCount}
-                  </span>
+                  <strong>{modeCount}</strong>
                 </button>
               )
             })}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="admin-request-tabs-row approvals-tabs-group" aria-label="Tipo de solicitacao">
             {Object.entries(REQUEST_KIND_TABS).map(([kind, config]) => {
               const isActive = kind === activeTab
               const tabCount = activeViewMode === 'history'
@@ -651,39 +630,19 @@ export function AdminApprovalsPage() {
                   key={kind}
                   type="button"
                   onClick={() => handleTabChange(kind)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 9,
-                    padding: '11px 18px',
-                    borderRadius: 12,
-                    border: isActive ? '1.5px solid var(--blue-300)' : '1.5px solid var(--slate-200)',
-                    background: isActive ? 'linear-gradient(180deg, var(--blue-50) 0%, #fff 100%)' : 'linear-gradient(180deg, #fff 0%, var(--slate-50) 100%)',
-                    color: isActive ? 'var(--blue-800)' : 'var(--slate-600)',
-                    fontSize: 13, fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 140ms',
-                    boxShadow: isActive ? '0 4px 12px rgba(37,99,235,.1)' : 'none',
-                  }}
+                  className={`admin-request-tab approvals-filter-tab ${isActive ? 'active' : ''}`}
                 >
                   <span>{config.label}</span>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    minWidth: 24, height: 24, padding: '0 7px',
-                    borderRadius: 999,
-                    background: isActive ? 'var(--blue-600)' : 'var(--slate-200)',
-                    color: isActive ? '#fff' : 'var(--slate-600)',
-                    fontSize: 11, fontWeight: 700,
-                  }}>
-                    {tabCount}
-                  </span>
+                  <strong>{tabCount}</strong>
                 </button>
               )
             })}
           </div>
 
-          <div style={{ position: 'relative', minWidth: 260 }}>
+          <div className="approvals-search-wrap">
             <svg
               width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', pointerEvents: 'none' }}
+              className="approvals-search-icon"
             >
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -691,31 +650,14 @@ export function AdminApprovalsPage() {
               placeholder="Buscar por título, fluxo ou solicitante..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 36px 10px 38px',
-                border: '1.5px solid var(--slate-200)',
-                borderRadius: 10,
-                background: 'var(--slate-50)',
-                color: 'var(--slate-900)',
-                fontSize: 13,
-                outline: 'none',
-                transition: 'border-color 140ms, box-shadow 140ms',
-              }}
-              onFocus={(event) => { event.target.style.borderColor = 'var(--blue-400)'; event.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,.08)'; event.target.style.background = '#fff' }}
-              onBlur={(event) => { event.target.style.borderColor = 'var(--slate-200)'; event.target.style.boxShadow = 'none'; event.target.style.background = 'var(--slate-50)' }}
+              className="approvals-search-input"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                style={{
-                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                  width: 20, height: 20, borderRadius: '50%',
-                  border: 'none', background: 'var(--slate-200)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--slate-500)',
-                }}
+                className="approvals-search-clear"
+                aria-label="Limpar busca"
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -726,49 +668,45 @@ export function AdminApprovalsPage() {
         </div>
 
         {!isLoading && visibleQueue.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: 'var(--slate-400)', fontWeight: 600 }}>
+          <div className="approvals-result-line">
+            <span>
               {visibleQueue.length} aprovação{visibleQueue.length === 1 ? '' : 'es'} encontrada{visibleQueue.length === 1 ? '' : 's'}
             </span>
             {query && (
-              <span style={{
-                padding: '3px 10px', borderRadius: 999,
-                background: 'var(--blue-50)', color: 'var(--blue-700)',
-                fontSize: 12, fontWeight: 600,
-              }}>
+              <strong>
                 "{query}"
-              </span>
+              </strong>
             )}
           </div>
         )}
 
         {isLoading ? (
-          <div style={{ padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)' }}>
-            <div style={{ width: 36, height: 36, border: '3px solid var(--blue-100)', borderTopColor: 'var(--blue-600)', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--slate-400)', fontWeight: 500 }}>Carregando aprovações…</p>
+          <div className="approvals-loading-state">
+            <div className="approvals-spinner" />
+            <p>Carregando aprovações...</p>
           </div>
         ) : visibleQueue.length === 0 ? (
-          <div style={{ borderRadius: 20, background: '#fff', border: '1px solid var(--slate-200)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, padding: '72px 32px' }}>
-              <div style={{ width: 64, height: 64, borderRadius: 20, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate-300)', marginBottom: 4 }}>
+          <div className="admin-panel-card approvals-empty-panel">
+            <div className="empty-state">
+              <div className="approvals-empty-icon">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" />
                   <path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" />
                 </svg>
               </div>
-              <strong style={{ fontSize: 16, color: 'var(--slate-700)', fontWeight: 600 }}>Nenhuma aprovação encontrada</strong>
-              <span style={{ fontSize: 14, color: 'var(--slate-400)', maxWidth: 300, lineHeight: 1.65 }}>
+              <strong>Nenhuma aprovação encontrada</strong>
+              <span>
                 {activeViewMode === 'history' ? activeViewConfig.emptyText : activeConfig.emptyText}
               </span>
               {query && (
-                <button type="button" onClick={() => setQuery('')} className="secondary-button" style={{ marginTop: 8 }}>
+                <button type="button" onClick={() => setQuery('')} className="secondary-button">
                   Limpar busca
                 </button>
               )}
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 14 }}>
+          <div className="approval-queue-grid">
             {visibleQueue.map((item) => (
               <article className="approval-request-card" key={`${item.request_kind}-${item.request_id}`}>
                 {(() => {
@@ -778,16 +716,9 @@ export function AdminApprovalsPage() {
                     <>
                       <div className="approval-request-top">
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <div className="approval-request-badges">
                             <span className="approval-kind">{REQUEST_KIND_TABS[requestKind]?.label ?? item.request_kind}</span>
-                            <span style={{
-                              padding: '3px 8px',
-                              borderRadius: 5,
-                              background: '#eef2ff',
-                              color: '#3730a3',
-                              fontSize: 11,
-                              fontWeight: 700,
-                            }}>
+                            <span className="approval-id-badge">
                               ID #{item.request_id}
                             </span>
                           </div>
@@ -806,11 +737,6 @@ export function AdminApprovalsPage() {
                           <span>Solicitante</span>
                           <strong>{item.requester_name}</strong>
                           <small>{item.requester_email}</small>
-                        </div>
-                        <div>
-                          <span>Fluxo</span>
-                          <strong>{item.workflow_name}</strong>
-                          <small>Etapa atual: {formatApprovalLabel(item.current_step_label) ?? 'Concluída'}</small>
                         </div>
                         {requiresVacancySalary(item) ? (
                           <div>

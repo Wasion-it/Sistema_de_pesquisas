@@ -9,13 +9,8 @@ const REQUEST_MODULES = [
     to: '/admin/admission-requests',
     variant: 'primary',
     accent: 'amber',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 12H4" />
-        <path d="M20 6H4" />
-        <path d="M20 18H4" />
-      </svg>
-    ),
+    code: 'ADM',
+    mark: 'admission',
   },
   {
     title: 'Checklist de admissão',
@@ -23,17 +18,8 @@ const REQUEST_MODULES = [
     to: '/admin/admission-checklist',
     variant: 'secondary',
     accent: 'green',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4" />
-        <path d="M5 4h2" />
-        <path d="M5 12h2" />
-        <path d="M5 20h2" />
-        <path d="M11 4h8" />
-        <path d="M11 12h8" />
-        <path d="M11 20h8" />
-      </svg>
-    ),
+    code: 'CHK',
+    mark: 'checklist',
   },
 
 
@@ -45,12 +31,8 @@ const REQUEST_MODULES = [
     to: '/admin/dismissal-requests',
     variant: 'primary',
     accent: 'slate',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 12H4" />
-        <path d="M13 5l7 7-7 7" />
-      </svg>
-    ),
+    code: 'DEM',
+    mark: 'dismissal',
   },
   {
     title: 'Checklist de demissão',
@@ -58,17 +40,8 @@ const REQUEST_MODULES = [
     to: '/admin/dismissal-checklist',
     variant: 'secondary',
     accent: 'green',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4" />
-        <path d="M5 4h2" />
-        <path d="M5 12h2" />
-        <path d="M5 20h2" />
-        <path d="M11 4h8" />
-        <path d="M11 12h8" />
-        <path d="M11 20h8" />
-      </svg>
-    ),
+    code: 'CHK',
+    mark: 'checklist',
   },
   {
     title: 'Departamentos',
@@ -76,16 +49,8 @@ const REQUEST_MODULES = [
     to: '/admin/departments',
     variant: 'secondary',
     accent: 'slate',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 21h16" />
-        <path d="M6 21V7l6-4 6 4v14" />
-        <path d="M9 10h.01" />
-        <path d="M15 10h.01" />
-        <path d="M9 14h.01" />
-        <path d="M15 14h.01" />
-      </svg>
-    ),
+    code: 'DEP',
+    mark: 'department',
   },
   {
     title: 'Cargos',
@@ -93,13 +58,8 @@ const REQUEST_MODULES = [
     to: '/admin/job-titles',
     variant: 'secondary',
     accent: 'amber',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 7h16" />
-        <path d="M4 12h16" />
-        <path d="M4 17h10" />
-      </svg>
-    ),
+    code: 'CARGO',
+    mark: 'role',
   },
   {
     title: 'KPIs de admissão',
@@ -107,17 +67,35 @@ const REQUEST_MODULES = [
     to: '/admin/dashboard/admissao',
     variant: 'secondary',
     accent: 'blue',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 6v6l4 2" />
-        <circle cx="12" cy="12" r="9" />
-      </svg>
-    ),
+    code: 'KPI',
+    mark: 'kpi',
   },
 ]
 
 function getFirstName(name) {
   return name?.split(' ')[0] ?? 'Administrador'
+}
+
+function ModuleMark({ mark }) {
+  return (
+    <span className={`admin-home-module-mark mark-${mark}`} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  )
+}
+
+function ModuleAction({ className = '' }) {
+  return (
+    <span className={`admin-home-module-action ${className}`.trim()}>
+      Abrir
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 12h14" />
+        <path d="M12 5l7 7-7 7" />
+      </svg>
+    </span>
+  )
 }
 
 export function AdminRequestsPage() {
@@ -144,15 +122,16 @@ export function AdminRequestsPage() {
       <section className="admin-home-modules" aria-label="Atalhos de solicitações">
         {primaryModules.map((module) => (
           <Link className={`admin-home-module module-${module.accent}`} key={module.title} to={module.to}>
-            <div className="admin-home-module-icon" aria-hidden="true">
-              {module.icon}
+            <div className="admin-home-module-head">
+              <span className="admin-home-module-code">{module.code}</span>
+              <ModuleMark mark={module.mark} />
             </div>
             <div className="admin-home-module-body">
               <span className="admin-home-module-kicker">Solicitações</span>
-              <h3>{module.title}</h3>
+              <h4>{module.title}</h4>
               <p>{module.description}</p>
             </div>
-            <span className="admin-home-module-action">Abrir</span>
+            <ModuleAction />
           </Link>
         ))}
       </section>
@@ -172,15 +151,16 @@ export function AdminRequestsPage() {
               key={module.title}
               to={module.to}
             >
-              <div className="admin-home-module-icon" aria-hidden="true">
-                {module.icon}
+              <div className="admin-home-module-head">
+                <span className="admin-home-module-code">{module.code}</span>
+                <ModuleMark mark={module.mark} />
               </div>
               <div className="admin-home-module-body">
                 <span className="admin-home-module-kicker admin-home-module-kicker-secondary">Configuração</span>
-                <h3>{module.title}</h3>
+                <h4>{module.title}</h4>
                 <p>{module.description}</p>
               </div>
-              <span className="admin-home-module-action admin-home-module-action-secondary">Abrir</span>
+              <ModuleAction className="admin-home-module-action-secondary" />
             </Link>
           ))}
         </div>

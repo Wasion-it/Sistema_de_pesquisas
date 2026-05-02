@@ -2610,6 +2610,47 @@ body:has(.admin-shell) { background: var(--slate-100); }
   border-radius: 999px;
 }
 
+.mark-checklist {
+  align-items: center;
+  grid-template-columns: 12px 1fr;
+  column-gap: 7px;
+}
+
+.mark-checklist span {
+  position: relative;
+  border-radius: 999px;
+}
+
+.mark-checklist span:nth-child(1) {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  background: transparent;
+}
+
+.mark-checklist span:nth-child(1)::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  width: 8px;
+  height: 4px;
+  border-bottom: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.mark-checklist span:nth-child(2),
+.mark-checklist span:nth-child(3) {
+  width: 26px;
+  height: 3px;
+}
+
+.mark-checklist span:nth-child(3) {
+  width: 18px;
+  opacity: .48;
+}
+
 .mark-admission span,
 .mark-dismissal span {
   position: absolute;

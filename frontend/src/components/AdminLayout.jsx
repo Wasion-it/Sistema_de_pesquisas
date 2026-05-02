@@ -20,6 +20,7 @@ export function AdminLayout() {
   const canAccessApprovals = hasModuleAccess(user, 'APPROVALS')
   const canAccessSurveys = hasModuleAccess(user, 'SURVEYS')
   const canAccessAccessControl = user?.role === 'RH_ADMIN'
+  const canAccessAuditLogs = user?.role === 'RH_ADMIN'
 
   function handleSignOut() {
     signOut('/')
@@ -93,6 +94,17 @@ export function AdminLayout() {
                 <path d="M8 17h8" />
               </svg>
               Delegação de acesso
+            </NavLink>
+          ) : null}
+          {canAccessAuditLogs ? (
+            <NavLink className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`} to="/admin/audit-logs">
+              <svg className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 5h16" />
+                <path d="M4 12h16" />
+                <path d="M4 19h10" />
+                <path d="M18 17l2 2 3-4" />
+              </svg>
+              Auditoria
             </NavLink>
           ) : null}
         </nav>

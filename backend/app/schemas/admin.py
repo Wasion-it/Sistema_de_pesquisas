@@ -13,6 +13,7 @@ from app.models.enums import (
     AdmissionPositionEnum,
     AdmissionRequestStatusEnum,
     AdmissionRequestTypeEnum,
+    AuditActionEnum,
     CampaignStatusEnum,
     ContractRegimeEnum,
     DismissalRequestStatusEnum,
@@ -171,6 +172,33 @@ class AccessControlGrantInput(BaseModel):
 
 class AccessControlUpdateRequest(BaseModel):
     role: RoleEnum | None = None
+
+
+class AuditLogActorResponse(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    role: RoleEnum
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    actor_user_id: int | None
+    actor_user: AuditLogActorResponse | None
+    action: AuditActionEnum
+    entity_name: str
+    entity_id: str
+    description: str | None
+    details: dict | list | str | int | float | bool | None
+    ip_address: str | None
+    created_at: datetime
+
+
+class AuditLogListResponse(BaseModel):
+    items: list[AuditLogResponse]
+    total: int
+    limit: int
+    offset: int
 
 
 class AdmissionChecklistStepResponse(BaseModel):

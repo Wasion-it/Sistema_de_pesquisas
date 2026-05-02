@@ -65,6 +65,23 @@ export async function getAdminDashboard(token) {
   return parseResponse(response)
 }
 
+export async function getAdminAuditLogs(token, params = {}) {
+  const searchParams = new URLSearchParams()
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.set(key, String(value))
+    }
+  })
+
+  const query = searchParams.toString()
+  const response = await fetch(`${API_URL}/admin/audit-logs${query ? `?${query}` : ''}`, {
+    headers: buildHeaders(token),
+  })
+
+  return parseResponse(response)
+}
+
 export async function getAdminDepartments(token) {
   const response = await fetch(`${API_URL}/admin/departments`, {
     headers: buildHeaders(token),

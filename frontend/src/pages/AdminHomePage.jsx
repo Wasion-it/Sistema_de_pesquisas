@@ -83,6 +83,15 @@ const ADMIN_MODULES = [
     code: 'CARGO',
     mark: 'role',
   },
+  {
+    title: 'Auditoria',
+    description: 'Visualize os logs administrativos e eventos registrados no sistema.',
+    to: '/admin/audit-logs',
+    accent: 'slate',
+    group: 'settings',
+    code: 'AUD',
+    mark: 'audit',
+  },
 ]
 
 const MODULE_GROUPS = [
@@ -113,6 +122,7 @@ function canAccessModule(user, module) {
   if (module.to.startsWith('/admin/dashboard/admissao')) return hasModuleAccess(user, 'DASHBOARD')
   if (module.to.startsWith('/admin/departments')) return hasAdminSectionAccess(user, 'DEPARTMENTS')
   if (module.to.startsWith('/admin/job-titles')) return hasAdminSectionAccess(user, 'JOB_TITLES')
+  if (module.to.startsWith('/admin/audit-logs')) return hasAdminSectionAccess(user, 'AUDIT_LOGS')
   if (module.to.startsWith('/admin/admission-requests')) return hasModuleAccess(user, 'ADMISSION')
   if (module.to.startsWith('/admin/dismissal-requests')) return hasModuleAccess(user, 'DISMISSAL')
   if (module.to.startsWith('/admin/approvals')) return hasModuleAccess(user, 'APPROVALS')

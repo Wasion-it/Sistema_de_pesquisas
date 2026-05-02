@@ -17,6 +17,7 @@ import { AdminAdmissionChecklistPage } from './pages/AdminAdmissionChecklistPage
 import { AdminDismissalChecklistPage } from './pages/AdminDismissalChecklistPage'
 import { AdminDismissalRequestsPage } from './pages/AdminDismissalRequestsPage'
 import { AdminAccessControlPage } from './pages/AdminAccessControlPage'
+import { AdminAuditLogsPage } from './pages/AdminAuditLogsPage'
 import { MyRequestsPage } from './pages/MyRequestsPage'
 import { AdminSurveyDetailPage } from './pages/AdminSurveyDetailPage'
 import { AdminSurveysPage } from './pages/AdminSurveysPage'
@@ -126,6 +127,7 @@ export default function App() {
             <Route path="campaigns/:campaignId/responses" element={<AdminModuleRoute moduleName="SURVEYS"><AdminCampaignResponsesPage /></AdminModuleRoute>} />
             <Route path="surveys/:surveyId" element={<AdminModuleRoute moduleName="SURVEYS"><AdminSurveyDetailPage /></AdminModuleRoute>} />
             <Route path="access-control" element={<AdminSectionRoute sectionName="ACCESS_CONTROL"><AdminAccessControlPage /></AdminSectionRoute>} />
+            <Route path="audit-logs" element={<AdminSectionRoute sectionName="AUDIT_LOGS"><AdminAuditLogsPage /></AdminSectionRoute>} />
           </Route>
         </Routes>
       </AuthProvider>

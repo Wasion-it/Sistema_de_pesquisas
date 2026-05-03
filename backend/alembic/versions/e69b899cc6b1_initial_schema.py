@@ -98,7 +98,7 @@ def upgrade() -> None:
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('full_name', sa.String(length=150), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
-    sa.Column('role', sa.Enum('RH_ADMIN', 'RH_ANALISTA', 'RH_PESQUISAS', 'GESTOR', 'DIRETOR_RAVI', 'COLABORADOR', name='roleenum', native_enum=False, length=30), nullable=False),
+    sa.Column('role', sa.Enum('RH_ADMIN', 'RH_ANALISTA', 'RH_PESQUISAS', 'GESTOR_COORDENADOR_SUPERVISOR', 'GESTOR', 'DIRETOR_RAVI', 'COLABORADOR', name='roleenum', native_enum=False, length=30), nullable=False),
     sa.Column('auth_source', sa.Enum('LOCAL', 'LDAP', name='authenticationsourceenum', native_enum=False, length=20), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('last_login_at', sa.DateTime(timezone=True), nullable=True),

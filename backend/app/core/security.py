@@ -22,6 +22,9 @@ ADMIN_PORTAL_ROLES: Final[set[RoleEnum]] = {
     RoleEnum.GESTOR,
     RoleEnum.DIRETOR_RAVI,
 }
+REQUEST_CREATOR_ROLES: Final[set[RoleEnum]] = {
+    RoleEnum.GESTOR_COORDENADOR_SUPERVISOR,
+}
 LDAP_AUTH_ROLES: Final[set[RoleEnum]] = {
     RoleEnum.RH_ADMIN,
     RoleEnum.RH_ANALISTA,
@@ -82,6 +85,7 @@ def decode_access_token(token: str) -> dict:
 __all__ = [
     "ADMIN_PORTAL_ROLES",
     "LDAP_AUTH_ROLES",
+    "REQUEST_CREATOR_ROLES",
     "InvalidTokenError",
     "create_access_token",
     "decode_access_token",

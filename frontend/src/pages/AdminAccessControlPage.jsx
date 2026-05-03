@@ -20,8 +20,8 @@ const ROLE_OPTIONS = [
   },
   {
     value: 'GESTOR',
-    label: 'Gestor',
-    description: 'Aprovação de admissão e demissão',
+    label: 'Gestor Gerente',
+    description: 'Primeira aprovação de admissão e demissão',
     color: '#d97706',
     bg: '#fffbeb',
     border: '#fde68a',
@@ -29,6 +29,22 @@ const ROLE_OPTIONS = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    ),
+  },
+  {
+    value: 'GESTOR_COORDENADOR_SUPERVISOR',
+    label: 'Gestor Coordenador/Supervisor',
+    description: 'Abertura de solicitações de admissão e demissão',
+    color: '#2563eb',
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M19 8v6"/>
+        <path d="M22 11h-6"/>
       </svg>
     ),
   },
@@ -646,7 +662,8 @@ export function AdminAccessControlPage() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     {[
-                      { label: 'Portal collab.', allowed: ['COLABORADOR', 'GESTOR', 'DIRETOR_RAVI', 'RH_ANALISTA', 'RH_PESQUISAS', 'RH_ADMIN'].includes(selectedRole) },
+                      { label: 'Portal collab.', allowed: ['COLABORADOR', 'GESTOR_COORDENADOR_SUPERVISOR', 'GESTOR', 'DIRETOR_RAVI', 'RH_ANALISTA', 'RH_PESQUISAS', 'RH_ADMIN'].includes(selectedRole) },
+                      { label: 'Solicitações', allowed: ['GESTOR_COORDENADOR_SUPERVISOR', 'RH_ANALISTA', 'RH_ADMIN'].includes(selectedRole) },
                       { label: 'Aprovações', allowed: ['GESTOR', 'DIRETOR_RAVI', 'RH_ADMIN'].includes(selectedRole) },
                       { label: 'Admissão', allowed: ['RH_ANALISTA', 'RH_ADMIN'].includes(selectedRole) },
                       { label: 'Demissão', allowed: ['RH_ANALISTA', 'RH_ADMIN'].includes(selectedRole) },

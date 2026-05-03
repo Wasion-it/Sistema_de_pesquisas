@@ -127,6 +127,12 @@ def _normalize_user_roles() -> None:
 
     with engine.begin() as connection:
         connection.execute(text("UPDATE users SET role = 'RH_ANALISTA' WHERE role = 'TI_SUPORTE'"))
+        connection.execute(
+            text(
+                "UPDATE users SET role = 'GESTOR_COORDENADOR_SUPERVISOR' "
+                "WHERE role IN ('GESTOR_COORDENADOR', 'GESTOR_SUPERVISOR')"
+            )
+        )
 
 
 def _ensure_employee_columns() -> None:

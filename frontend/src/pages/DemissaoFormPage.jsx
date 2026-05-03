@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthProvider'
 import { createAdminDismissalRequest, getAdminDepartments, getAdminJobTitles } from '../services/admin'
+import { canCreateRequests } from '../utils/accessControl'
 
 const INITIAL_FORM = {
   nome: '',
@@ -113,7 +114,7 @@ function SummaryRow({ label, value }) {
 }
 
 export function DemissaoFormPage() {
-  const { isAuthenticated, isLoading, token } = useAuth()
+  const { isAuthenticated, isLoading, token, user } = useAuth()
   const [formValues, setFormValues] = useState(INITIAL_FORM)
   const [departments, setDepartments] = useState([])
   const [jobTitles, setJobTitles] = useState([])
@@ -234,6 +235,10 @@ export function DemissaoFormPage() {
       setErrorMessage('Você precisa estar autenticado no portal administrativo para salvar esta solicitação.')
       return
     }
+    if (!canCreateRequests(user)) {
+      setErrorMessage('Seu perfil não possui permissão para abrir solicitações.')
+      return
+    }
 
     setIsSubmitting(true)
     setErrorMessage('')
@@ -315,6 +320,16 @@ export function DemissaoFormPage() {
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             Acesso administrativo necessário. Faça login no portal RH para salvar esta solicitação.
+          </div>
+        ) : null}
+        {!isLoading && isAuthenticated && !canCreateRequests(user) ? (
+          <div className="form-error">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            Seu perfil não possui permissão para abrir solicitações.
           </div>
         ) : null}
 
@@ -526,7 +541,7 @@ export function DemissaoFormPage() {
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button
                 className="primary-button"
-                disabled={isSubmitDisabled || isSubmitting || !isAuthenticated || activeJobTitles.length === 0 || activeDepartments.length === 0}
+                disabled={isSubmitDisabled || isSubmitting || !isAuthenticated || !canCreateRequests(user) || activeJobTitles.length === 0 || activeDepartments.length === 0}
                 type="submit"
                 style={{ minWidth: 180, padding: '13px 20px', fontSize: 15 }}
               >

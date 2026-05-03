@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, false, func, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.deps import get_current_admin_user
+from app.api.deps import get_current_admin_user, get_current_portal_user
+from app.core.security import REQUEST_CREATOR_ROLES
 from app.db.session import get_db
 from app.services.admission_checklist import DEFAULT_ADMISSION_CHECKLIST_STEPS
 from app.services.dismissal_checklist import DEFAULT_DISMISSAL_CHECKLIST_STEPS
@@ -117,6 +118,8 @@ from app.schemas.admin import (
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+REQUEST_CREATION_ROLES = REQUEST_CREATOR_ROLES | {RoleEnum.RH_ADMIN, RoleEnum.RH_ANALISTA}
 
 
 def _normalize_dimension_code(name: str, fallback_index: int) -> str:
@@ -465,6 +468,9 @@ def _can_user_view_admission_request(user: User, request_item: AdmissionRequest)
     if user.role == RoleEnum.RH_ADMIN:
         return True
 
+    if request_item.created_by_user_id == user.id:
+        return True
+
     if user.role in {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI}:
         return True
 
@@ -473,6 +479,9 @@ def _can_user_view_admission_request(user: User, request_item: AdmissionRequest)
 
 def _can_user_view_dismissal_request(user: User, request_item: DismissalRequest) -> bool:
     if user.role == RoleEnum.RH_ADMIN:
+        return True
+
+    if request_item.created_by_user_id == user.id:
         return True
 
     if user.role in {RoleEnum.GESTOR, RoleEnum.DIRETOR_RAVI}:
@@ -508,6 +517,14 @@ def _requires_admission_salary(request_item: AdmissionRequest) -> bool:
 def _require_recruiter_access(user: User) -> None:
     if user.role not in {RoleEnum.RH_ADMIN, RoleEnum.RH_ANALISTA}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admission access restricted to assigned recruiters")
+
+
+def _require_request_creation_access(user: User) -> None:
+    if user.role not in REQUEST_CREATION_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Somente coordenadores, supervisores e RH podem abrir solicitações",
+        )
 
 
 def _mark_request_approval_progress(
@@ -1073,7 +1090,7 @@ def read_admin_dismissal_approval_history(
 
 @router.get("/hr/my-requests", response_model=ApprovalQueueListResponse)
 def read_my_requests(
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ApprovalQueueListResponse:
     admission_items = db.scalars(
@@ -1814,7 +1831,7 @@ def read_admin_dashboard(
 
 @router.get("/departments", response_model=DepartmentManagementListResponse)
 def read_admin_departments(
-    _: Annotated[User, Depends(get_current_admin_user)],
+    _: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> DepartmentManagementListResponse:
     departments = db.scalars(select(Department).order_by(Department.name.asc(), Department.id.asc())).all()
@@ -1823,7 +1840,7 @@ def read_admin_departments(
 
 @router.get("/job-titles", response_model=JobTitleManagementListResponse)
 def read_admin_job_titles(
-    _: Annotated[User, Depends(get_current_admin_user)],
+    _: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> JobTitleManagementListResponse:
     job_titles = db.scalars(select(JobTitle).order_by(JobTitle.name.asc(), JobTitle.id.asc())).all()
@@ -1942,11 +1959,9 @@ def read_admin_admission_requests(
 @router.get("/hr/admission-requests/{request_id}", response_model=AdmissionRequestResponse)
 def read_admin_admission_request_detail(
     request_id: int,
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
-    _require_recruiter_access(user)
-
     item = db.scalar(
         select(AdmissionRequest)
         .options(
@@ -1971,9 +1986,11 @@ def read_admin_admission_request_detail(
 @router.post("/hr/admission-requests", response_model=AdmissionRequestResponse, status_code=status.HTTP_201_CREATED)
 def create_admin_admission_request(
     payload: AdmissionRequestCreateRequest,
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AdmissionRequestResponse:
+    _require_request_creation_access(user)
+
     workflow = _get_standard_approval_workflow(db)
     cargo = payload.cargo.strip()
     setor = payload.setor.strip()
@@ -2420,11 +2437,9 @@ def finalize_admin_admission_request(
 @router.get("/hr/admission-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)
 def read_admin_admission_request_approval_status(
     request_id: int,
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ApprovalQueueItemResponse:
-    _require_recruiter_access(user)
-
     item = db.scalar(
         select(AdmissionRequest)
         .options(
@@ -2470,7 +2485,7 @@ def read_admin_dismissal_requests(
 @router.get("/hr/dismissal-requests/{request_id}", response_model=DismissalRequestResponse)
 def read_admin_dismissal_request_detail(
     request_id: int,
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> DismissalRequestResponse:
     item = db.scalar(
@@ -2554,7 +2569,7 @@ def finalize_admin_dismissal_request(
 @router.get("/hr/dismissal-requests/{request_id}/approval-status", response_model=ApprovalQueueItemResponse)
 def read_admin_dismissal_request_approval_status(
     request_id: int,
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ApprovalQueueItemResponse:
     item = db.scalar(
@@ -2630,9 +2645,11 @@ def reject_admin_dismissal_request_after_approval(
 @router.post("/hr/dismissal-requests", response_model=DismissalRequestResponse, status_code=status.HTTP_201_CREATED)
 def create_admin_dismissal_request(
     payload: DismissalRequestCreateRequest,
-    user: Annotated[User, Depends(get_current_admin_user)],
+    user: Annotated[User, Depends(get_current_portal_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> DismissalRequestResponse:
+    _require_request_creation_access(user)
+
     workflow = _get_standard_approval_workflow(db)
     employee_name = payload.employee_name.strip()
     cargo = payload.cargo.strip()

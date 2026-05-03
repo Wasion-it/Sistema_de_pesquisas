@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.security import ADMIN_PORTAL_ROLES
+from app.core.security import ADMIN_PORTAL_ROLES, REQUEST_CREATOR_ROLES
 from app.models import AccessLevelEnum, AccessModuleEnum, RoleEnum, User, UserModuleAccess
 
 
@@ -32,7 +32,7 @@ def has_portal_access(session: Session, user: User) -> bool:
     if user.role == RoleEnum.COLABORADOR:
         return False
 
-    if user.role in ADMIN_PORTAL_ROLES:
+    if user.role in ADMIN_PORTAL_ROLES or user.role in REQUEST_CREATOR_ROLES:
         return True
 
     if user.role == RoleEnum.RH_PESQUISAS:

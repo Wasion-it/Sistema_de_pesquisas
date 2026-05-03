@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '../auth/AuthProvider'
+import { canCreateRequests } from '../utils/accessControl'
+
 export function RequestsPage() {
+  const { user } = useAuth()
+  const canOpenRequests = canCreateRequests(user)
+
   return (
     <main className="collab-shell">
       <header className="collab-header">
@@ -21,7 +27,7 @@ export function RequestsPage() {
           <span className="eyebrow">Solicitações RH</span>
           <h1>Admissão e demissão</h1>
           <p>
-            Este módulo centralizará os fluxos de solicitação ligados à entrada e à
+            Este módulo centraliza os fluxos de solicitação ligados à entrada e à
             saída de colaboradores.
           </p>
         </section>
@@ -48,44 +54,48 @@ export function RequestsPage() {
             <span className="module-card-action">Abrir painel</span>
           </Link>
 
-          <Link className="module-card" aria-label="Requisição de vaga" to="/solicitacoes/admissao">
-            <div className="module-card-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-                <path d="M12 11v6" />
-                <path d="M9 14h6" />
-              </svg>
-            </div>
-            <div className="module-card-body">
-              <span className="module-card-kicker">Solicitação</span>
-              <h2>Requisição de vaga</h2>
-              <p>
-                Cadastro de novas contratações, alinhamento de documentos e preparação
-                do fluxo da requisição.
-              </p>
-            </div>
-            <span className="module-card-action">Abrir formulário</span>
-          </Link>
+          {canOpenRequests ? (
+            <>
+              <Link className="module-card" aria-label="Requisição de vaga" to="/solicitacoes/admissao">
+                <div className="module-card-icon" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                    <path d="M12 11v6" />
+                    <path d="M9 14h6" />
+                  </svg>
+                </div>
+                <div className="module-card-body">
+                  <span className="module-card-kicker">Solicitação</span>
+                  <h2>Requisição de vaga</h2>
+                  <p>
+                    Cadastro de novas contratações, alinhamento de documentos e preparação
+                    do fluxo da requisição.
+                  </p>
+                </div>
+                <span className="module-card-action">Abrir formulário</span>
+              </Link>
 
-          <Link className="module-card" aria-label="Solicitação de demissão" to="/solicitacoes/demissao">
-            <div className="module-card-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 12H4" />
-                <path d="M14 6l6 6-6 6" />
-                <path d="M10 6v12" />
-              </svg>
-            </div>
-            <div className="module-card-body">
-              <span className="module-card-kicker">Solicitação</span>
-              <h2>Demissão</h2>
-              <p>
-                Organização do processo de desligamento, validação das etapas e
-                acompanhamento operacional.
-              </p>
-            </div>
-            <span className="module-card-action">Abrir formulário</span>
-          </Link>
+              <Link className="module-card" aria-label="Solicitação de demissão" to="/solicitacoes/demissao">
+                <div className="module-card-icon" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 12H4" />
+                    <path d="M14 6l6 6-6 6" />
+                    <path d="M10 6v12" />
+                  </svg>
+                </div>
+                <div className="module-card-body">
+                  <span className="module-card-kicker">Solicitação</span>
+                  <h2>Demissão</h2>
+                  <p>
+                    Organização do processo de desligamento, validação das etapas e
+                    acompanhamento operacional.
+                  </p>
+                </div>
+                <span className="module-card-action">Abrir formulário</span>
+              </Link>
+            </>
+          ) : null}
         </section>
       </div>
     </main>

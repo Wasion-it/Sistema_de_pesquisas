@@ -20,11 +20,12 @@ const FULL_PORTAL_ROLES = new Set(['RH_ADMIN'])
 const SURVEYS_ONLY_ROLES = new Set(['RH_PESQUISAS'])
 const RH_ANALYST_MODULES = new Set(['ADMISSION', 'DISMISSAL'])
 const APPROVAL_ONLY_ROLES = new Set(['GESTOR', 'DIRETOR_RAVI'])
+const REQUEST_CREATOR_ROLES = new Set(['GESTOR_COORDENADOR_SUPERVISOR'])
 
 export function hasPortalAccess(user) {
   if (!user) return false
   if (user.role === 'COLABORADOR') return false
-  if (FULL_PORTAL_ROLES.has(user.role) || SURVEYS_ONLY_ROLES.has(user.role) || APPROVAL_ONLY_ROLES.has(user.role) || user.role === 'RH_ANALISTA') return true
+  if (FULL_PORTAL_ROLES.has(user.role) || SURVEYS_ONLY_ROLES.has(user.role) || APPROVAL_ONLY_ROLES.has(user.role) || REQUEST_CREATOR_ROLES.has(user.role) || user.role === 'RH_ANALISTA') return true
   return Boolean(user.access_grants?.some((grant) => grant.is_active !== false))
 }
 
@@ -34,6 +35,7 @@ export function hasModuleAccess(user, moduleName) {
   if (SURVEYS_ONLY_ROLES.has(user.role)) return moduleName === 'SURVEYS'
   if (user.role === 'RH_ANALISTA') return RH_ANALYST_MODULES.has(moduleName)
   if (APPROVAL_ONLY_ROLES.has(user.role)) return moduleName === 'APPROVALS'
+  if (REQUEST_CREATOR_ROLES.has(user.role)) return false
   return Boolean(user.access_grants?.some((grant) => grant.is_active !== false && grant.module === moduleName))
 }
 
@@ -47,6 +49,7 @@ export function hasAdminSectionAccess(user, sectionName) {
   if (APPROVAL_ONLY_ROLES.has(user.role)) {
     return sectionName === 'HOME' || sectionName === 'APPROVALS'
   }
+  if (REQUEST_CREATOR_ROLES.has(user.role)) return sectionName === 'HOME'
 
   return false
 }
@@ -58,4 +61,9 @@ export function isApprovalOnlyUser(user) {
 
   const activeModules = user.access_grants?.filter((grant) => grant.is_active !== false).map((grant) => grant.module) ?? []
   return activeModules.length > 0 && activeModules.every((moduleName) => moduleName === 'APPROVALS')
+}
+
+export function canCreateRequests(user) {
+  if (!user) return false
+  return REQUEST_CREATOR_ROLES.has(user.role) || FULL_PORTAL_ROLES.has(user.role) || user.role === 'RH_ANALISTA'
 }

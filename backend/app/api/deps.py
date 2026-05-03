@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.security import InvalidTokenError, decode_access_token
+from app.core.security import REQUEST_CREATOR_ROLES, InvalidTokenError, decode_access_token
 from app.db.session import get_db
 from app.models import User
 from app.services.access_control import has_portal_access
@@ -40,7 +40,7 @@ def get_current_admin_user(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
-    if not has_portal_access(db, user):
+    if not has_portal_access(db, user) or user.role in REQUEST_CREATOR_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso Negado")
 
     return user

@@ -237,7 +237,7 @@ def _ensure_admission_request_columns() -> None:
         statements.append("ALTER TABLE admission_requests ADD COLUMN checklist_completed_steps INTEGER NOT NULL DEFAULT 0")
 
     if "finalized_at" not in existing_columns:
-        statements.append("ALTER TABLE admission_requests ADD COLUMN finalized_at DATETIME")
+        statements.append("ALTER TABLE admission_requests ADD COLUMN finalized_at TIMESTAMP WITH TIME ZONE")
 
     if not statements:
         return
@@ -391,11 +391,11 @@ def _ensure_approval_workflow_columns() -> None:
             )
         if "post_approval_rejected_at" not in existing_columns:
             statements.append(
-                "ALTER TABLE dismissal_requests ADD COLUMN post_approval_rejected_at DATETIME"
+                "ALTER TABLE dismissal_requests ADD COLUMN post_approval_rejected_at TIMESTAMP WITH TIME ZONE"
             )
         if "finalized_at" not in existing_columns:
             statements.append(
-                "ALTER TABLE dismissal_requests ADD COLUMN finalized_at DATETIME"
+                "ALTER TABLE dismissal_requests ADD COLUMN finalized_at TIMESTAMP WITH TIME ZONE"
             )
 
     if not statements:

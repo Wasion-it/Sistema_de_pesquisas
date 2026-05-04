@@ -5,7 +5,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -26,6 +26,14 @@ router = APIRouter(prefix="/admin/access-control", tags=["access-control"])
 logger = logging.getLogger(__name__)
 
 
+def _get_client_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",", maxsplit=1)[0].strip() or None
+
+    return request.client.host if request.client else None
+
+
 def _serialize_user(user: User, session: Session) -> AccessControlUserResponse:
     return AccessControlUserResponse(
         id=user.id,
@@ -42,6 +50,7 @@ def _serialize_user(user: User, session: Session) -> AccessControlUserResponse:
 @router.get("/users", response_model=AccessControlUserListResponse)
 def list_access_control_users(
     user: Annotated[User, Depends(get_current_portal_user)],
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> AccessControlUserListResponse:
     if user.role != RoleEnum.RH_ADMIN:
@@ -58,14 +67,33 @@ def list_access_control_users(
                     entity_id="sync",
                     description="LDAP users synchronized from access control.",
                     details_json=json.dumps({"ldap_user_base_dn": settings.ldap_user_base_dn}),
-                    ip_address="127.0.0.1",
+                    ip_address=_get_client_ip(request),
                     created_at=datetime.now(UTC),
                 )
             )
             db.commit()
         except (LdapAuthenticationError, LdapConfigurationError) as exc:
             db.rollback()
-            logger.warning("LDAP synchronization skipped: %s", exc)
+            logger.exception("LDAP synchronization failed from access control")
+            db.add(
+                AuditLog(
+                    actor_user_id=user.id,
+                    action=AuditActionEnum.UPDATE,
+                    entity_name="ldap_users",
+                    entity_id="sync_failed",
+                    description="LDAP synchronization failed from access control.",
+                    details_json=json.dumps(
+                        {
+                            "ldap_user_base_dn": settings.ldap_user_base_dn,
+                            "error_type": exc.__class__.__name__,
+                            "error_message": str(exc),
+                        }
+                    ),
+                    ip_address=_get_client_ip(request),
+                    created_at=datetime.now(UTC),
+                )
+            )
+            db.commit()
 
     users = db.scalars(
         select(User)
@@ -82,6 +110,7 @@ def update_access_control_user(
     user_id: int,
     payload: AccessControlUpdateRequest,
     user: Annotated[User, Depends(get_current_portal_user)],
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> AccessControlUserResponse:
     if user.role != RoleEnum.RH_ADMIN:
@@ -110,7 +139,7 @@ def update_access_control_user(
                             "new_role": target_user.role.value,
                         }
                     ),
-                    ip_address="127.0.0.1",
+                    ip_address=_get_client_ip(request),
                     created_at=datetime.now(UTC),
                 )
             )

@@ -1,4 +1,6 @@
+import json
 import logging
+from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +9,7 @@ from app.api.v1.router import router as v1_router
 from app.core.config import settings
 from app.db.session import create_tables
 from app.db.session import SessionLocal
+from app.models import AuditActionEnum, AuditLog
 from app.services.ldap_auth import LdapAuthenticationError, LdapConfigurationError, sync_directory_users_from_ou
 
 logger = logging.getLogger(__name__)
@@ -36,7 +39,27 @@ def on_startup() -> None:
                 sync_directory_users_from_ou(session)
                 session.commit()
         except (LdapAuthenticationError, LdapConfigurationError) as exc:
-            logger.warning("LDAP startup sync skipped: %s", exc)
+            logger.exception("LDAP startup sync failed")
+            with SessionLocal() as session:
+                session.add(
+                    AuditLog(
+                        actor_user_id=None,
+                        action=AuditActionEnum.UPDATE,
+                        entity_name="ldap_users",
+                        entity_id="startup_sync_failed",
+                        description="LDAP startup synchronization failed.",
+                        details_json=json.dumps(
+                            {
+                                "ldap_user_base_dn": settings.ldap_user_base_dn,
+                                "error_type": exc.__class__.__name__,
+                                "error_message": str(exc),
+                            }
+                        ),
+                        ip_address=None,
+                        created_at=datetime.now(UTC),
+                    )
+                )
+                session.commit()
 
 
 @app.get("/", tags=["root"])

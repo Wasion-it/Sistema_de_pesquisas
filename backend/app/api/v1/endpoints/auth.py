@@ -5,7 +5,7 @@ import secrets
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -21,6 +21,37 @@ from app.services.access_control import get_active_access_grants, has_portal_acc
 from app.services.ldap_auth import LdapAuthenticationError, LdapConfigurationError, authenticate_ldap_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _get_client_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",", maxsplit=1)[0].strip() or None
+
+    return request.client.host if request.client else None
+
+
+def _record_login_audit(
+    db: Session,
+    *,
+    request: Request,
+    actor_user_id: int | None,
+    entity_id: str,
+    description: str,
+    details: dict[str, str],
+) -> None:
+    db.add(
+        AuditLog(
+            actor_user_id=actor_user_id,
+            action=AuditActionEnum.LOGIN,
+            entity_name="user",
+            entity_id=entity_id,
+            description=description,
+            details_json=json.dumps(details),
+            ip_address=_get_client_ip(request),
+            created_at=datetime.now(UTC),
+        )
+    )
 
 
 def _find_user_for_login(db: Session, identifier: str) -> User | None:
@@ -132,9 +163,11 @@ def _serialize_user(user: User) -> AuthUserResponse:
 @router.post("/login", response_model=LoginResponse)
 def login_admin(
     payload: LoginRequest,
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
 ) -> LoginResponse:
     identifier = payload.identifier
+    normalized_identifier = identifier.strip().lower()
     user = None
     ldap_authenticated = False
 
@@ -154,9 +187,27 @@ def login_admin(
     if user is None:
         user = _find_user_for_login(db, identifier)
         if user is None:
+            _record_login_audit(
+                db,
+                request=request,
+                actor_user_id=None,
+                entity_id=normalized_identifier or "unknown",
+                description="Administrative login failed.",
+                details={"identifier": normalized_identifier or "unknown", "result": "invalid_credentials"},
+            )
+            db.commit()
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
         if not verify_password(payload.password, user.password_hash):
+            _record_login_audit(
+                db,
+                request=request,
+                actor_user_id=user.id,
+                entity_id=str(user.id),
+                description="Administrative login failed.",
+                details={"email": user.email, "result": "invalid_credentials"},
+            )
+            db.commit()
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     if not user.is_active:
@@ -173,17 +224,13 @@ def login_admin(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     user.last_login_at = datetime.now(UTC)
-    db.add(
-        AuditLog(
-            actor_user_id=user.id,
-            action=AuditActionEnum.LOGIN,
-            entity_name="user",
-            entity_id=str(user.id),
-            description="Administrative login successful.",
-            details_json=json.dumps({"email": user.email, "role": user.role.value}),
-            ip_address="127.0.0.1",
-            created_at=datetime.now(UTC),
-        )
+    _record_login_audit(
+        db,
+        request=request,
+        actor_user_id=user.id,
+        entity_id=str(user.id),
+        description="Administrative login successful.",
+        details={"email": user.email, "role": user.role.value, "result": "success"},
     )
     db.commit()
     db.refresh(user)
